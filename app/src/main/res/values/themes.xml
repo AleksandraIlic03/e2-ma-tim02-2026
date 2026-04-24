@@ -6,4 +6,9 @@
     </style>
 
     <style name="Theme.Slagalica" parent="Base.Theme.Slagalica" />
+
+    <style name="HintText" parent="TextAppearance.MaterialComponents.Subtitle1">
+        <item name="fontFamily">@font/fredoka_regular</item>
+    </style>
+
 </resources>
