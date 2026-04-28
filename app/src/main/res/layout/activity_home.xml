@@ -11,6 +11,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_alignParentTop="true"
+        android:layout_marginTop="10dp"
         android:background="#FEFEFE"
         android:elevation="4dp"
         android:gravity="center_vertical"
@@ -21,18 +22,28 @@
         <ImageView
             android:layout_width="36dp"
             android:layout_height="36dp"
-            android:src="@drawable/img"
-            android:contentDescription="Maskota" />
+            android:contentDescription="Maskota"
+            android:src="@drawable/img" />
 
         <TextView
-            android:layout_width="0dp"
+            android:layout_width="134dp"
             android:layout_height="wrap_content"
             android:layout_marginStart="12dp"
             android:layout_weight="1"
+            android:fontFamily="@font/fredoka_bold"
             android:text="Slagalica"
             android:textColor="#321C1C"
-            android:textSize="22sp"
-            android:fontFamily="@font/fredoka_bold" />
+            android:textSize="22sp" />
+
+        <ImageButton
+            android:id="@+id/btnNotifications"
+            android:layout_width="25dp"
+            android:layout_height="25dp"
+            android:layout_marginEnd="12dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:scaleType="fitCenter"
+            android:src="@android:drawable/ic_popup_reminder"
+            app:tint="#823FAB" />
 
         <LinearLayout
             android:layout_width="wrap_content"
@@ -43,28 +54,28 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:fontFamily="@font/fredoka_semibold"
                 android:text="⭐ 0"
                 android:textColor="#321C1C"
-                android:textSize="14sp"
-                android:fontFamily="@font/fredoka_semibold" />
+                android:textSize="18sp" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="12dp"
+                android:layout_marginStart="10dp"
+                android:fontFamily="@font/fredoka_semibold"
                 android:text="🎟️ 5"
                 android:textColor="#321C1C"
-                android:textSize="14sp"
-                android:fontFamily="@font/fredoka_semibold" />
+                android:textSize="18sp" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="12dp"
+                android:layout_marginStart="10dp"
+                android:fontFamily="@font/fredoka_semibold"
                 android:text="🏆 0"
                 android:textColor="#321C1C"
-                android:textSize="14sp"
-                android:fontFamily="@font/fredoka_semibold" />
+                android:textSize="18sp" />
         </LinearLayout>
     </LinearLayout>
 
@@ -111,6 +122,30 @@
             android:textColor="#FFFFFF"
             android:textSize="16sp"
             android:fontFamily="@font/fredoka_bold"
+            app:cornerRadius="100dp" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnAsocijacije"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:layout_marginTop="10dp"
+            android:backgroundTint="#2196F3"
+            android:fontFamily="@font/fredoka_bold"
+            android:text="IGRA ASOCIJACIJE"
+            android:textColor="#FFFFFF"
+            android:textSize="16sp"
+            app:cornerRadius="100dp" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnSkocko"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:layout_marginTop="10dp"
+            android:backgroundTint="#4CAF50"
+            android:fontFamily="@font/fredoka_bold"
+            android:text="IGRA SKOČKO"
+            android:textColor="#FFFFFF"
+            android:textSize="16sp"
             app:cornerRadius="100dp" />
 
         <com.google.android.material.button.MaterialButton

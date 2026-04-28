@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginHorizontal="16dp"
+    android:layout_marginVertical="8dp"
+    app:cardCornerRadius="20dp"
+    app:cardElevation="3dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="#FFFFFF"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:padding="16dp">
+
+        <!-- Ikona sa kružnom pozadinom -->
+        <FrameLayout
+            android:layout_width="48dp"
+            android:layout_height="48dp">
+
+            <View
+                android:id="@+id/viewIconBg"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@drawable/circle_placeholder"
+                android:backgroundTint="#FFF9C4" /> <!-- Svetlo žuta za nagrade npr. -->
+
+            <TextView
+                android:id="@+id/tvNotifIcon"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:text="🏆"
+                android:textSize="22sp" />
+        </FrameLayout>
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/tvNotifTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="@font/fredoka_bold"
+                android:text="Nova nagrada!"
+                android:textColor="#321C1C"
+                android:textSize="17sp" />
+
+            <TextView
+                android:id="@+id/tvNotifMessage"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:fontFamily="@font/fredoka_regular"
+                android:text="Osvojili ste 5 tokena za plasman na listi."
+                android:textColor="#665A5A"
+                android:textSize="14sp" />
+
+            <TextView
+                android:id="@+id/tvNotifTime"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:fontFamily="@font/fredoka_regular"
+                android:text="pre 5 min"
+                android:textColor="#BDBDBD"
+                android:textSize="12sp" />
+        </LinearLayout>
+
+        <!-- Indikator nepročitano (Mala tačkica) -->
+        <View
+            android:id="@+id/ivUnreadDot"
+            android:layout_width="8dp"
+            android:layout_height="8dp"
+            android:layout_gravity="top"
+            android:layout_marginTop="4dp"
+            android:background="@drawable/small_circle_placeholder"
+            android:backgroundTint="#823FAB" />
+
+    </LinearLayout>
+</androidx.cardview.widget.CardView>
