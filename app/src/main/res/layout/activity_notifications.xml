@@ -1,0 +1,220 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#FBF7EF"
+    android:orientation="vertical">
+
+    <!-- Header -->
+    <androidx.cardview.widget.CardView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:cardElevation="4dp"
+        app:cardCornerRadius="0dp">
+
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="60dp"
+            android:background="#FFFFFF"
+            android:paddingHorizontal="16dp">
+
+            <ImageButton
+                android:id="@+id/btnBack"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_centerVertical="true"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:src="@android:drawable/ic_menu_revert"
+                app:tint="#321C1C"
+                android:contentDescription="Nazad" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerInParent="true"
+                android:fontFamily="@font/fredoka_bold"
+                android:text="Notifikacije"
+                android:textColor="#321C1C"
+                android:textSize="22sp" />
+
+        </RelativeLayout>
+    </androidx.cardview.widget.CardView>
+
+    <!-- Filteri (Kanali + Pročitano/Nepročitano) -->
+    <HorizontalScrollView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingVertical="12dp"
+        android:paddingHorizontal="16dp"
+        android:scrollbars="none">
+
+        <com.google.android.material.chip.ChipGroup
+            android:id="@+id/chipGroupFilters"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:singleSelection="true">
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipAll"
+                style="@style/Widget.MaterialComponents.Chip.Choice"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Sve"
+                android:checked="true"
+                app:chipBackgroundColor="#F3E5F5"
+                app:chipStrokeColor="#823FAB"
+                android:textColor="#823FAB" />
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipUnread"
+                style="@style/Widget.MaterialComponents.Chip.Choice"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Nepročitane"
+                android:textColor="#877777" />
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipChat"
+                style="@style/Widget.MaterialComponents.Chip.Choice"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Čet"
+                android:textColor="#877777" />
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipRanking"
+                style="@style/Widget.MaterialComponents.Chip.Choice"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Rangiranje"
+                android:textColor="#877777" />
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipRewards"
+                style="@style/Widget.MaterialComponents.Chip.Choice"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Nagrade"
+                android:textColor="#877777" />
+
+        </com.google.android.material.chip.ChipGroup>
+    </HorizontalScrollView>
+
+    <!-- Istorija notifikacija (Različiti primeri za KT1) -->
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingBottom="16dp">
+
+            <!-- Nagrada -->
+            <androidx.cardview.widget.CardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="16dp"
+                android:layout_marginVertical="8dp"
+                app:cardCornerRadius="20dp"
+                app:cardElevation="3dp">
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:padding="16dp" android:gravity="center_vertical">
+                    <TextView android:layout_width="48dp" android:layout_height="48dp" android:text="🎁" android:textSize="24sp" android:gravity="center" android:background="@drawable/circle_placeholder" android:backgroundTint="#FFF9C4"/>
+                    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:layout_marginStart="16dp" android:orientation="vertical">
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Nova nagrada!" android:fontFamily="@font/fredoka_bold" android:textColor="#321C1C" android:textSize="17sp"/>
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Dobili ste 5 tokena za plasman!" android:fontFamily="@font/fredoka_regular" android:textColor="#665A5A" android:textSize="14sp"/>
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="pre 2 min" android:fontFamily="@font/fredoka_regular" android:textColor="#BDBDBD" android:textSize="12sp"/>
+                    </LinearLayout>
+                    <View android:layout_width="8dp" android:layout_height="8dp" android:background="@drawable/small_circle_placeholder" android:backgroundTint="#823FAB"/>
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
+            <!-- Čet -->
+            <androidx.cardview.widget.CardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="16dp"
+                android:layout_marginVertical="8dp"
+                app:cardCornerRadius="20dp"
+                app:cardElevation="3dp">
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:padding="16dp" android:gravity="center_vertical">
+                    <TextView android:layout_width="48dp" android:layout_height="48dp" android:text="💬" android:textSize="24sp" android:gravity="center" android:background="@drawable/circle_placeholder" android:backgroundTint="#E1F5FE"/>
+                    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:layout_marginStart="16dp" android:orientation="vertical">
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Nova poruka u četu" android:fontFamily="@font/fredoka_bold" android:textColor="#321C1C" android:textSize="17sp"/>
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Marko: Hej, jesi li za partiju?" android:fontFamily="@font/fredoka_regular" android:textColor="#665A5A" android:textSize="14sp"/>
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="pre 15 min" android:fontFamily="@font/fredoka_regular" android:textColor="#BDBDBD" android:textSize="12sp"/>
+                    </LinearLayout>
+                    <View android:layout_width="8dp" android:layout_height="8dp" android:background="@drawable/small_circle_placeholder" android:backgroundTint="#823FAB"/>
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
+            <!-- Rangiranje -->
+            <androidx.cardview.widget.CardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="16dp"
+                android:layout_marginVertical="8dp"
+                app:cardCornerRadius="20dp"
+                app:cardElevation="3dp">
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:padding="16dp" android:gravity="center_vertical">
+                    <TextView android:layout_width="48dp" android:layout_height="48dp" android:text="📊" android:textSize="24sp" android:gravity="center" android:background="@drawable/circle_placeholder" android:backgroundTint="#F3E5F5"/>
+                    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:layout_marginStart="16dp" android:orientation="vertical">
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Ažurirana rang lista" android:fontFamily="@font/fredoka_bold" android:textColor="#321C1C" android:textSize="17sp"/>
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Skočili ste na 3. mesto u ligi!" android:fontFamily="@font/fredoka_regular" android:textColor="#665A5A" android:textSize="14sp"/>
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="pre 1 sat" android:fontFamily="@font/fredoka_regular" android:textColor="#BDBDBD" android:textSize="12sp"/>
+                    </LinearLayout>
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
+            <!-- Prijatelj -->
+            <androidx.cardview.widget.CardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="16dp"
+                android:layout_marginVertical="8dp"
+                app:cardCornerRadius="20dp"
+                app:cardElevation="3dp">
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:padding="16dp" android:gravity="center_vertical">
+                    <TextView android:layout_width="48dp" android:layout_height="48dp" android:text="🤝" android:textSize="24sp" android:gravity="center" android:background="@drawable/circle_placeholder" android:backgroundTint="#E8F5E9"/>
+                    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:layout_marginStart="16dp" android:orientation="vertical">
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Poziv za prijatelja" android:fontFamily="@font/fredoka_bold" android:textColor="#321C1C" android:textSize="17sp"/>
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Korisnik 'SlagalicaMajstor' vas je dodao." android:fontFamily="@font/fredoka_regular" android:textColor="#665A5A" android:textSize="14sp"/>
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="juče" android:fontFamily="@font/fredoka_regular" android:textColor="#BDBDBD" android:textSize="12sp"/>
+                    </LinearLayout>
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
+        </LinearLayout>
+    </ScrollView>
+
+    <!-- Donja traka sa akcijama -->
+    <androidx.cardview.widget.CardView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:cardElevation="12dp"
+        app:cardCornerRadius="0dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp"
+            android:background="#FFFFFF">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnMarkAllRead"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:text="Označi sve kao pročitano"
+                android:textColor="#FFFFFF"
+                android:backgroundTint="#823FAB"
+                android:fontFamily="@font/fredoka_semibold"
+                app:cornerRadius="100dp" />
+
+        </LinearLayout>
+    </androidx.cardview.widget.CardView>
+
+</LinearLayout>

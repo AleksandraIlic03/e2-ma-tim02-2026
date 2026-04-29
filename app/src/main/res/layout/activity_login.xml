@@ -20,7 +20,7 @@
             android:text="Slagalica"
             android:textColor="#321C1C"
             android:textSize="32sp"
-            android:fontFamily="@font/fredoka_bold" />
+            android:textStyle="bold" />
 
         <TextView
             android:layout_width="wrap_content"
@@ -28,16 +28,15 @@
             android:layout_marginTop="4dp"
             android:text="Prijavite se na vaš nalog"
             android:textColor="#877777"
-            android:textSize="15sp"
-            android:fontFamily="@font/fredoka_regular" />
+            android:textSize="15sp" />
 
         <androidx.cardview.widget.CardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="40dp"
             app:cardBackgroundColor="#FEFEFE"
-            app:cardCornerRadius="24dp"
-            app:cardElevation="2dp">
+            app:cardCornerRadius="0dp"
+            app:cardElevation="0dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -55,16 +54,14 @@
                     app:boxCornerRadiusTopStart="16dp"
                     app:boxStrokeColor="#823FAB"
                     app:hintTextColor="#823FAB"
-                    app:hintTextAppearance="@style/HintText"
-                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+                    style="@style/Widget.Material3.TextInputLayout.OutlinedBox">
 
                     <com.google.android.material.textfield.TextInputEditText
                         android:id="@+id/etEmailUsername"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:inputType="textEmailAddress"
-                        android:textColor="#321C1C"
-                        android:fontFamily="@font/fredoka_regular" />
+                        android:textColor="#321C1C" />
                 </com.google.android.material.textfield.TextInputLayout>
 
                 <com.google.android.material.textfield.TextInputLayout
@@ -78,17 +75,15 @@
                     app:boxCornerRadiusTopStart="16dp"
                     app:boxStrokeColor="#823FAB"
                     app:hintTextColor="#823FAB"
-                    app:hintTextAppearance="@style/HintText"
                     app:passwordToggleEnabled="true"
-                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+                    style="@style/Widget.Material3.TextInputLayout.OutlinedBox">
 
                     <com.google.android.material.textfield.TextInputEditText
                         android:id="@+id/etPassword"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:inputType="textPassword"
-                        android:textColor="#321C1C"
-                        android:fontFamily="@font/fredoka_regular" />
+                        android:textColor="#321C1C" />
                 </com.google.android.material.textfield.TextInputLayout>
 
 

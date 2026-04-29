@@ -12,6 +12,15 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.Slagalica">
         <activity
+            android:name=".AsocijacijeActivity"
+            android:exported="false" />
+        <activity
+            android:name=".SkockoActivity"
+            android:exported="false" />
+        <activity
+            android:name=".NotificationsActivity"
+            android:exported="false" />
+        <activity
             android:name=".KorakPoKorakActivity"
             android:exported="false" />
         <activity
@@ -22,7 +31,8 @@
             android:exported="false" />
         <activity
             android:name=".LoginActivity"
-            android:exported="true">
+            android:exported="true"
+            android:hardwareAccelerated="false">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
