@@ -41,5 +41,10 @@ public class HomeActivity extends AppCompatActivity {
             Intent intent = new Intent(HomeActivity.this, ProfileActivity.class);
             startActivity(intent);
         });
+
+        findViewById(R.id.btnMojBroj).setOnClickListener(v -> {
+            Intent intent = new Intent(HomeActivity.this, MojBrojActivity.class);
+            startActivity(intent);
+        });
     }
 }
