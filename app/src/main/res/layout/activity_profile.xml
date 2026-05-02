@@ -70,21 +70,25 @@
                 </androidx.cardview.widget.CardView>
 
                 <androidx.cardview.widget.CardView
+                    android:id="@+id/btnEditAvatar"
                     android:layout_width="32dp"
                     android:layout_height="32dp"
                     android:layout_gravity="bottom|end"
                     android:layout_margin="4dp"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:foreground="?attr/selectableItemBackground"
                     app:cardBackgroundColor="#823FAB"
                     app:cardCornerRadius="16dp"
                     app:cardElevation="2dp">
 
                     <ImageView
-                        android:layout_width="18dp"
-                        android:layout_height="18dp"
+                        android:layout_width="14dp"
+                        android:layout_height="19dp"
                         android:layout_gravity="center"
-                        android:src="@android:drawable/ic_menu_camera"
-                        app:tint="#FFFFFF"
-                        android:contentDescription="Promeni sliku" />
+                        android:contentDescription="Promeni sliku"
+                        android:src="@android:drawable/ic_menu_edit"
+                        app:tint="#FFFFFF" />
                 </androidx.cardview.widget.CardView>
             </FrameLayout>
 
@@ -269,12 +273,23 @@
                 android:id="@+id/ivQrCode"
                 android:layout_width="140dp"
                 android:layout_height="140dp"
+                android:layout_marginBottom="32dp"
                 android:background="#F5F5F5"
                 android:contentDescription="QR Kod"
                 android:padding="24dp"
                 android:scaleType="centerInside"
                 android:src="@android:drawable/ic_menu_camera"
                 app:tint="#BDBDBD" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnLogout"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:fontFamily="@font/fredoka_bold"
+                android:text="LOGOUT"
+                android:textColor="#FFFFFF"
+                app:backgroundTint="#823FAB"
+                app:cornerRadius="100dp" />
 
         </LinearLayout>
     </ScrollView>

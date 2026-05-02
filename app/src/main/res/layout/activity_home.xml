@@ -89,18 +89,18 @@
         android:padding="24dp">
 
         <ImageView
-            android:layout_width="160dp"
-            android:layout_height="160dp"
+            android:layout_width="120dp"
+            android:layout_height="120dp"
             android:src="@drawable/img"
             android:contentDescription="Maskota" />
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
+            android:layout_marginTop="12dp"
             android:text="Spremni za igru?"
             android:textColor="#321C1C"
-            android:textSize="24sp"
+            android:textSize="22sp"
             android:fontFamily="@font/fredoka_bold" />
 
         <TextView
@@ -115,71 +115,83 @@
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnStartMatch"
             android:layout_width="match_parent"
-            android:layout_height="56dp"
-            android:layout_marginTop="24dp"
+            android:layout_height="48dp"
+            android:layout_marginTop="16dp"
             android:backgroundTint="#823FAB"
             android:text="ZAPOČNI PARTIJU"
             android:textColor="#FFFFFF"
-            android:textSize="16sp"
+            android:textSize="14sp"
             android:fontFamily="@font/fredoka_bold"
             app:cornerRadius="100dp" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnAsocijacije"
             android:layout_width="match_parent"
-            android:layout_height="56dp"
-            android:layout_marginTop="10dp"
+            android:layout_height="48dp"
+            android:layout_marginTop="8dp"
             android:backgroundTint="#2196F3"
             android:fontFamily="@font/fredoka_bold"
             android:text="IGRA ASOCIJACIJE"
             android:textColor="#FFFFFF"
-            android:textSize="16sp"
+            android:textSize="14sp"
             app:cornerRadius="100dp" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnSkocko"
             android:layout_width="match_parent"
-            android:layout_height="56dp"
-            android:layout_marginTop="10dp"
+            android:layout_height="48dp"
+            android:layout_marginTop="8dp"
             android:backgroundTint="#4CAF50"
             android:fontFamily="@font/fredoka_bold"
             android:text="IGRA SKOČKO"
             android:textColor="#FFFFFF"
-            android:textSize="16sp"
+            android:textSize="14sp"
+            app:cornerRadius="100dp" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnSpojnice"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:layout_marginTop="8dp"
+            android:backgroundTint="#823FAB"
+            android:fontFamily="@font/fredoka_bold"
+            android:text="IGRA SPOJNICE"
+            android:textColor="#FFFFFF"
+            android:textSize="14sp"
             app:cornerRadius="100dp" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnMojBroj"
             android:layout_width="match_parent"
-            android:layout_height="56dp"
-            android:layout_marginTop="10dp"
+            android:layout_height="48dp"
+            android:layout_marginTop="8dp"
             android:backgroundTint="#FF912B"
             android:fontFamily="@font/fredoka_bold"
             android:text="IGRA MOJ BROJ "
             android:textColor="#FFFFFF"
-            android:textSize="16sp"
+            android:textSize="14sp"
             app:cornerRadius="100dp" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnKoZnaZna"
             android:layout_width="match_parent"
-            android:layout_height="56dp"
-            android:layout_marginTop="10dp"
+            android:layout_height="48dp"
+            android:layout_marginTop="8dp"
             android:backgroundTint="#E91E63"
             android:fontFamily="@font/fredoka_bold"
             android:text="IGRA KO ZNA ZNA"
             android:textColor="#FFFFFF"
-            android:textSize="16sp"
+            android:textSize="14sp"
             app:cornerRadius="100dp" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnFriendMatch"
             android:layout_width="match_parent"
-            android:layout_height="48dp"
-            android:layout_marginTop="10dp"
+            android:layout_height="40dp"
+            android:layout_marginTop="8dp"
             android:text="POZOVI PRIJATELJA"
             android:textColor="#823FAB"
-            android:textSize="14sp"
+            android:textSize="13sp"
             android:fontFamily="@font/fredoka_semibold"
             app:cornerRadius="100dp"
             app:strokeColor="#823FAB"

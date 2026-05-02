@@ -118,16 +118,15 @@
 
         <TextView
             android:id="@+id/tvTimer"
-            android:layout_width="60dp"
-            android:layout_height="60dp"
-            android:background="@drawable/dot_inactive"
-            android:backgroundTint="#FFFFFF"
-            android:elevation="4dp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/input_bg_rounded"
             android:fontFamily="@font/fredoka_bold"
-            android:gravity="center"
-            android:text="5"
+            android:paddingHorizontal="16dp"
+            android:paddingVertical="6dp"
+            android:text="⏱ 5s"
             android:textColor="#823FAB"
-            android:textSize="24sp" />
+            android:textSize="16sp" />
 
         <TextView
             android:layout_width="wrap_content"

@@ -51,5 +51,10 @@ public class HomeActivity extends AppCompatActivity {
             Intent intent = new Intent(HomeActivity.this, KoZnaZnaActivity.class);
             startActivity(intent);
         });
+
+        findViewById(R.id.btnSpojnice).setOnClickListener(v -> {
+            Intent intent = new Intent(HomeActivity.this, SpojniceActivity.class);
+            startActivity(intent);
+        });
     }
 }
