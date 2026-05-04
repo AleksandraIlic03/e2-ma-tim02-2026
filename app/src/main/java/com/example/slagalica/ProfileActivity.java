@@ -12,11 +12,6 @@ public class ProfileActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_profile);
 
-        ImageButton btnBack = findViewById(R.id.btnBack);
-        if (btnBack != null) {
-            btnBack.setOnClickListener(v -> finish());
-        }
-
         MaterialButton btnLogout = findViewById(R.id.btnLogout);
         if (btnLogout != null) {
             btnLogout.setOnClickListener(v -> {
@@ -24,6 +19,14 @@ public class ProfileActivity extends AppCompatActivity {
                 intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
                 startActivity(intent);
                 finish();
+            });
+        }
+
+        MaterialButton btnStatistics = findViewById(R.id.btnStatistics);
+        if (btnStatistics != null) {
+            btnStatistics.setOnClickListener(v -> {
+                Intent intent = new Intent(this, StatisticsActivity.class);
+                startActivity(intent);
             });
         }
     }

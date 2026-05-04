@@ -11,22 +11,12 @@
         android:layout_height="64dp"
         android:paddingHorizontal="8dp">
 
-        <ImageButton
-            android:id="@+id/btnBack"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:layout_centerVertical="true"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="Nazad"
-            android:src="@android:drawable/ic_menu_revert"
-            app:tint="#321C1C" />
-
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_centerInParent="true"
             android:fontFamily="@font/fredoka_bold"
-            android:text="Profil"
+            android:text="PROFIL"
             android:textColor="#321C1C"
             android:textSize="20sp" />
     </RelativeLayout>
@@ -42,7 +32,7 @@
             android:gravity="center_horizontal"
             android:orientation="vertical"
             android:paddingHorizontal="24dp"
-            android:paddingTop="20dp"
+            android:paddingTop="16dp"
             android:paddingBottom="40dp">
 
             <FrameLayout
@@ -64,8 +54,8 @@
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
                         android:contentDescription="Avatar"
-                        android:scaleType="centerInside"
                         android:padding="24dp"
+                        android:scaleType="centerInside"
                         android:src="@drawable/ic_user" />
                 </androidx.cardview.widget.CardView>
 
@@ -105,7 +95,7 @@
                 android:id="@+id/tvEmail"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="32dp"
+                android:layout_marginBottom="16dp"
                 android:fontFamily="@font/fredoka_regular"
                 android:text="username@email.com"
                 android:textColor="#9E9E9E"
@@ -114,7 +104,7 @@
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="24dp"
+                android:layout_marginBottom="16dp"
                 android:orientation="horizontal">
 
                 <androidx.cardview.widget.CardView
@@ -191,7 +181,7 @@
             <androidx.cardview.widget.CardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="40dp"
+                android:layout_marginBottom="20dp"
                 app:cardBackgroundColor="#FAFAFA"
                 app:cardCornerRadius="20dp"
                 app:cardElevation="0dp">
@@ -273,13 +263,26 @@
                 android:id="@+id/ivQrCode"
                 android:layout_width="140dp"
                 android:layout_height="140dp"
-                android:layout_marginBottom="32dp"
+                android:layout_marginBottom="24dp"
                 android:background="#F5F5F5"
                 android:contentDescription="QR Kod"
                 android:padding="24dp"
                 android:scaleType="centerInside"
                 android:src="@android:drawable/ic_menu_camera"
                 app:tint="#BDBDBD" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnStatistics"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:layout_marginBottom="8dp"
+                android:fontFamily="@font/fredoka_bold"
+                android:text="STATISTIKA"
+                android:textColor="#823FAB"
+                app:cornerRadius="100dp"
+                app:strokeColor="#823FAB"
+                app:strokeWidth="2dp" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnLogout"
@@ -290,7 +293,6 @@
                 android:textColor="#FFFFFF"
                 app:backgroundTint="#823FAB"
                 app:cornerRadius="100dp" />
-
         </LinearLayout>
     </ScrollView>
 </LinearLayout>
