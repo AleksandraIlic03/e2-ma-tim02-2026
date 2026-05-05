@@ -37,8 +37,23 @@ public class HomeActivity extends AppCompatActivity {
             startActivity(intent);
         });
 
+        findViewById(R.id.btnNavProfile).setOnClickListener(v -> {
+            Intent intent = new Intent(HomeActivity.this, ProfileActivity.class);
+            startActivity(intent);
+        });
+
         findViewById(R.id.btnMojBroj).setOnClickListener(v -> {
             Intent intent = new Intent(HomeActivity.this, MojBrojActivity.class);
+            startActivity(intent);
+        });
+
+        findViewById(R.id.btnKoZnaZna).setOnClickListener(v -> {
+            Intent intent = new Intent(HomeActivity.this, KoZnaZnaActivity.class);
+            startActivity(intent);
+        });
+
+        findViewById(R.id.btnSpojnice).setOnClickListener(v -> {
+            Intent intent = new Intent(HomeActivity.this, SpojniceActivity.class);
             startActivity(intent);
         });
     }

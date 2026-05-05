@@ -15,6 +15,12 @@
             android:name=".MojBrojActivity"
             android:exported="false" />
         <activity
+            android:name=".SpojniceActivity"
+            android:exported="false" />
+        <activity
+            android:name=".KoZnaZnaActivity"
+            android:exported="false" />
+        <activity
             android:name=".AsocijacijeActivity"
             android:exported="false" />
         <activity
@@ -40,6 +46,12 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity
+            android:name=".ProfileActivity"
+            android:exported="false" />
+        <activity
+            android:name=".StatisticsActivity"
+            android:exported="false" />
         <activity
             android:name=".MainActivity"
             android:exported="false" />
