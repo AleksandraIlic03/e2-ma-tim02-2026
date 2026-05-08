@@ -2,7 +2,6 @@ package com.example.slagalica;
 
 import android.os.Bundle;
 import android.content.Intent;
-import android.widget.ImageButton;
 import androidx.appcompat.app.AppCompatActivity;
 import com.google.android.material.button.MaterialButton;
 
@@ -26,6 +25,14 @@ public class ProfileActivity extends AppCompatActivity {
         if (btnStatistics != null) {
             btnStatistics.setOnClickListener(v -> {
                 Intent intent = new Intent(this, StatisticsActivity.class);
+                startActivity(intent);
+            });
+        }
+
+        MaterialButton btnManagePassword = findViewById(R.id.btnManagePassword);
+        if (btnManagePassword != null) {
+            btnManagePassword.setOnClickListener(v -> {
+                Intent intent = new Intent(this, ResetPasswordActivity.class);
                 startActivity(intent);
             });
         }
