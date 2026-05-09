@@ -285,6 +285,19 @@
                 app:strokeWidth="2dp" />
 
             <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnManagePassword"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:layout_marginBottom="8dp"
+                android:fontFamily="@font/fredoka_bold"
+                android:text="PROMENI LOZINKU"
+                android:textColor="#823FAB"
+                app:cornerRadius="100dp"
+                app:strokeColor="#823FAB"
+                app:strokeWidth="2dp" />
+
+            <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnLogout"
                 android:layout_width="match_parent"
                 android:layout_height="56dp"
@@ -293,6 +306,7 @@
                 android:textColor="#FFFFFF"
                 app:backgroundTint="#823FAB"
                 app:cornerRadius="100dp" />
+
         </LinearLayout>
     </ScrollView>
 </LinearLayout>
