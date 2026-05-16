@@ -1,5 +1,6 @@
 package com.example.slagalica;
 
+import android.content.Intent;
 import android.content.res.ColorStateList;
 import android.graphics.Color;
 import android.os.Bundle;
@@ -102,6 +103,7 @@ public class SkockoActivity extends AppCompatActivity {
         layoutSolution.setVisibility(View.GONE);
         btnConfirm.setText("POTVRDI");
         btnConfirm.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor("#823FAB")));
+        btnDelete.setVisibility(View.VISIBLE);
         
         for (int i = 0; i < 6; i++) {
             for (int j = 0; j < 4; j++) attempts[i][j] = -1;
@@ -265,12 +267,19 @@ public class SkockoActivity extends AppCompatActivity {
         isGameOver = true;
         showTargetCombination();
         
+        Intent intent = new Intent(GameEventReceiver.ACTION_GAME_FINISHED);
+        intent.putExtra("title", "Skočko - Rezultat");
+        intent.putExtra("message", "Završena runda " + currentRound + ". Osvojeno: " + totalPoints + " poena.");
+        intent.putExtra("type", "rewards");
+        sendBroadcast(intent);
+
         if (currentRound == 1) {
             btnConfirm.setText("SLEDEĆA RUNDA");
         } else {
             btnConfirm.setText("ZAVRŠI IGRU");
         }
         btnConfirm.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor("#4CAF50")));
+        btnDelete.setVisibility(View.GONE);
     }
 
     private void showTargetCombination() {

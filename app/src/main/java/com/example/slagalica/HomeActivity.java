@@ -14,6 +14,8 @@ public class HomeActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_home);
 
+        NotificationHelper.createNotificationChannels(this);
+
         MaterialButton btnAsocijacije = findViewById(R.id.btnAsocijacije);
         btnAsocijacije.setOnClickListener(v -> {
             Intent intent = new Intent(HomeActivity.this, AsocijacijeActivity.class);

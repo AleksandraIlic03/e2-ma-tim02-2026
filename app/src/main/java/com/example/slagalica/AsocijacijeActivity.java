@@ -237,6 +237,20 @@ public class AsocijacijeActivity extends AppCompatActivity {
         etKonacnoResenje.setEnabled(false);
         etKonacnoResenje.setBackgroundResource(R.drawable.final_success_bg);
 
+        String msg = "Osvojili ste " + totalPoints + " zvezdica u igri Asocijacije!";
+        NotificationHelper.sendRealNotification(this, "Kraj Runde " + currentRound, msg, NotificationHelper.CHANNEL_REWARDS);
+        
+        com.example.slagalica.models.NotificationRepository.addNotification(
+            new com.example.slagalica.models.Notification(
+                String.valueOf(System.currentTimeMillis()), 
+                "Asocijacije - Rezultat", 
+                msg, 
+                "sada", 
+                "rewards", 
+                false
+            )
+        );
+
         solveColumn('A', false); solveColumn('B', false);
         solveColumn('V', false); solveColumn('G', false);
 
