@@ -14,12 +14,6 @@ public class HomeActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_home);
 
-        MaterialButton btnStart = findViewById(R.id.btnStartMatch);
-        btnStart.setOnClickListener(v -> {
-            Intent intent = new Intent(HomeActivity.this, KorakPoKorakActivity.class);
-            startActivity(intent);
-        });
-
         MaterialButton btnAsocijacije = findViewById(R.id.btnAsocijacije);
         btnAsocijacije.setOnClickListener(v -> {
             Intent intent = new Intent(HomeActivity.this, AsocijacijeActivity.class);
@@ -34,6 +28,11 @@ public class HomeActivity extends AppCompatActivity {
 
         findViewById(R.id.btnNotifications).setOnClickListener(v -> {
             Intent intent = new Intent(HomeActivity.this, NotificationsActivity.class);
+            startActivity(intent);
+        });
+
+        findViewById(R.id.btnStartMatch).setOnClickListener(v -> {
+            Intent intent = new Intent(HomeActivity.this, KorakPoKorakActivity.class);
             startActivity(intent);
         });
 
