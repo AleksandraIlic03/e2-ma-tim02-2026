@@ -30,7 +30,7 @@
                 android:layout_width="40dp"
                 android:layout_height="40dp"
                 android:contentDescription="Player 1"
-                android:src="@drawable/circle_placeholder" />
+                android:src="@drawable/img" />
 
             <LinearLayout
                 android:layout_width="wrap_content"
@@ -130,7 +130,7 @@
                 android:layout_width="40dp"
                 android:layout_height="40dp"
                 android:contentDescription="Player 2"
-                android:src="@drawable/circle_placeholder" />
+                android:src="@drawable/img_1" />
         </LinearLayout>
     </LinearLayout>
 
