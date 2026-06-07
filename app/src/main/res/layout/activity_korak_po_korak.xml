@@ -11,7 +11,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_alignParentTop="true"
-        android:background="#823FAB"
+        android:background="#F5EEFF"
         android:gravity="center_vertical"
         android:orientation="horizontal"
         android:paddingHorizontal="16dp"
@@ -21,423 +21,251 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:orientation="vertical">
+            android:background="@drawable/input_bg_rounded"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:padding="8dp">
 
-            <TextView
+            <ImageView
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:contentDescription="Player 1"
+                android:src="@drawable/circle_placeholder" />
+
+            <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Igrač 1"
-                android:textColor="#FFFFFF"
-                android:textSize="11sp"
-                android:fontFamily="@font/fredoka_regular" />
+                android:layout_marginStart="8dp"
+                android:orientation="vertical">
 
-            <TextView
-                android:id="@+id/tvPlayer1Score"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="0 bod."
-                android:textColor="#FFFFFF"
-                android:textSize="16sp"
-                android:fontFamily="@font/fredoka_bold" />
+                <TextView
+                    android:id="@+id/tvPlayer1Name"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="@font/fredoka_semibold"
+                    android:text="User1"
+                    android:textColor="#877777"
+                    android:textSize="12sp" />
+
+                <TextView
+                    android:id="@+id/tvPlayer1Points"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="@font/fredoka_bold"
+                    android:text="0"
+                    android:textColor="#321C1C"
+                    android:textSize="20sp" />
+            </LinearLayout>
         </LinearLayout>
 
         <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:gravity="center"
-            android:orientation="vertical">
+            android:orientation="vertical"
+            android:paddingHorizontal="8dp">
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Korak po korak"
-                android:textColor="#FFFFFF"
-                android:textSize="10sp"
-                android:fontFamily="@font/fredoka_regular" />
-
-            <TextView
-                android:id="@+id/tvTimer"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="01:10"
-                android:textColor="#FFFFFF"
-                android:textSize="22sp"
-                android:fontFamily="@font/fredoka_bold" />
+                android:fontFamily="@font/fredoka_bold"
+                android:text="VS"
+                android:textColor="#823FAB"
+                android:textSize="16sp" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:fontFamily="@font/fredoka_bold"
+                android:text="KORAK PO KORAK"
+                android:textColor="#2D1B4E"
+                android:textSize="11sp" />
+
+            <TextView
+                android:id="@+id/tvRound"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="@font/fredoka_regular"
                 android:text="Runda 1/2"
-                android:textColor="#D4B8E8"
-                android:textSize="10sp"
-                android:fontFamily="@font/fredoka_regular" />
+                android:textColor="#877777"
+                android:textSize="10sp" />
         </LinearLayout>
 
         <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:gravity="end"
-            android:orientation="vertical">
+            android:background="@drawable/input_bg_rounded"
+            android:gravity="center_vertical|end"
+            android:orientation="horizontal"
+            android:padding="8dp">
 
-            <TextView
+            <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Igrač 2"
-                android:textColor="#FFFFFF"
-                android:textSize="11sp"
-                android:layout_gravity="end"
-                android:fontFamily="@font/fredoka_regular" />
+                android:layout_marginEnd="8dp"
+                android:gravity="end"
+                android:orientation="vertical">
 
-            <TextView
-                android:id="@+id/tvPlayer2Score"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="0 bod."
-                android:textColor="#FFFFFF"
-                android:textSize="16sp"
-                android:layout_gravity="end"
-                android:fontFamily="@font/fredoka_bold" />
+                <TextView
+                    android:id="@+id/tvPlayer2Name"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="@font/fredoka_semibold"
+                    android:text="User2"
+                    android:textColor="#877777"
+                    android:textSize="12sp" />
+
+                <TextView
+                    android:id="@+id/tvPlayer2Points"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="@font/fredoka_bold"
+                    android:text="0"
+                    android:textColor="#321C1C"
+                    android:textSize="20sp" />
+            </LinearLayout>
+
+            <ImageView
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:contentDescription="Player 2"
+                android:src="@drawable/circle_placeholder" />
         </LinearLayout>
     </LinearLayout>
 
-    <TextView
-        android:id="@+id/tvStepTimer"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_below="@id/header"
-        android:layout_centerHorizontal="true"
-        android:layout_marginTop="8dp"
-        android:text="⏱️ 10s"
-        android:textColor="#E94560"
-        android:textSize="20sp"
-        android:fontFamily="@font/fredoka_bold" />
-
-    <TextView
-        android:id="@+id/tvCurrentPoints"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_below="@id/tvStepTimer"
-        android:layout_centerHorizontal="true"
-        android:layout_marginTop="2dp"
-        android:text="Pogodi za 20 bodova"
-        android:textColor="#823FAB"
-        android:textSize="14sp"
-        android:fontFamily="@font/fredoka_semibold" />
-
-    <ScrollView
+    <!-- WAITING SCREEN -->
+    <LinearLayout
+        android:id="@+id/layoutWaiting"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_below="@id/tvCurrentPoints"
-        android:layout_above="@id/bottomBar"
-        android:layout_marginTop="8dp">
+        android:layout_height="match_parent"
+        android:layout_below="@id/header"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:visibility="gone">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:fontFamily="@font/fredoka_bold"
+            android:text="⏳"
+            android:textSize="64sp" />
+
+        <TextView
+            android:id="@+id/tvWaitingText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:fontFamily="@font/fredoka_bold"
+            android:text="Čekanje na protivnika..."
+            android:textColor="#2D1B4E"
+            android:textSize="22sp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:fontFamily="@font/fredoka_regular"
+            android:text="Protivnik trenutno igra svoju rundu"
+            android:textColor="#877777"
+            android:textSize="15sp" />
+    </LinearLayout>
+
+    <!-- GAME SCREEN -->
+    <LinearLayout
+        android:id="@+id/layoutGame"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_below="@id/header"
+        android:orientation="vertical"
+        android:visibility="visible">
+
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingHorizontal="16dp"
+            android:paddingTop="8dp">
+
+            <TextView
+                android:id="@+id/tvStepTimer"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerHorizontal="true"
+                android:fontFamily="@font/fredoka_bold"
+                android:text="⏱️ 10s"
+                android:textColor="#E94560"
+                android:textSize="20sp" />
+
+            <TextView
+                android:id="@+id/tvCurrentPoints"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_below="@id/tvStepTimer"
+                android:layout_centerHorizontal="true"
+                android:layout_marginTop="2dp"
+                android:fontFamily="@font/fredoka_semibold"
+                android:text="Pogodi za 20 bodova"
+                android:textColor="#823FAB"
+                android:textSize="14sp" />
+        </RelativeLayout>
+
+        <ScrollView
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:layout_marginTop="8dp">
+
+            <LinearLayout
+                android:id="@+id/llSteps"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:paddingHorizontal="16dp" />
+        </ScrollView>
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:paddingHorizontal="16dp">
+            android:background="#FEFEFE"
+            android:elevation="8dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:padding="12dp">
 
-            <androidx.cardview.widget.CardView
-                android:layout_width="match_parent"
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                app:cardBackgroundColor="#823FAB"
-                app:cardCornerRadius="12dp"
-                app:cardElevation="2dp">
+                android:layout_weight="1"
+                android:hint="Unesite odgovor"
+                app:boxCornerRadiusBottomEnd="14dp"
+                app:boxCornerRadiusBottomStart="14dp"
+                app:boxCornerRadiusTopEnd="14dp"
+                app:boxCornerRadiusTopStart="14dp"
+                app:boxStrokeColor="#823FAB"
+                app:hintTextColor="#823FAB"
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
 
-                <LinearLayout
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etAnswer"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal"
-                    android:padding="10dp">
+                    android:fontFamily="@font/fredoka_regular"
+                    android:inputType="text"
+                    android:textColor="#321C1C" />
+            </com.google.android.material.textfield.TextInputLayout>
 
-                    <TextView
-                        android:layout_width="24dp"
-                        android:layout_height="24dp"
-                        android:background="@android:color/white"
-                        android:gravity="center"
-                        android:text="7"
-                        android:textColor="#823FAB"
-                        android:textSize="12sp"
-                        android:fontFamily="@font/fredoka_bold" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="10dp"
-                        android:text="Romul i Rem"
-                        android:textColor="#FFFFFF"
-                        android:textSize="14sp"
-                        android:fontFamily="@font/fredoka_semibold" />
-                </LinearLayout>
-            </androidx.cardview.widget.CardView>
-
-            <androidx.cardview.widget.CardView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                app:cardBackgroundColor="#9B59B6"
-                app:cardCornerRadius="12dp"
-                app:cardElevation="2dp">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal"
-                    android:padding="10dp">
-
-                    <TextView
-                        android:layout_width="24dp"
-                        android:layout_height="24dp"
-                        android:background="@android:color/white"
-                        android:gravity="center"
-                        android:text="6"
-                        android:textColor="#9B59B6"
-                        android:textSize="12sp"
-                        android:fontFamily="@font/fredoka_bold" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="10dp"
-                        android:text="Sedam brežuljaka"
-                        android:textColor="#FFFFFF"
-                        android:textSize="14sp"
-                        android:fontFamily="@font/fredoka_semibold" />
-                </LinearLayout>
-            </androidx.cardview.widget.CardView>
-
-            <androidx.cardview.widget.CardView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                app:cardBackgroundColor="#A873C7"
-                app:cardCornerRadius="12dp"
-                app:cardElevation="2dp">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal"
-                    android:padding="10dp">
-
-                    <TextView
-                        android:layout_width="24dp"
-                        android:layout_height="24dp"
-                        android:background="@android:color/white"
-                        android:gravity="center"
-                        android:text="5"
-                        android:textColor="#A873C7"
-                        android:textSize="12sp"
-                        android:fontFamily="@font/fredoka_bold" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="10dp"
-                        android:text="Vatikan"
-                        android:textColor="#FFFFFF"
-                        android:textSize="14sp"
-                        android:fontFamily="@font/fredoka_semibold" />
-                </LinearLayout>
-            </androidx.cardview.widget.CardView>
-
-            <androidx.cardview.widget.CardView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                app:cardBackgroundColor="#D5C4E0"
-                app:cardCornerRadius="12dp"
-                app:cardElevation="2dp">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal"
-                    android:padding="10dp">
-
-                    <TextView
-                        android:layout_width="24dp"
-                        android:layout_height="24dp"
-                        android:background="@android:color/white"
-                        android:gravity="center"
-                        android:text="4"
-                        android:textColor="#D5C4E0"
-                        android:textSize="12sp"
-                        android:fontFamily="@font/fredoka_bold" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="10dp"
-                        android:text="?"
-                        android:textColor="#FFFFFF"
-                        android:textSize="14sp"
-                        android:fontFamily="@font/fredoka_semibold" />
-                </LinearLayout>
-            </androidx.cardview.widget.CardView>
-
-            <androidx.cardview.widget.CardView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                app:cardBackgroundColor="#D5C4E0"
-                app:cardCornerRadius="12dp"
-                app:cardElevation="2dp">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal"
-                    android:padding="10dp">
-
-                    <TextView
-                        android:layout_width="24dp"
-                        android:layout_height="24dp"
-                        android:background="@android:color/white"
-                        android:gravity="center"
-                        android:text="3"
-                        android:textColor="#D5C4E0"
-                        android:textSize="12sp"
-                        android:fontFamily="@font/fredoka_bold" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="10dp"
-                        android:text="?"
-                        android:textColor="#FFFFFF"
-                        android:textSize="14sp"
-                        android:fontFamily="@font/fredoka_semibold" />
-                </LinearLayout>
-            </androidx.cardview.widget.CardView>
-
-            <androidx.cardview.widget.CardView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                app:cardBackgroundColor="#D5C4E0"
-                app:cardCornerRadius="12dp"
-                app:cardElevation="2dp">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal"
-                    android:padding="10dp">
-
-                    <TextView
-                        android:layout_width="24dp"
-                        android:layout_height="24dp"
-                        android:background="@android:color/white"
-                        android:gravity="center"
-                        android:text="2"
-                        android:textColor="#D5C4E0"
-                        android:textSize="12sp"
-                        android:fontFamily="@font/fredoka_bold" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="10dp"
-                        android:text="?"
-                        android:textColor="#FFFFFF"
-                        android:textSize="14sp"
-                        android:fontFamily="@font/fredoka_semibold" />
-                </LinearLayout>
-            </androidx.cardview.widget.CardView>
-
-            <androidx.cardview.widget.CardView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:layout_marginBottom="8dp"
-                app:cardBackgroundColor="#D5C4E0"
-                app:cardCornerRadius="12dp"
-                app:cardElevation="2dp">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal"
-                    android:padding="10dp">
-
-                    <TextView
-                        android:layout_width="24dp"
-                        android:layout_height="24dp"
-                        android:background="@android:color/white"
-                        android:gravity="center"
-                        android:text="1"
-                        android:textColor="#D5C4E0"
-                        android:textSize="12sp"
-                        android:fontFamily="@font/fredoka_bold" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="10dp"
-                        android:text="?"
-                        android:textColor="#FFFFFF"
-                        android:textSize="14sp"
-                        android:fontFamily="@font/fredoka_semibold" />
-                </LinearLayout>
-            </androidx.cardview.widget.CardView>
-
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnGuess"
+                android:layout_width="wrap_content"
+                android:layout_height="48dp"
+                android:layout_marginStart="8dp"
+                android:backgroundTint="#823FAB"
+                android:fontFamily="@font/fredoka_bold"
+                android:text="POGODI"
+                android:textColor="#FFFFFF"
+                android:textSize="14sp"
+                app:cornerRadius="14dp" />
         </LinearLayout>
-    </ScrollView>
-
-    <LinearLayout
-        android:id="@+id/bottomBar"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_alignParentBottom="true"
-        android:background="#FEFEFE"
-        android:elevation="8dp"
-        android:gravity="center_vertical"
-        android:orientation="horizontal"
-        android:padding="12dp">
-
-        <com.google.android.material.textfield.TextInputLayout
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:hint="Unesite odgovor"
-            app:boxCornerRadiusBottomEnd="14dp"
-            app:boxCornerRadiusBottomStart="14dp"
-            app:boxCornerRadiusTopEnd="14dp"
-            app:boxCornerRadiusTopStart="14dp"
-            app:boxStrokeColor="#823FAB"
-            app:hintTextColor="#823FAB"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
-
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/etAnswer"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:inputType="text"
-                android:textColor="#321C1C"
-                android:fontFamily="@font/fredoka_regular" />
-        </com.google.android.material.textfield.TextInputLayout>
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnStartMatch"
-            android:layout_width="wrap_content"
-            android:layout_height="48dp"
-            android:layout_marginStart="8dp"
-            android:backgroundTint="#823FAB"
-            android:text="POGODI"
-            android:textColor="#FFFFFF"
-            android:textSize="14sp"
-            android:fontFamily="@font/fredoka_bold"
-            app:cornerRadius="14dp" />
     </LinearLayout>
 
 </RelativeLayout>
