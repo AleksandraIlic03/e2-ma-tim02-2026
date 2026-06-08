@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginTop="4dp"
+    android:layout_marginHorizontal="16dp"
+    app:cardCornerRadius="12dp"
+    app:cardElevation="2dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:padding="10dp">
+
+        <TextView
+            android:id="@+id/tvStepNumber"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:background="@android:color/white"
+            android:gravity="center"
+            android:text="7"
+            android:textColor="#823FAB"
+            android:textSize="12sp"
+            android:fontFamily="@font/fredoka_bold" />
+
+        <TextView
+            android:id="@+id/tvStepText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="10dp"
+            android:text="Korak"
+            android:textColor="#FFFFFF"
+            android:textSize="14sp"
+            android:fontFamily="@font/fredoka_semibold" />
+
+    </LinearLayout>
+
+</androidx.cardview.widget.CardView>
