@@ -53,7 +53,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:fontFamily="@font/fredoka_bold"
-                    android:text="98"
+                    android:text="0"
                     android:textColor="#321C1C"
                     android:textSize="20sp" />
             </LinearLayout>
@@ -98,7 +98,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:fontFamily="@font/fredoka_bold"
-                    android:text="48"
+                    android:text="0"
                     android:textColor="#321C1C"
                     android:textSize="20sp" />
             </LinearLayout>
@@ -160,7 +160,7 @@
                 android:layout_height="wrap_content"
                 android:fontFamily="@font/fredoka_bold"
                 android:gravity="center"
-                android:text="Kada je počeo Prvi svetski rat?"
+                android:text="?"
                 android:textColor="#2D1B4E"
                 android:textSize="20sp" />
         </LinearLayout>
@@ -235,11 +235,12 @@
                 android:contentDescription="Answer 1" />
 
             <TextView
+                android:id="@+id/tvAnswer1"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
                 android:fontFamily="@font/fredoka_semibold"
-                android:text="1912. godine"
+                android:text="?"
                 android:textColor="#2D1B4E"
                 android:clickable="false"
                 android:focusable="false" />
@@ -263,11 +264,12 @@
                 android:contentDescription="Answer 2" />
 
             <TextView
+                android:id="@+id/tvAnswer2"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
                 android:fontFamily="@font/fredoka_semibold"
-                android:text="1914. godine"
+                android:text="?"
                 android:textColor="#2D1B4E"
                 android:clickable="false"
                 android:focusable="false" />
@@ -291,11 +293,12 @@
                 android:contentDescription="Answer 3" />
 
             <TextView
+                android:id="@+id/tvAnswer3"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
                 android:fontFamily="@font/fredoka_semibold"
-                android:text="1916. godine"
+                android:text="?"
                 android:textColor="#2D1B4E"
                 android:clickable="false"
                 android:focusable="false" />
@@ -319,11 +322,12 @@
                 android:contentDescription="Answer 4" />
 
             <TextView
+                android:id="@+id/tvAnswer4"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
                 android:fontFamily="@font/fredoka_semibold"
-                android:text="1918. godine"
+                android:text="?"
                 android:textColor="#2D1B4E"
                 android:clickable="false"
                 android:focusable="false" />

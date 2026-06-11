@@ -125,13 +125,25 @@
             app:cornerRadius="100dp" />
 
         <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnAsocijacije"
+            android:id="@+id/btnMojBroj"
             android:layout_width="match_parent"
             android:layout_height="48dp"
             android:layout_marginTop="8dp"
-            android:backgroundTint="#2196F3"
+            android:backgroundTint="#FF912B"
             android:fontFamily="@font/fredoka_bold"
-            android:text="IGRA ASOCIJACIJE"
+            android:text="IGRA MOJ BROJ "
+            android:textColor="#FFFFFF"
+            android:textSize="14sp"
+            app:cornerRadius="100dp" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnKoZnaZna"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:layout_marginTop="8dp"
+            android:backgroundTint="#E91E63"
+            android:fontFamily="@font/fredoka_bold"
+            android:text="IGRA KO ZNA ZNA"
             android:textColor="#FFFFFF"
             android:textSize="14sp"
             app:cornerRadius="100dp" />
@@ -161,25 +173,13 @@
             app:cornerRadius="100dp" />
 
         <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnMojBroj"
+            android:id="@+id/btnAsocijacije"
             android:layout_width="match_parent"
             android:layout_height="48dp"
             android:layout_marginTop="8dp"
-            android:backgroundTint="#FF912B"
+            android:backgroundTint="#2196F3"
             android:fontFamily="@font/fredoka_bold"
-            android:text="IGRA MOJ BROJ "
-            android:textColor="#FFFFFF"
-            android:textSize="14sp"
-            app:cornerRadius="100dp" />
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnKoZnaZna"
-            android:layout_width="match_parent"
-            android:layout_height="48dp"
-            android:layout_marginTop="8dp"
-            android:backgroundTint="#E91E63"
-            android:fontFamily="@font/fredoka_bold"
-            android:text="IGRA KO ZNA ZNA"
+            android:text="IGRA ASOCIJACIJE"
             android:textColor="#FFFFFF"
             android:textSize="14sp"
             app:cornerRadius="100dp" />

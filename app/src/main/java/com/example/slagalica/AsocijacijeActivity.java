@@ -1,6 +1,7 @@
 package com.example.slagalica;
 
 import android.content.Context;
+import android.content.Intent;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.os.CountDownTimer;
@@ -27,7 +28,9 @@ public class AsocijacijeActivity extends AppCompatActivity {
 
     private AsocijacijaModel currentAsocijacija;
     private int totalPoints = 0;
+    private int initialPoints = 0;
     private int roundPoints = 0;
+    private String player1Name;
     private TextView tvTimer, tvPoints;
     private CountDownTimer countDownTimer;
     private MaterialButton btnNextAction;
@@ -50,7 +53,12 @@ public class AsocijacijeActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_asocijacije);
 
+        player1Name = getIntent().getStringExtra("player1Name");
+        initialPoints = getIntent().getIntExtra("player1Score", 0);
+        totalPoints = initialPoints;
+
         initViews();
+        updateScoreUI();
         loadRoundData(currentRound);
         startTimer();
     }
@@ -103,7 +111,7 @@ public class AsocijacijeActivity extends AppCompatActivity {
                 loadRoundData(currentRound);
                 startTimer();
             } else {
-                finish();
+                finishGame();
             }
         });
     }
@@ -265,8 +273,15 @@ public class AsocijacijeActivity extends AppCompatActivity {
     }
 
     private void updateScoreUI() {
-        totalPoints = roundPoints;
+        totalPoints = initialPoints + roundPoints;
         tvPoints.setText(String.format(Locale.getDefault(), "⭐ %d", totalPoints));
+    }
+
+    private void finishGame() {
+        Intent intent = new Intent(this, HomeActivity.class);
+        intent.putExtra("player1Score", totalPoints);
+        startActivity(intent);
+        finish();
     }
 
     private void hideKeyboard() {

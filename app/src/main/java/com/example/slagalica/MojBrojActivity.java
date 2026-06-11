@@ -407,7 +407,7 @@ public class MojBrojActivity extends AppCompatActivity implements SensorEventLis
     public void onAccuracyChanged(Sensor sensor, int accuracy) {}
 
     private void finishGame() {
-        Intent intent = new Intent(this, HomeActivity.class);
+        Intent intent = new Intent(this, KoZnaZnaActivity.class);
         intent.putExtra("player1Name", player1Name);
         intent.putExtra("player2Name", player2Name);
         intent.putExtra("player1Score", player1Score + myPoints);
