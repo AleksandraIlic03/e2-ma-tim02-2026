@@ -245,6 +245,10 @@ public class KoZnaZnaActivity extends AppCompatActivity {
 
     private void finishGame() {
         Toast.makeText(this, "Igra 'Ko zna zna' završena!", Toast.LENGTH_SHORT).show();
+        Intent intent = new Intent(this, SpojniceActivity.class);
+        intent.putExtra("player1Name", tvPlayer1Name.getText().toString());
+        intent.putExtra("player1Score", player1Points);
+        startActivity(intent);
         finish();
     }
 

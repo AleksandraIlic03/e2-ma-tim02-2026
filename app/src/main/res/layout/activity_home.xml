@@ -149,18 +149,6 @@
             app:cornerRadius="100dp" />
 
         <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnSkocko"
-            android:layout_width="match_parent"
-            android:layout_height="48dp"
-            android:layout_marginTop="8dp"
-            android:backgroundTint="#4CAF50"
-            android:fontFamily="@font/fredoka_bold"
-            android:text="IGRA SKOČKO"
-            android:textColor="#FFFFFF"
-            android:textSize="14sp"
-            app:cornerRadius="100dp" />
-
-        <com.google.android.material.button.MaterialButton
             android:id="@+id/btnSpojnice"
             android:layout_width="match_parent"
             android:layout_height="48dp"
@@ -168,6 +156,18 @@
             android:backgroundTint="#823FAB"
             android:fontFamily="@font/fredoka_bold"
             android:text="IGRA SPOJNICE"
+            android:textColor="#FFFFFF"
+            android:textSize="14sp"
+            app:cornerRadius="100dp" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnSkocko"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:layout_marginTop="8dp"
+            android:backgroundTint="#4CAF50"
+            android:fontFamily="@font/fredoka_bold"
+            android:text="IGRA SKOČKO"
             android:textColor="#FFFFFF"
             android:textSize="14sp"
             app:cornerRadius="100dp" />
