@@ -110,12 +110,6 @@ public class SpojniceActivity extends AppCompatActivity {
                 .addSnapshotListener((snapshot, e) -> {
                     if (snapshot == null || !snapshot.exists()) return;
 
-                    String status = snapshot.getString("status");
-                    if ("korakpokorak".equals(status)) {
-                        navigateToKorakPoKorak();
-                        return;
-                    }
-
                     currentRound = snapshot.getLong("currentRound") != null ? snapshot.getLong("currentRound").intValue() : 1;
                     currentTurn = snapshot.getString("spojnice_turn") != null ? snapshot.getString("spojnice_turn") : "p1";
                     currentLeftIndex = snapshot.getLong("spojnice_currentLeftIndex") != null ? snapshot.getLong("spojnice_currentLeftIndex").intValue() : 0;
@@ -276,22 +270,8 @@ public class SpojniceActivity extends AppCompatActivity {
             updates.put("roundStartTime", System.currentTimeMillis());
             db.collection("gameRooms").document(roomId).update(updates);
         } else {
-            if (isPlayer1) {
-                Map<String, Object> updates = new HashMap<>();
-                updates.put("status", "korakpokorak");
-                updates.put("roundStartTime", System.currentTimeMillis());
-                db.collection("gameRooms").document(roomId).update(updates);
-            }
+            db.collection("gameRooms").document(roomId).get().addOnSuccessListener(this::showFinalResults);
         }
-    }
-
-    private void navigateToKorakPoKorak() {
-        if (gameListener != null) gameListener.remove();
-        Intent intent = new Intent(this, KorakPoKorakActivity.class);
-        intent.putExtra("roomId", roomId);
-        intent.putExtra("isPlayer1", isPlayer1);
-        startActivity(intent);
-        finish();
     }
 
     private void showFinalResults(DocumentSnapshot snap) {
