@@ -13,7 +13,6 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.slagalica.models.SpojnicaModel;
 import com.google.android.material.button.MaterialButton;
-import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.ListenerRegistration;
@@ -50,7 +49,6 @@ public class SpojniceActivity extends AppCompatActivity {
     private final String COLOR_P2 = "#2196F3"; // Blue
     private final String COLOR_DEFAULT = "#D5C4E0";
     private final String COLOR_TEXT_DEFAULT = "#2D1B4E";
-    private final String COLOR_INACTIVE_ITEM = "#877777";
     private final String COLOR_WRONG = "#C62828";
 
     @Override
@@ -110,13 +108,13 @@ public class SpojniceActivity extends AppCompatActivity {
     private void attachGameListener() {
         gameListener = db.collection("gameRooms").document(roomId)
                 .addSnapshotListener((snapshot, e) -> {
-                    if (e != null || snapshot == null || !snapshot.exists()) return;
+                    if (snapshot == null || !snapshot.exists()) return;
 
-                    currentRound = snapshot.getLong("currentRound").intValue();
-                    currentTurn = snapshot.getString("turn");
-                    currentLeftIndex = snapshot.getLong("currentLeftIndex").intValue();
-                    matchedRightIndices = (List<Long>) snapshot.get("matchedRightIndices");
-                    whoMatched = (List<String>) snapshot.get("whoMatched");
+                    currentRound = snapshot.getLong("currentRound") != null ? snapshot.getLong("currentRound").intValue() : 1;
+                    currentTurn = snapshot.getString("spojnice_turn") != null ? snapshot.getString("spojnice_turn") : "p1";
+                    currentLeftIndex = snapshot.getLong("spojnice_currentLeftIndex") != null ? snapshot.getLong("spojnice_currentLeftIndex").intValue() : 0;
+                    matchedRightIndices = (List<Long>) snapshot.get("spojnice_matchedRightIndices");
+                    whoMatched = (List<String>) snapshot.get("spojnice_whoMatched");
                     
                     tvPlayer1Points.setText(String.valueOf(snapshot.getLong("player1Score")));
                     tvPlayer2Points.setText(String.valueOf(snapshot.getLong("player2Score")));
@@ -126,21 +124,23 @@ public class SpojniceActivity extends AppCompatActivity {
                     tvPlayer1Name.setTextColor(Color.parseColor(COLOR_P1));
                     tvPlayer2Name.setTextColor(Color.parseColor(COLOR_P2));
 
-                    currentSpojnica = spojnice.get(currentRound - 1);
-                    tvInstruction.setText(currentSpojnica.getTitle());
-                    
-                    isMyTurn = currentTurn.equals(isPlayer1 ? "p1" : "p2");
-                    updateUIState();
+                    if (spojnice.size() >= currentRound) {
+                        currentSpojnica = spojnice.get(currentRound - 1);
+                        tvInstruction.setText(currentSpojnica.getTitle());
+                        
+                        isMyTurn = currentTurn.equals(isPlayer1 ? "p1" : "p2");
+                        updateUIState();
+                    }
 
                     if (snapshot.contains("roundStartTime")) {
                         syncTimer(snapshot.getLong("roundStartTime"));
                     }
 
-                    if (snapshot.contains("wrongClickTrigger")) {
-                        long wrongTrigger = snapshot.getLong("wrongClickTrigger");
+                    if (snapshot.contains("spojnice_wrongClickTrigger")) {
+                        long wrongTrigger = snapshot.getLong("spojnice_wrongClickTrigger");
                         if (wrongTrigger > lastWrongTrigger) {
                             lastWrongTrigger = wrongTrigger;
-                            int wrongIdx = snapshot.getLong("lastWrongIndex").intValue();
+                            int wrongIdx = snapshot.getLong("spojnice_lastWrongIndex").intValue();
                             showWrongClickAnimation(wrongIdx);
                         }
                     }
@@ -153,10 +153,7 @@ public class SpojniceActivity extends AppCompatActivity {
 
     private void syncTimer(long startTime) {
         if (timer != null) timer.cancel();
-        long currentTime = System.currentTimeMillis();
-        long elapsed = currentTime - startTime;
-        long remaining = 60000 - elapsed;
-
+        long remaining = 60000 - (System.currentTimeMillis() - startTime);
         if (remaining <= 0) {
             tvTimer.setText("⏱ 0s");
             if (currentLeftIndex < 5) endRoundLocally();
@@ -164,13 +161,8 @@ public class SpojniceActivity extends AppCompatActivity {
         }
 
         timer = new CountDownTimer(remaining, 1000) {
-            @Override
-            public void onTick(long millisUntilFinished) {
-                tvTimer.setText("⏱ " + (millisUntilFinished / 1000) + "s");
-            }
-
-            @Override
-            public void onFinish() {
+            @Override public void onTick(long l) { tvTimer.setText("⏱ " + (l / 1000) + "s"); }
+            @Override public void onFinish() { 
                 tvTimer.setText("⏱ 0s");
                 endRoundLocally();
             }
@@ -178,20 +170,18 @@ public class SpojniceActivity extends AppCompatActivity {
     }
 
     private void showWrongClickAnimation(int rightIdx) {
-        if (rightIdx < 0 || rightIdx >= 5) return;
+        if (rightIdx < 0 || rightIdx >= 5 || currentLeftIndex >= 5) return;
         
-        final int leftIdx = currentLeftIndex;
-        if (leftIdx >= 5) return;
-
         rightButtons[rightIdx].setBackgroundTintList(android.content.res.ColorStateList.valueOf(Color.parseColor(COLOR_WRONG)));
         rightButtons[rightIdx].setTextColor(Color.WHITE);
-        leftButtons[leftIdx].setBackgroundTintList(android.content.res.ColorStateList.valueOf(Color.parseColor(COLOR_WRONG)));
-        leftButtons[leftIdx].setTextColor(Color.WHITE);
+        leftButtons[currentLeftIndex].setBackgroundTintList(android.content.res.ColorStateList.valueOf(Color.parseColor(COLOR_WRONG)));
+        leftButtons[currentLeftIndex].setTextColor(Color.WHITE);
 
         rightButtons[rightIdx].postDelayed(this::updateUIState, 500);
     }
 
     private void updateUIState() {
+        if (currentSpojnica == null) return;
         for (int i = 0; i < 5; i++) {
             leftButtons[i].setText(currentSpojnica.getLeftSide().get(i));
             rightButtons[i].setText(currentSpojnica.getRightSide().get(i));
@@ -203,22 +193,22 @@ public class SpojniceActivity extends AppCompatActivity {
             rightButtons[i].setEnabled(isMyTurn);
         }
 
-        for (int i = 0; i < 5; i++) {
-            int matchedRightIdx = matchedRightIndices.get(i).intValue();
-            if (matchedRightIdx != -1) {
-                String matchOwner = whoMatched.get(i);
-                int color = Color.parseColor(matchOwner.equals("p1") ? COLOR_P1 : COLOR_P2);
-
-                leftButtons[i].setBackgroundTintList(android.content.res.ColorStateList.valueOf(color));
-                leftButtons[i].setTextColor(Color.WHITE);
-                rightButtons[matchedRightIdx].setBackgroundTintList(android.content.res.ColorStateList.valueOf(color));
-                rightButtons[matchedRightIdx].setTextColor(Color.WHITE);
-                rightButtons[matchedRightIdx].setEnabled(false);
+        if (matchedRightIndices != null) {
+            for (int i = 0; i < 5; i++) {
+                int matchedRightIdx = matchedRightIndices.get(i).intValue();
+                if (matchedRightIdx != -1) {
+                    String matchOwner = whoMatched.get(i);
+                    int color = Color.parseColor(matchOwner.equals("p1") ? COLOR_P1 : COLOR_P2);
+                    leftButtons[i].setBackgroundTintList(android.content.res.ColorStateList.valueOf(color));
+                    leftButtons[i].setTextColor(Color.WHITE);
+                    rightButtons[matchedRightIdx].setBackgroundTintList(android.content.res.ColorStateList.valueOf(color));
+                    rightButtons[matchedRightIdx].setTextColor(Color.WHITE);
+                    rightButtons[matchedRightIdx].setEnabled(false);
+                }
             }
         }
 
         if (currentLeftIndex < 5) {
-            // Highlighting the current left item with the color of the player whose turn it is
             int turnColor = Color.parseColor(currentTurn.equals("p1") ? COLOR_P1 : COLOR_P2);
             leftButtons[currentLeftIndex].setBackgroundTintList(android.content.res.ColorStateList.valueOf(turnColor));
             leftButtons[currentLeftIndex].setTextColor(Color.WHITE);
@@ -238,29 +228,26 @@ public class SpojniceActivity extends AppCompatActivity {
         if (rightIndex == correctIndex) {
             matchedRightIndices.set(currentLeftIndex, (long) rightIndex);
             whoMatched.set(currentLeftIndex, isPlayer1 ? "p1" : "p2");
-            
-            updates.put("matchedRightIndices", matchedRightIndices);
-            updates.put("whoMatched", whoMatched);
-            updates.put("currentLeftIndex", currentLeftIndex + 1);
+            updates.put("spojnice_matchedRightIndices", matchedRightIndices);
+            updates.put("spojnice_whoMatched", whoMatched);
+            updates.put("spojnice_currentLeftIndex", currentLeftIndex + 1);
             
             String scoreField = isPlayer1 ? "player1Score" : "player2Score";
             db.collection("gameRooms").document(roomId).get().addOnSuccessListener(snap -> {
-                long currentScore = snap.getLong(scoreField);
-                updates.put(scoreField, currentScore + 2);
+                updates.put(scoreField, snap.getLong(scoreField) + 2);
                 db.collection("gameRooms").document(roomId).update(updates);
             });
         } else {
             String starter = getRoundStarter();
             if (currentTurn.equals(starter)) {
-                updates.put("turn", isPlayer1 ? "p2" : "p1");
+                updates.put("spojnice_turn", isPlayer1 ? "p2" : "p1");
             } else {
-                updates.put("currentLeftIndex", currentLeftIndex + 1);
-                updates.put("turn", starter);
+                updates.put("spojnice_currentLeftIndex", currentLeftIndex + 1);
+                updates.put("spojnice_turn", starter);
             }
-            updates.put("lastWrongIndex", rightIndex);
-            updates.put("wrongClickTrigger", System.currentTimeMillis());
+            updates.put("spojnice_lastWrongIndex", rightIndex);
+            updates.put("spojnice_wrongClickTrigger", System.currentTimeMillis());
             db.collection("gameRooms").document(roomId).update(updates);
-            Toast.makeText(this, "Pogrešno!", Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -274,17 +261,14 @@ public class SpojniceActivity extends AppCompatActivity {
         if (currentRound == 1) {
             Map<String, Object> updates = new HashMap<>();
             updates.put("currentRound", 2);
-            updates.put("turn", "p2"); 
-            updates.put("currentLeftIndex", 0);
-            updates.put("matchedRightIndices", java.util.Arrays.asList(-1, -1, -1, -1, -1));
-            updates.put("whoMatched", java.util.Arrays.asList("", "", "", "", ""));
-            updates.put("lastWrongIndex", -1);
-            updates.put("wrongClickTrigger", 0);
+            updates.put("spojnice_turn", "p2"); 
+            updates.put("spojnice_currentLeftIndex", 0);
+            updates.put("spojnice_matchedRightIndices", java.util.Arrays.asList(-1, -1, -1, -1, -1));
+            updates.put("spojnice_whoMatched", java.util.Arrays.asList("", "", "", "", ""));
+            updates.put("spojnice_lastWrongIndex", -1);
+            updates.put("spojnice_wrongClickTrigger", 0);
             updates.put("roundStartTime", System.currentTimeMillis());
-            
-            db.collection("gameRooms").document(roomId).update(updates).addOnSuccessListener(aVoid -> {
-                btnNext.setVisibility(View.INVISIBLE);
-            });
+            db.collection("gameRooms").document(roomId).update(updates);
         } else {
             db.collection("gameRooms").document(roomId).get().addOnSuccessListener(this::showFinalResults);
         }
@@ -293,23 +277,9 @@ public class SpojniceActivity extends AppCompatActivity {
     private void showFinalResults(DocumentSnapshot snap) {
         long p1Score = snap.getLong("player1Score");
         long p2Score = snap.getLong("player2Score");
-        String p1Name = snap.getString("player1Name");
-        String p2Name = snap.getString("player2Name");
-
-        String winner;
-        if (p1Score > p2Score) winner = p1Name;
-        else if (p2Score > p1Score) winner = p2Name;
-        else winner = "Nerešeno";
-        
-        new AlertDialog.Builder(this)
-                .setTitle("Kraj igre")
-                .setMessage(p1Name + ": " + p1Score + "\n" + p2Name + ": " + p2Score + "\n\nPobednik: " + winner)
-                .setCancelable(false)
-                .setPositiveButton("U redu", (dialog, which) -> {
-                    startActivity(new Intent(this, HomeActivity.class));
-                    finish();
-                })
-                .show();
+        String winner = p1Score > p2Score ? snap.getString("player1Name") : (p2Score > p1Score ? snap.getString("player2Name") : "Nerešeno");
+        new AlertDialog.Builder(this).setTitle("Kraj igre").setMessage("Pobednik: " + winner).setCancelable(false)
+                .setPositiveButton("U redu", (d, w) -> { startActivity(new Intent(this, HomeActivity.class)); finish(); }).show();
     }
 
     @Override

@@ -11,7 +11,7 @@
         android:id="@+id/tvTitle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Spojnice - Multiplayer"
+        android:text="Slagalica"
         android:textSize="24sp"
         android:textStyle="bold"
         android:textColor="#2D1B4E"

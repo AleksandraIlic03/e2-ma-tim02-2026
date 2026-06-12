@@ -10,13 +10,17 @@ import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.example.slagalica.models.KoZnaZnaQuestion;
 import com.example.slagalica.models.SpojnicaModel;
+import com.google.android.gms.tasks.Task;
+import com.google.android.gms.tasks.Tasks;
 import com.google.android.material.button.MaterialButton;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.ListenerRegistration;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
+import com.google.firebase.firestore.QuerySnapshot;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -80,132 +84,124 @@ public class WaitingRoomActivity extends AppCompatActivity {
         btnCreateRoom.setEnabled(false);
         btnJoinRoom.setEnabled(false);
 
-        db.collection("spojnice").get().addOnSuccessListener(queryDocumentSnapshots -> {
+        Task<QuerySnapshot> questionsTask = db.collection("ko_zna_zna_questions").get();
+        Task<QuerySnapshot> spojniceTask = db.collection("spojnice").get();
+
+        Tasks.whenAllSuccess(questionsTask, spojniceTask).addOnSuccessListener(results -> {
+            QuerySnapshot qSnap = (QuerySnapshot) results.get(0);
+            QuerySnapshot sSnap = (QuerySnapshot) results.get(1);
+
+            List<KoZnaZnaQuestion> allQuestions = new ArrayList<>();
+            for (QueryDocumentSnapshot doc : qSnap) allQuestions.add(doc.toObject(KoZnaZnaQuestion.class));
+            
+            if (allQuestions.size() < 5) {
+                Toast.makeText(this, "Nedovoljno pitanja 'Ko zna zna'", Toast.LENGTH_SHORT).show();
+                resetUI();
+                return;
+            }
+            Collections.shuffle(allQuestions);
+            List<KoZnaZnaQuestion> selectedQuestions = allQuestions.subList(0, 5);
+
             Map<String, List<SpojnicaModel>> grouped = new HashMap<>();
-            for (QueryDocumentSnapshot doc : queryDocumentSnapshots) {
+            for (QueryDocumentSnapshot doc : sSnap) {
                 SpojnicaModel s = doc.toObject(SpojnicaModel.class);
-                if (!grouped.containsKey(s.getTitle())) {
-                    grouped.put(s.getTitle(), new ArrayList<>());
-                }
+                if (!grouped.containsKey(s.getTitle())) grouped.put(s.getTitle(), new ArrayList<>());
                 grouped.get(s.getTitle()).add(s);
             }
 
             List<String> validTitles = new ArrayList<>();
             for (String title : grouped.keySet()) {
-                if (grouped.get(title).size() >= 2) {
-                    validTitles.add(title);
-                }
+                if (grouped.get(title).size() >= 2) validTitles.add(title);
             }
 
             if (validTitles.isEmpty()) {
-                Toast.makeText(this, "Nedovoljno spojnica sa istom temom u bazi", Toast.LENGTH_SHORT).show();
-                progressBar.setVisibility(View.GONE);
-                btnCreateRoom.setEnabled(true);
-                btnJoinRoom.setEnabled(true);
+                Toast.makeText(this, "Nedovoljno spojnica sa istom temom", Toast.LENGTH_SHORT).show();
+                resetUI();
                 return;
             }
 
             Collections.shuffle(validTitles);
-            String selectedTitle = validTitles.get(0);
-            List<SpojnicaModel> variants = grouped.get(selectedTitle);
+            List<SpojnicaModel> variants = grouped.get(validTitles.get(0));
             Collections.shuffle(variants);
-            SpojnicaModel s1 = variants.get(0);
-            SpojnicaModel s2 = variants.get(1);
 
             roomId = UUID.randomUUID().toString().substring(0, 6).toUpperCase();
-            
             Map<String, Object> room = new HashMap<>();
             room.put("player1Id", currentUserId);
             room.put("player1Name", currentUserName);
-            room.put("player1Score", 0);
             room.put("player2Id", null);
             room.put("player2Name", null);
+            room.put("player1Score", 0);
             room.put("player2Score", 0);
             room.put("status", "waiting");
-            room.put("currentRound", 1);
-            room.put("turn", "p1");
-            room.put("currentLeftIndex", 0);
-            room.put("matchedRightIndices", java.util.Arrays.asList(-1, -1, -1, -1, -1));
-            room.put("whoMatched", java.util.Arrays.asList("", "", "", "", ""));
-            room.put("lastWrongIndex", -1);
-            room.put("wrongClickTrigger", 0);
-            room.put("roundStartTime", System.currentTimeMillis());
-            room.put("spojnica1", s1);
-            room.put("spojnica2", s2);
-
-            db.collection("gameRooms").document(roomId).set(room)
-                    .addOnSuccessListener(aVoid -> {
-                        tvRoomId.setText("Šifra sobe: " + roomId);
-                        tvRoomId.setVisibility(View.VISIBLE);
-                        tvStatus.setVisibility(View.VISIBLE);
-                        progressBar.setVisibility(View.GONE);
-                        listenForOpponent(true);
-                    })
-                    .addOnFailureListener(e -> {
-                        Toast.makeText(this, "Greška pri kreiranju sobe", Toast.LENGTH_SHORT).show();
-                        progressBar.setVisibility(View.GONE);
-                        btnCreateRoom.setEnabled(true);
-                        btnJoinRoom.setEnabled(true);
-                    });
+            room.put("currentGame", "koznazna");
+            room.put("koZnaZnaQuestions", selectedQuestions);
+            room.put("currentQuestionIndex", 0);
+            room.put("questionStartTime", 0);
+            room.put("answers_q0", new HashMap<String, Object>());
+            room.put("answers_q1", new HashMap<String, Object>());
+            room.put("answers_q2", new HashMap<String, Object>());
+            room.put("answers_q3", new HashMap<String, Object>());
+            room.put("answers_q4", new HashMap<String, Object>());
+            
+            room.put("spojnica1", variants.get(0));
+            room.put("spojnica2", variants.get(1));
+            room.put("spojnice_turn", "p1");
+            room.put("spojnice_currentLeftIndex", 0);
+            room.put("spojnice_matchedRightIndices", java.util.Arrays.asList(-1, -1, -1, -1, -1));
+            room.put("spojnice_whoMatched", java.util.Arrays.asList("", "", "", "", ""));
+            
+            db.collection("gameRooms").document(roomId).set(room).addOnSuccessListener(aVoid -> {
+                tvRoomId.setText("Šifra sobe: " + roomId);
+                tvRoomId.setVisibility(View.VISIBLE);
+                tvStatus.setVisibility(View.VISIBLE);
+                progressBar.setVisibility(View.GONE);
+                listenForOpponent(true);
+            });
         });
+    }
+
+    private void resetUI() {
+        progressBar.setVisibility(View.GONE);
+        btnCreateRoom.setEnabled(true);
+        btnJoinRoom.setEnabled(true);
     }
 
     private void joinRoom() {
         String inputId = etRoomId.getText().toString().trim().toUpperCase();
-        if (inputId.isEmpty()) {
-            etRoomId.setError("Unesite šifru");
-            return;
-        }
+        if (inputId.isEmpty()) return;
 
         progressBar.setVisibility(View.VISIBLE);
         btnJoinRoom.setEnabled(false);
         btnCreateRoom.setEnabled(false);
 
         DocumentReference roomRef = db.collection("gameRooms").document(inputId);
-        roomRef.get().addOnSuccessListener(documentSnapshot -> {
-            if (documentSnapshot.exists()) {
-                String status = documentSnapshot.getString("status");
-                if ("waiting".equals(status)) {
-                    roomId = inputId;
-                    Map<String, Object> updates = new HashMap<>();
-                    updates.put("player2Id", currentUserId);
-                    updates.put("player2Name", currentUserName);
-                    updates.put("status", "playing");
-
-                    roomRef.update(updates).addOnSuccessListener(aVoid -> {
-                        listenForOpponent(false);
-                    });
-                } else {
-                    Toast.makeText(this, "Soba je popunjena ili igra traje", Toast.LENGTH_SHORT).show();
-                    progressBar.setVisibility(View.GONE);
-                    btnJoinRoom.setEnabled(true);
-                    btnCreateRoom.setEnabled(true);
-                }
+        roomRef.get().addOnSuccessListener(snapshot -> {
+            if (snapshot.exists() && "waiting".equals(snapshot.getString("status"))) {
+                roomId = inputId;
+                Map<String, Object> updates = new HashMap<>();
+                updates.put("player2Id", currentUserId);
+                updates.put("player2Name", currentUserName);
+                updates.put("status", "playing");
+                updates.put("questionStartTime", System.currentTimeMillis());
+                roomRef.update(updates).addOnSuccessListener(aVoid -> listenForOpponent(false));
             } else {
-                Toast.makeText(this, "Soba nije pronađena", Toast.LENGTH_SHORT).show();
-                progressBar.setVisibility(View.GONE);
-                btnJoinRoom.setEnabled(true);
-                btnCreateRoom.setEnabled(true);
+                Toast.makeText(this, "Soba nije dostupna", Toast.LENGTH_SHORT).show();
+                resetUI();
             }
         });
     }
 
     private void listenForOpponent(boolean isPlayer1) {
-        roomListener = db.collection("gameRooms").document(roomId)
-                .addSnapshotListener((snapshot, e) -> {
-                    if (e != null) return;
-                    if (snapshot != null && snapshot.exists()) {
-                        String status = snapshot.getString("status");
-                        if ("playing".equals(status)) {
-                            if (roomListener != null) roomListener.remove();
-                            Intent intent = new Intent(this, SpojniceActivity.class);
-                            intent.putExtra("roomId", roomId);
-                            intent.putExtra("isPlayer1", isPlayer1);
-                            startActivity(intent);
-                            finish();
-                        }
-                    }
-                });
+        roomListener = db.collection("gameRooms").document(roomId).addSnapshotListener((snapshot, e) -> {
+            if (snapshot != null && snapshot.exists() && "playing".equals(snapshot.getString("status"))) {
+                if (roomListener != null) roomListener.remove();
+                Intent intent = new Intent(this, KoZnaZnaActivity.class);
+                intent.putExtra("roomId", roomId);
+                intent.putExtra("isPlayer1", isPlayer1);
+                startActivity(intent);
+                finish();
+            }
+        });
     }
 
     @Override
