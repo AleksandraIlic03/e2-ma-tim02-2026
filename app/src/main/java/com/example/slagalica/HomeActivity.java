@@ -49,12 +49,12 @@ public class HomeActivity extends AppCompatActivity {
         });
 
         findViewById(R.id.btnKoZnaZna).setOnClickListener(v -> {
-            Intent intent = new Intent(HomeActivity.this, KoZnaZnaActivity.class);
+            Intent intent = new Intent(HomeActivity.this, WaitingRoomActivity.class);
             startActivity(intent);
         });
 
         findViewById(R.id.btnSpojnice).setOnClickListener(v -> {
-            Intent intent = new Intent(HomeActivity.this, SpojniceActivity.class);
+            Intent intent = new Intent(HomeActivity.this, WaitingRoomActivity.class);
             startActivity(intent);
         });
     }

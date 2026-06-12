@@ -53,7 +53,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:fontFamily="@font/fredoka_bold"
-                    android:text="98"
+                    android:text="0"
                     android:textColor="#321C1C"
                     android:textSize="20sp" />
             </LinearLayout>
@@ -98,7 +98,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:fontFamily="@font/fredoka_bold"
-                    android:text="48"
+                    android:text="0"
                     android:textColor="#321C1C"
                     android:textSize="20sp" />
             </LinearLayout>
@@ -154,7 +154,7 @@
             android:fontFamily="@font/fredoka_bold"
             android:gravity="center"
             android:padding="12dp"
-            android:text="Spojte domaća književna dela sa pravcima koje su obeležila"
+            android:text="?"
             android:textColor="#2D1B4E"
             android:textSize="16sp" />
     </androidx.cardview.widget.CardView>
@@ -181,11 +181,11 @@
                 android:layout_height="0dp"
                 android:layout_weight="1"
                 android:layout_marginBottom="6dp"
-                android:backgroundTint="#823FAB"
+                android:backgroundTint="#D5C4E0"
                 android:fontFamily="@font/fredoka_semibold"
-                android:text="ČAROBNA ŠUMA"
+                android:text=""
                 android:textAllCaps="true"
-                android:textColor="#FFFFFF"
+                android:textColor="#2D1B4E"
                 android:textSize="12sp"
                 app:cornerRadius="12dp" />
 
@@ -196,11 +196,11 @@
                 android:layout_height="0dp"
                 android:layout_weight="1"
                 android:layout_marginBottom="6dp"
-                android:backgroundTint="#823FAB"
+                android:backgroundTint="#D5C4E0"
                 android:fontFamily="@font/fredoka_semibold"
-                android:text="ŽIVOT I PRIKLJUČENIJA"
+                android:text=""
                 android:textAllCaps="true"
-                android:textColor="#FFFFFF"
+                android:textColor="#2D1B4E"
                 android:textSize="12sp"
                 app:cornerRadius="12dp" />
 
@@ -213,7 +213,7 @@
                 android:layout_marginBottom="6dp"
                 android:backgroundTint="#D5C4E0"
                 android:fontFamily="@font/fredoka_semibold"
-                android:text="KORA"
+                android:text=""
                 android:textAllCaps="true"
                 android:textColor="#2D1B4E"
                 android:textSize="12sp"
@@ -226,11 +226,11 @@
                 android:layout_height="0dp"
                 android:layout_weight="1"
                 android:layout_marginBottom="6dp"
-                android:backgroundTint="#823FAB"
+                android:backgroundTint="#D5C4E0"
                 android:fontFamily="@font/fredoka_semibold"
-                android:text="MRTVO MORE"
+                android:text=""
                 android:textAllCaps="true"
-                android:textColor="#FFFFFF"
+                android:textColor="#2D1B4E"
                 android:textSize="12sp"
                 app:cornerRadius="12dp" />
 
@@ -241,11 +241,11 @@
                 android:layout_height="0dp"
                 android:layout_weight="1"
                 android:layout_marginBottom="6dp"
-                android:backgroundTint="#823FAB"
+                android:backgroundTint="#D5C4E0"
                 android:fontFamily="@font/fredoka_semibold"
-                android:text="NEČISTA KRV"
+                android:text=""
                 android:textAllCaps="true"
-                android:textColor="#FFFFFF"
+                android:textColor="#2D1B4E"
                 android:textSize="12sp"
                 app:cornerRadius="12dp" />
 
@@ -266,11 +266,11 @@
                 android:layout_height="0dp"
                 android:layout_weight="1"
                 android:layout_marginBottom="6dp"
-                android:backgroundTint="#823FAB"
+                android:backgroundTint="#D5C4E0"
                 android:fontFamily="@font/fredoka_semibold"
-                android:text="KNJIŽEVNOST ZA DECU"
+                android:text=""
                 android:textAllCaps="true"
-                android:textColor="#FFFFFF"
+                android:textColor="#2D1B4E"
                 android:textSize="12sp"
                 app:cornerRadius="12dp" />
 
@@ -281,11 +281,11 @@
                 android:layout_height="0dp"
                 android:layout_weight="1"
                 android:layout_marginBottom="6dp"
-                android:backgroundTint="#823FAB"
+                android:backgroundTint="#D5C4E0"
                 android:fontFamily="@font/fredoka_semibold"
-                android:text="PROSVETITELJSTVO"
+                android:text=""
                 android:textAllCaps="true"
-                android:textColor="#FFFFFF"
+                android:textColor="#2D1B4E"
                 android:textSize="12sp"
                 app:cornerRadius="12dp" />
 
@@ -298,7 +298,7 @@
                 android:layout_marginBottom="6dp"
                 android:backgroundTint="#D5C4E0"
                 android:fontFamily="@font/fredoka_semibold"
-                android:text="SAVREMENA"
+                android:text=""
                 android:textAllCaps="true"
                 android:textColor="#2D1B4E"
                 android:textSize="12sp"
@@ -311,11 +311,11 @@
                 android:layout_height="0dp"
                 android:layout_weight="1"
                 android:layout_marginBottom="6dp"
-                android:backgroundTint="#823FAB"
+                android:backgroundTint="#D5C4E0"
                 android:fontFamily="@font/fredoka_semibold"
-                android:text="REALIZAM"
+                android:text=""
                 android:textAllCaps="true"
-                android:textColor="#FFFFFF"
+                android:textColor="#2D1B4E"
                 android:textSize="12sp"
                 app:cornerRadius="12dp" />
 
@@ -326,11 +326,11 @@
                 android:layout_height="0dp"
                 android:layout_weight="1"
                 android:layout_marginBottom="6dp"
-                android:backgroundTint="#823FAB"
+                android:backgroundTint="#D5C4E0"
                 android:fontFamily="@font/fredoka_semibold"
-                android:text="MODERNA"
+                android:text=""
                 android:textAllCaps="true"
-                android:textColor="#FFFFFF"
+                android:textColor="#2D1B4E"
                 android:textSize="12sp"
                 app:cornerRadius="12dp" />
 
@@ -340,7 +340,8 @@
     <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="8dp">
+        android:layout_marginTop="8dp"
+        android:minHeight="48dp">
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnNext"
@@ -351,6 +352,7 @@
             android:fontFamily="@font/fredoka_bold"
             android:paddingHorizontal="24dp"
             android:text="DALJE"
+            android:visibility="invisible"
             app:cornerRadius="16dp" />
     </RelativeLayout>
 

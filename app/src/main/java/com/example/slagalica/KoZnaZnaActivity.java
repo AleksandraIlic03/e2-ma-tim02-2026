@@ -1,12 +1,370 @@
 package com.example.slagalica;
 
+import android.content.Intent;
+import android.graphics.Color;
 import android.os.Bundle;
+import android.os.CountDownTimer;
+import android.view.View;
+import android.widget.ImageButton;
+import android.widget.LinearLayout;
+import android.widget.TextView;
+import android.widget.Toast;
+
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.ListenerRegistration;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 public class KoZnaZnaActivity extends AppCompatActivity {
+
+    private TextView tvTimer, tvQuestion, tvPlayer1Points, tvPlayer1Name, tvPlayer2Points, tvPlayer2Name;
+    private TextView tvAnswer1, tvAnswer2, tvAnswer3, tvAnswer4;
+    private ImageButton btnAnswer1, btnAnswer2, btnAnswer3, btnAnswer4;
+    private LinearLayout llProgress;
+
+    private FirebaseFirestore db;
+    private String roomId;
+    private boolean isPlayer1;
+    private List<Object> questions = new ArrayList<>();
+    private int currentQuestionIndex = 0;
+    private int lastProcessedQuestionIndex = -1;
+    private CountDownTimer questionTimer;
+    private boolean answered = false;
+    private ListenerRegistration gameListener;
+
+    private final String COLOR_P1 = "#823FAB";
+    private final String COLOR_P2 = "#2196F3";
+    private final String COLOR_WRONG = "#C62828";
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_ko_zna_zna);
+
+        db = FirebaseFirestore.getInstance();
+        roomId = getIntent().getStringExtra("roomId");
+        isPlayer1 = getIntent().getBooleanExtra("isPlayer1", true);
+
+        initViews();
+        attachGameListener();
+    }
+
+    private void initViews() {
+        tvTimer = findViewById(R.id.tvTimer);
+        tvQuestion = findViewById(R.id.tvQuestion);
+        tvPlayer1Points = findViewById(R.id.tvPlayer1Points);
+        tvPlayer1Name = findViewById(R.id.tvPlayer1Name);
+        tvPlayer2Points = findViewById(R.id.tvPlayer2Points);
+        tvPlayer2Name = findViewById(R.id.tvPlayer2Name);
+
+        tvAnswer1 = findViewById(R.id.tvAnswer1);
+        tvAnswer2 = findViewById(R.id.tvAnswer2);
+        tvAnswer3 = findViewById(R.id.tvAnswer3);
+        tvAnswer4 = findViewById(R.id.tvAnswer4);
+
+        btnAnswer1 = findViewById(R.id.btnAnswer1);
+        btnAnswer2 = findViewById(R.id.btnAnswer2);
+        btnAnswer3 = findViewById(R.id.btnAnswer3);
+        btnAnswer4 = findViewById(R.id.btnAnswer4);
+
+        llProgress = findViewById(R.id.llProgress);
+
+        btnAnswer1.setOnClickListener(v -> checkAnswer(0));
+        btnAnswer2.setOnClickListener(v -> checkAnswer(1));
+        btnAnswer3.setOnClickListener(v -> checkAnswer(2));
+        btnAnswer4.setOnClickListener(v -> checkAnswer(3));
+
+        findViewById(R.id.btnNext).setVisibility(View.GONE);
+        
+        tvPlayer1Name.setTextColor(Color.parseColor(COLOR_P1));
+        tvPlayer2Name.setTextColor(Color.parseColor(COLOR_P2));
+    }
+
+    private void attachGameListener() {
+        gameListener = db.collection("gameRooms").document(roomId)
+                .addSnapshotListener((snapshot, e) -> {
+                    if (snapshot == null || !snapshot.exists()) return;
+
+                    String status = snapshot.getString("status");
+                    if ("spojnice".equals(status)) {
+                        navigateToSpojnice();
+                        return;
+                    }
+
+                    tvPlayer1Name.setText(snapshot.getString("player1Name"));
+                    tvPlayer2Name.setText(snapshot.getString("player2Name"));
+                    tvPlayer1Points.setText(String.valueOf(snapshot.getLong("player1Score")));
+                    tvPlayer2Points.setText(String.valueOf(snapshot.getLong("player2Score")));
+
+                    Long idxLong = snapshot.getLong("currentQuestionIndex");
+                    int newIdx = (idxLong != null) ? idxLong.intValue() : 0;
+                    
+                    if (questions.isEmpty()) {
+                        questions = (List<Object>) snapshot.get("koZnaZnaQuestions");
+                        currentQuestionIndex = newIdx;
+                        if (questions != null && !questions.isEmpty()) displayQuestion();
+                    } else if (newIdx != currentQuestionIndex) {
+                        currentQuestionIndex = newIdx;
+                        displayQuestion();
+                    }
+
+                    Long startLong = snapshot.getLong("questionStartTime");
+                    if (startLong != null) syncTimer(startLong);
+                    
+                    checkBothAnswered(snapshot);
+                });
+    }
+
+    private void displayQuestion() {
+        answered = false;
+        enableAnswerButtons(true);
+        resetButtonColors();
+
+        Map<String, Object> qMap = (Map<String, Object>) questions.get(currentQuestionIndex);
+        tvQuestion.setText((String) qMap.get("question"));
+        List<String> answers = (List<String>) qMap.get("answers");
+        if (answers != null && answers.size() >= 4) {
+            tvAnswer1.setText(answers.get(0));
+            tvAnswer2.setText(answers.get(1));
+            tvAnswer3.setText(answers.get(2));
+            tvAnswer4.setText(answers.get(3));
+        }
+        updateProgressDots();
+    }
+
+    private void syncTimer(long startTime) {
+        if (questionTimer != null) questionTimer.cancel();
+        long remaining = 5000 - (System.currentTimeMillis() - startTime);
+        if (remaining <= 0) {
+            tvTimer.setText("⏱ 0s");
+            if (!answered) {
+                answered = true;
+                enableAnswerButtons(false);
+                submitAnswer(-1); // Timeout
+            }
+            return;
+        }
+
+        questionTimer = new CountDownTimer(remaining, 1000) {
+            @Override public void onTick(long l) { tvTimer.setText("⏱ " + (l / 1000 + 1) + "s"); }
+            @Override public void onFinish() { 
+                tvTimer.setText("⏱ 0s");
+                if (!answered) {
+                    answered = true;
+                    enableAnswerButtons(false);
+                    submitAnswer(-1);
+                }
+            }
+        }.start();
+    }
+
+    private void checkAnswer(int selectedIndex) {
+        if (answered) return;
+        answered = true;
+        enableAnswerButtons(false);
+        submitAnswer(selectedIndex);
+    }
+
+    private void submitAnswer(int selectedIndex) {
+        Map<String, Object> qMap = (Map<String, Object>) questions.get(currentQuestionIndex);
+        Long correctIdxLong = (Long) qMap.get("correctAnswerIndex");
+        int correctIdx = (correctIdxLong != null) ? correctIdxLong.intValue() : -1;
+        
+        long timeTaken = System.currentTimeMillis();
+
+        Map<String, Object> myAnswer = new HashMap<>();
+        myAnswer.put("index", selectedIndex);
+        myAnswer.put("time", timeTaken);
+        myAnswer.put("correct", selectedIndex == correctIdx);
+
+        db.collection("gameRooms").document(roomId).update("answers_q" + currentQuestionIndex + "." + (isPlayer1 ? "p1" : "p2"), myAnswer);
+        
+        if (selectedIndex != -1) {
+            if (selectedIndex == correctIdx) highlightButton(selectedIndex, true);
+            else {
+                highlightButton(selectedIndex, false);
+                highlightButton(correctIdx, true);
+            }
+        } else {
+            highlightButton(correctIdx, true);
+        }
+    }
+
+    private void checkBothAnswered(DocumentSnapshot snap) {
+        if (lastProcessedQuestionIndex == currentQuestionIndex) return;
+
+        Map<String, Object> answers = (Map<String, Object>) snap.get("answers_q" + currentQuestionIndex);
+        if (answers != null && answers.size() == 2) {
+            if (isPlayer1) lastProcessedQuestionIndex = currentQuestionIndex;
+            showBothSelections(answers, snap);
+        }
+    }
+
+    private void showBothSelections(Map<String, Object> answers, DocumentSnapshot snap) {
+        Map<String, Object> p1 = (Map<String, Object>) answers.get("p1");
+        Map<String, Object> p2 = (Map<String, Object>) answers.get("p2");
+
+        int p1Idx = p1.get("index") != null ? ((Long) p1.get("index")).intValue() : -1;
+        int p2Idx = p2.get("index") != null ? ((Long) p2.get("index")).intValue() : -1;
+        long p1Time = p1.get("time") != null ? (Long) p1.get("time") : Long.MAX_VALUE;
+        long p2Time = p2.get("time") != null ? (Long) p2.get("time") : Long.MAX_VALUE;
+        boolean p1Corr = p1.get("correct") != null && (boolean) p1.get("correct");
+        boolean p2Corr = p2.get("correct") != null && (boolean) p2.get("correct");
+
+        Map<String, Object> qMap = (Map<String, Object>) questions.get(currentQuestionIndex);
+        int correctIdx = ((Long) qMap.get("correctAnswerIndex")).intValue();
+
+        resetButtonColors();
+
+        // 1. Show wrong clicks in red immediately
+        if (p1Idx != -1 && !p1Corr) highlightButtonWithColor(p1Idx, COLOR_WRONG);
+        if (p2Idx != -1 && !p2Corr) highlightButtonWithColor(p2Idx, COLOR_WRONG);
+
+        // 2. Handle correct answer coloring logic
+        if (p1Corr && p2Corr) {
+            // Both correct: show split color initially
+            if (p1Time < p2Time) highlightButtonWithBothColors(correctIdx, COLOR_P1, COLOR_P2);
+            else highlightButtonWithBothColors(correctIdx, COLOR_P2, COLOR_P1);
+            
+            // After 1 second, transition to the winner's color and update points
+            tvTimer.postDelayed(() -> {
+                highlightButtonWithColor(correctIdx, p1Time < p2Time ? COLOR_P1 : COLOR_P2);
+                if (isPlayer1) calculatePointsAndNext(snap, answers);
+            }, 1000);
+        } else if (p1Corr) {
+            highlightButtonWithColor(correctIdx, COLOR_P1);
+            tvTimer.postDelayed(() -> {
+                if (isPlayer1) calculatePointsAndNext(snap, answers);
+            }, 1000);
+        } else if (p2Corr) {
+            highlightButtonWithColor(correctIdx, COLOR_P2);
+            tvTimer.postDelayed(() -> {
+                if (isPlayer1) calculatePointsAndNext(snap, answers);
+            }, 1000);
+        } else {
+            // No one correct: show Yellow
+            highlightButtonWithColor(correctIdx, "#FFEB3B"); // Yellow
+            tvTimer.postDelayed(() -> {
+                if (isPlayer1) calculatePointsAndNext(snap, answers);
+            }, 1000);
+        }
+    }
+
+    private ImageButton getButtonByIndex(int index) {
+        if (index == 0) return btnAnswer1;
+        if (index == 1) return btnAnswer2;
+        if (index == 2) return btnAnswer3;
+        if (index == 3) return btnAnswer4;
+        return null;
+    }
+
+    private void highlightButtonWithBothColors(int index, String colorFirst, String colorSecond) {
+        ImageButton btn = getButtonByIndex(index);
+        if (btn == null) return;
+        
+        android.graphics.drawable.GradientDrawable gd = new android.graphics.drawable.GradientDrawable(
+                android.graphics.drawable.GradientDrawable.Orientation.LEFT_RIGHT,
+                new int[]{Color.parseColor(colorFirst), Color.parseColor(colorFirst), 
+                          Color.parseColor(colorSecond), Color.parseColor(colorSecond)}
+        );
+        gd.setCornerRadius(30); 
+        btn.setBackground(gd);
+    }
+
+    private void highlightButtonWithColor(int index, String colorHex) {
+        ImageButton btn = getButtonByIndex(index);
+        if (btn != null) {
+            btn.setBackgroundTintList(android.content.res.ColorStateList.valueOf(Color.parseColor(colorHex)));
+        }
+    }
+
+    private void calculatePointsAndNext(DocumentSnapshot snap, Map<String, Object> answers) {
+        Map<String, Object> p1 = (Map<String, Object>) answers.get("p1");
+        Map<String, Object> p2 = (Map<String, Object>) answers.get("p2");
+
+        long p1ScoreAdd = 0, p2ScoreAdd = 0;
+        Boolean p1Corr = (Boolean) p1.get("correct");
+        Boolean p2Corr = (Boolean) p2.get("correct");
+
+        if (p1Corr != null && p2Corr != null && p1Corr && p2Corr) {
+            Long t1 = (Long) p1.get("time");
+            Long t2 = (Long) p2.get("time");
+            if (t1 != null && t2 != null) {
+                if (t1 < t2) p1ScoreAdd = 10; else p2ScoreAdd = 10;
+            }
+        } else {
+            if (p1Corr != null && p1Corr) p1ScoreAdd = 10; 
+            else if (p1.get("index") != null && ((Long)p1.get("index")).intValue() != -1) p1ScoreAdd = -5;
+            
+            if (p2Corr != null && p2Corr) p2ScoreAdd = 10; 
+            else if (p2.get("index") != null && ((Long)p2.get("index")).intValue() != -1) p2ScoreAdd = -5;
+        }
+
+        Map<String, Object> updates = new HashMap<>();
+        Long s1 = snap.getLong("player1Score");
+        Long s2 = snap.getLong("player2Score");
+        updates.put("player1Score", (s1 != null ? s1 : 0) + p1ScoreAdd);
+        updates.put("player2Score", (s2 != null ? s2 : 0) + p2ScoreAdd);
+
+        if (currentQuestionIndex < 4) {
+            updates.put("currentQuestionIndex", currentQuestionIndex + 1);
+            updates.put("questionStartTime", System.currentTimeMillis() + 2000);
+            db.collection("gameRooms").document(roomId).update(updates);
+        } else {
+            updates.put("status", "transitioning");
+            db.collection("gameRooms").document(roomId).update(updates);
+            tvTimer.postDelayed(() -> db.collection("gameRooms").document(roomId).update("status", "spojnice", "roundStartTime", System.currentTimeMillis()), 2000);
+        }
+    }
+
+    private void highlightButton(int index, boolean correct) {
+        if (index < 0) return;
+        ImageButton btn = index == 0 ? btnAnswer1 : (index == 1 ? btnAnswer2 : (index == 2 ? btnAnswer3 : btnAnswer4));
+        btn.setBackgroundResource(correct ? R.drawable.input_success_bg : R.drawable.input_error_bg);
+    }
+
+    private void resetButtonColors() {
+        btnAnswer1.setBackgroundResource(R.drawable.input_bg_rounded);
+        btnAnswer2.setBackgroundResource(R.drawable.input_bg_rounded);
+        btnAnswer3.setBackgroundResource(R.drawable.input_bg_rounded);
+        btnAnswer4.setBackgroundResource(R.drawable.input_bg_rounded);
+        btnAnswer1.setBackgroundTintList(null);
+        btnAnswer2.setBackgroundTintList(null);
+        btnAnswer3.setBackgroundTintList(null);
+        btnAnswer4.setBackgroundTintList(null);
+    }
+
+    private void enableAnswerButtons(boolean enable) {
+        btnAnswer1.setEnabled(enable); btnAnswer2.setEnabled(enable);
+        btnAnswer3.setEnabled(enable); btnAnswer4.setEnabled(enable);
+    }
+
+    private void updateProgressDots() {
+        if (llProgress == null) return;
+        for (int i = 0; i < llProgress.getChildCount(); i++) {
+            llProgress.getChildAt(i).setBackgroundResource(i == currentQuestionIndex ? R.drawable.dot_active : R.drawable.dot_inactive);
+        }
+    }
+
+    private void navigateToSpojnice() {
+        if (gameListener != null) gameListener.remove();
+        Intent intent = new Intent(this, SpojniceActivity.class);
+        intent.putExtra("roomId", roomId);
+        intent.putExtra("isPlayer1", isPlayer1);
+        startActivity(intent);
+        finish();
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (gameListener != null) gameListener.remove();
+        if (questionTimer != null) questionTimer.cancel();
     }
 }

@@ -47,15 +47,14 @@
                     android:layout_height="match_parent"
                     app:cardCornerRadius="60dp"
                     app:cardElevation="0dp"
-                    app:cardBackgroundColor="#F5F5F5">
+                    app:cardBackgroundColor="#FFFFFF">
 
                     <ImageView
                         android:id="@+id/ivAvatar"
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
                         android:contentDescription="Avatar"
-                        android:padding="24dp"
-                        android:scaleType="centerInside"
+                        android:scaleType="centerCrop"
                         android:src="@drawable/ic_user" />
                 </androidx.cardview.widget.CardView>
 
