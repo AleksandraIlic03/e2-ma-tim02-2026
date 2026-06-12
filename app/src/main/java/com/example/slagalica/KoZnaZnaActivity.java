@@ -91,8 +91,8 @@ public class KoZnaZnaActivity extends AppCompatActivity {
                 .addSnapshotListener((snapshot, e) -> {
                     if (snapshot == null || !snapshot.exists()) return;
 
-                    String status = snapshot.getString("status");
-                    if ("spojnice".equals(status)) {
+                    String currentGame = snapshot.getString("currentGame");
+                    if ("spojnice".equals(currentGame)) {
                         navigateToSpojnice();
                         return;
                     }
@@ -317,9 +317,9 @@ public class KoZnaZnaActivity extends AppCompatActivity {
             updates.put("questionStartTime", System.currentTimeMillis() + 2000);
             db.collection("gameRooms").document(roomId).update(updates);
         } else {
-            updates.put("status", "transitioning");
+            updates.put("currentGame", "transitioning");
             db.collection("gameRooms").document(roomId).update(updates);
-            tvTimer.postDelayed(() -> db.collection("gameRooms").document(roomId).update("status", "spojnice", "roundStartTime", System.currentTimeMillis()), 2000);
+            tvTimer.postDelayed(() -> db.collection("gameRooms").document(roomId).update("currentGame", "spojnice", "roundStartTime", System.currentTimeMillis()), 2000);
         }
     }
 
