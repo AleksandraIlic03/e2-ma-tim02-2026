@@ -118,7 +118,7 @@
             android:layout_height="48dp"
             android:layout_marginTop="16dp"
             android:backgroundTint="#823FAB"
-            android:text="IGRA KORAK PO KORAK"
+            android:text="ZAPOČNI MEČ"
             android:textColor="#FFFFFF"
             android:textSize="14sp"
             android:fontFamily="@font/fredoka_bold"
