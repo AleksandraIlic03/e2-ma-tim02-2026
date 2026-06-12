@@ -34,7 +34,7 @@ public class HomeActivity extends AppCompatActivity {
         });
 
         findViewById(R.id.btnStartMatch).setOnClickListener(v -> {
-            Intent intent = new Intent(HomeActivity.this, KorakPoKorakActivity.class);
+            Intent intent = new Intent(HomeActivity.this, WaitingRoomActivity.class);
             startActivity(intent);
         });
 
@@ -43,10 +43,7 @@ public class HomeActivity extends AppCompatActivity {
             startActivity(intent);
         });
 
-        findViewById(R.id.btnMojBroj).setOnClickListener(v -> {
-            Intent intent = new Intent(HomeActivity.this, MojBrojActivity.class);
-            startActivity(intent);
-        });
+        findViewById(R.id.btnMojBroj).setVisibility(android.view.View.GONE);
 
         findViewById(R.id.btnKoZnaZna).setOnClickListener(v -> {
             Intent intent = new Intent(HomeActivity.this, WaitingRoomActivity.class);

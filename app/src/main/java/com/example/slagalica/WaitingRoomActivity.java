@@ -51,7 +51,9 @@ public class WaitingRoomActivity extends AppCompatActivity {
 
         db = FirebaseFirestore.getInstance();
         mAuth = FirebaseAuth.getInstance();
-        currentUserId = mAuth.getCurrentUser() != null ? mAuth.getCurrentUser().getUid() : UUID.randomUUID().toString();
+        currentUserId = mAuth.getCurrentUser() != null
+                ? mAuth.getCurrentUser().getUid()
+                : UUID.randomUUID().toString();
 
         initViews();
         fetchUserName();
@@ -89,8 +91,8 @@ public class WaitingRoomActivity extends AppCompatActivity {
                 db.collection("ko_zna_zna_questions").add(q2);
 
                 Map<String, Object> q3 = new HashMap<>();
-                q3.put("question", "Ko je napisao 'Na Drini ćuprija'?");
-                q3.put("answers", java.util.Arrays.asList("Ivo Andrić", "Meša Selimović", "Miloš Crnjanski", "Bora Stanković"));
+                q3.put("question", "Ko je napisao 'Na Drini cuprija'?");
+                q3.put("answers", java.util.Arrays.asList("Ivo Andric", "Mesa Selimovic", "Milos Crnjanski", "Bora Stankovic"));
                 q3.put("correctAnswerIndex", 0);
                 db.collection("ko_zna_zna_questions").add(q3);
             }
@@ -100,8 +102,8 @@ public class WaitingRoomActivity extends AppCompatActivity {
         db.collection("spojnice").get().addOnSuccessListener(snap -> {
             if (snap.isEmpty()) {
                 Map<String, Object> s1 = new HashMap<>();
-                s1.put("naslov", "Spoji države i glavne gradove");
-                s1.put("levaKolona", java.util.Arrays.asList("Srbija", "Hrvatska", "Grčka", "Italija", "Španija"));
+                s1.put("naslov", "Spoji drzave i glavne gradove");
+                s1.put("levaKolona", java.util.Arrays.asList("Srbija", "Hrvatska", "Grcka", "Italija", "Spanija"));
                 s1.put("desnaKolona", java.util.Arrays.asList("Rim", "Madrid", "Beograd", "Zagreb", "Atina"));
                 s1.put("tacniIndeksi", java.util.Arrays.asList(2, 3, 4, 0, 1));
                 db.collection("spojnice").add(s1);
@@ -218,7 +220,7 @@ public class WaitingRoomActivity extends AppCompatActivity {
                     return;
                 }
 
-                // 4. Skočko kombinacije
+                // 4. Skocko kombinacije
                 java.util.Random rand = new java.util.Random();
                 List<Integer> skocko1 = new ArrayList<>();
                 List<Integer> skocko2 = new ArrayList<>();
@@ -260,7 +262,7 @@ public class WaitingRoomActivity extends AppCompatActivity {
                 room.put("spojnice_lastWrongIndex", -1);
                 room.put("spojnice_wrongClickTrigger", 0L);
 
-                // Asocijacije - SVA POTREBNA POLJA
+                // Asocijacije
                 room.put("asocijacija1", selectedAsocijacije.get(0));
                 room.put("asocijacija2", selectedAsocijacije.get(1));
                 room.put("asoc_currentRound", 1);
@@ -278,7 +280,7 @@ public class WaitingRoomActivity extends AppCompatActivity {
                 asocOpened.put("3", java.util.Arrays.asList(false, false, false, false));
                 room.put("asoc_opened", asocOpened);
 
-                // Skočko
+                // Skocko
                 room.put("skocko_target1", skocko1);
                 room.put("skocko_target2", skocko2);
                 room.put("skocko_turn", "p1");
@@ -286,23 +288,46 @@ public class WaitingRoomActivity extends AppCompatActivity {
                 room.put("skocko_attempts", new ArrayList<>());
                 room.put("skocko_isSteal", false);
 
+                // Korak po korak - polja koje treba drugarica
+                room.put("korak_phase", "p1_playing");
+                room.put("korak_currentStep", -1);
+                room.put("korak_currentStepText", "");
+                room.put("korakPoKorak_round", 1);
+                room.put("korakPoKorak_turn", "p1");
+                room.put("korakPoKorak_p1_guessed", false);
+                room.put("korakPoKorak_p2_guessed", false);
+                room.put("korakPoKorak_p1_score", 0);
+                room.put("korakPoKorak_p2_score", 0);
+
+                // Moj broj - polja koje treba drugarica
+                room.put("mojbroj_phase", "p1_playing");
+                room.put("mojbroj_numbersRevealed", false);
+                room.put("mojbroj_p1Finished", false);
+                room.put("mojbroj_p2Finished", false);
+                room.put("mojbroj_p1Result", -1);
+                room.put("mojbroj_p2Result", -1);
+                room.put("r1Target", -1);
+                room.put("r1Numbers", new ArrayList<>());
+                room.put("r2Target", -1);
+                room.put("r2Numbers", new ArrayList<>());
+
                 db.collection("gameRooms").document(roomId).set(room)
                         .addOnSuccessListener(aVoid -> {
-                            tvRoomId.setText("Šifra sobe: " + roomId);
+                            tvRoomId.setText("Sifra sobe: " + roomId);
                             tvRoomId.setVisibility(View.VISIBLE);
                             tvStatus.setVisibility(View.VISIBLE);
                             progressBar.setVisibility(View.GONE);
                             listenForOpponent(true);
                         })
                         .addOnFailureListener(ex -> {
-                            Log.e("WaitingRoom", "Greška pri upisu sobe", ex);
-                            Toast.makeText(this, "Greška: " + ex.getMessage(), Toast.LENGTH_SHORT).show();
+                            Log.e("WaitingRoom", "Greska pri upisu sobe", ex);
+                            Toast.makeText(this, "Greska: " + ex.getMessage(), Toast.LENGTH_SHORT).show();
                             resetUI();
                         });
 
             } catch (Exception ex) {
                 Log.e("WaitingRoom", "Crash u createRoom", ex);
-                Toast.makeText(this, "Greška: " + ex.getMessage(), Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Greska: " + ex.getMessage(), Toast.LENGTH_SHORT).show();
                 resetUI();
             }
         });
@@ -332,7 +357,8 @@ public class WaitingRoomActivity extends AppCompatActivity {
                 updates.put("status", "playing");
                 updates.put("roundStartTime", System.currentTimeMillis());
                 updates.put("questionStartTime", System.currentTimeMillis());
-                roomRef.update(updates).addOnSuccessListener(aVoid -> listenForOpponent(false));
+                roomRef.update(updates)
+                        .addOnSuccessListener(aVoid -> listenForOpponent(false));
             } else {
                 Toast.makeText(this, "Soba nije dostupna", Toast.LENGTH_SHORT).show();
                 resetUI();
@@ -343,8 +369,10 @@ public class WaitingRoomActivity extends AppCompatActivity {
     private void listenForOpponent(boolean isPlayer1) {
         roomListener = db.collection("gameRooms").document(roomId)
                 .addSnapshotListener((snapshot, e) -> {
-                    if (snapshot != null && snapshot.exists() && "playing".equals(snapshot.getString("status"))) {
+                    if (snapshot != null && snapshot.exists()
+                            && "playing".equals(snapshot.getString("status"))) {
                         if (roomListener != null) roomListener.remove();
+                        // Uvek startujemo od Skocko - prva igra u redosledu
                         Intent intent = new Intent(this, SkockoActivity.class);
                         intent.putExtra("roomId", roomId);
                         intent.putExtra("isPlayer1", isPlayer1);
