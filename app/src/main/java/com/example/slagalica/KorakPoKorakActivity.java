@@ -407,6 +407,9 @@ public class KorakPoKorakActivity extends AppCompatActivity {
             if (gameListener != null) gameListener.remove();
             Map<String, Object> updates = new HashMap<>();
             updates.put("currentGame", "koZnaZna");
+            updates.put("currentQuestionIndex", 0);
+            // Postavljamo vreme početka za 3 sekunde u budućnost kako bi oba igrača stigla da učitaju aktivnost
+            updates.put("questionStartTime", System.currentTimeMillis() + 3000);
             db.collection("gameRooms").document(roomId).update(updates)
                     .addOnSuccessListener(unused -> {
                         Intent intent = new Intent(this, KoZnaZnaActivity.class);

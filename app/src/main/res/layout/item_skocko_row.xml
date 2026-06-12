@@ -19,42 +19,46 @@
 
         <ImageView
             android:id="@+id/ivSymbol1"
-            android:layout_width="56dp"
-            android:layout_height="56dp"
-            android:layout_margin="2dp"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:layout_margin="3dp"
             android:background="@drawable/circle_placeholder"
             android:backgroundTint="#C8BDD9"
-            android:padding="6dp"
+            android:padding="8dp"
             android:scaleType="centerInside" />
 
         <ImageView
             android:id="@+id/ivSymbol2"
-            android:layout_width="56dp"
-            android:layout_height="56dp"
-            android:layout_margin="2dp"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:layout_margin="3dp"
             android:background="@drawable/circle_placeholder"
             android:backgroundTint="#C8BDD9"
-            android:padding="6dp"
+            android:padding="8dp"
             android:scaleType="centerInside" />
 
         <ImageView
             android:id="@+id/ivSymbol3"
-            android:layout_width="56dp"
-            android:layout_height="56dp"
-            android:layout_margin="2dp"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:layout_margin="3dp"
             android:background="@drawable/circle_placeholder"
             android:backgroundTint="#C8BDD9"
-            android:padding="6dp"
+            android:padding="8dp"
             android:scaleType="centerInside" />
 
         <ImageView
             android:id="@+id/ivSymbol4"
-            android:layout_width="56dp"
-            android:layout_height="56dp"
-            android:layout_margin="2dp"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:layout_margin="3dp"
             android:background="@drawable/circle_placeholder"
             android:backgroundTint="#C8BDD9"
-            android:padding="6dp"
+            android:padding="8dp"
             android:scaleType="centerInside" />
     </LinearLayout>
 

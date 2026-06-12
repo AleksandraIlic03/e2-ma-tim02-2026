@@ -418,8 +418,12 @@ public class MojBrojActivity extends AppCompatActivity {
             transitioning = true;
             if (isPlayer1) {
                 if (gameListener != null) gameListener.remove();
+                Map<String, Object> updates = new HashMap<>();
+                updates.put("currentGame", "koZnaZna");
+                updates.put("currentQuestionIndex", 0);
+                updates.put("questionStartTime", System.currentTimeMillis());
                 db.collection("gameRooms").document(roomId)
-                        .update("currentGame", "koZnaZna")
+                        .update(updates)
                         .addOnSuccessListener(unused -> {
                             Intent intent = new Intent(this, KoZnaZnaActivity.class);
                             intent.putExtra("roomId", roomId);
