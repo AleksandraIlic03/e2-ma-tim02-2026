@@ -17,11 +17,14 @@ import java.util.List;
 public class NotificationsActivity extends AppCompatActivity {
     private NotificationAdapter adapter;
     private List<Notification> displayedNotifications;
+    private NotificationDbHelper dbHelper;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_notifications);
+        
+        dbHelper = new NotificationDbHelper(this);
 
         if (findViewById(R.id.btnBack) != null) {
             findViewById(R.id.btnBack).setOnClickListener(v -> finish());
@@ -30,16 +33,14 @@ public class NotificationsActivity extends AppCompatActivity {
         RecyclerView rvNotifications = findViewById(R.id.rvNotifications);
         rvNotifications.setLayoutManager(new LinearLayoutManager(this));
 
-        displayedNotifications = new ArrayList<>(NotificationRepository.getAll());
+        displayedNotifications = new ArrayList<>(dbHelper.getAllNotifications());
         adapter = new NotificationAdapter(displayedNotifications);
         rvNotifications.setAdapter(adapter);
 
         setupFilters();
 
         findViewById(R.id.btnMarkAllRead).setOnClickListener(v -> {
-            for (Notification n : NotificationRepository.getAll()) {
-                n.setRead(true);
-            }
+            dbHelper.markAllAsRead();
             filterNotifications("Sve");
         });
     }
@@ -59,7 +60,7 @@ public class NotificationsActivity extends AppCompatActivity {
 
     private void filterNotifications(String criteria) {
         displayedNotifications.clear();
-        List<Notification> all = NotificationRepository.getAll();
+        List<Notification> all = dbHelper.getAllNotifications();
         
         switch (criteria) {
             case "Sve":
@@ -67,6 +68,9 @@ public class NotificationsActivity extends AppCompatActivity {
                 break;
             case "Nepročitane":
                 for (Notification n : all) if (!n.isRead()) displayedNotifications.add(n);
+                break;
+            case "Pročitane":
+                for (Notification n : all) if (n.isRead()) displayedNotifications.add(n);
                 break;
             case "Čet":
                 for (Notification n : all) if (n.getType().equals("chat")) displayedNotifications.add(n);

@@ -34,11 +34,25 @@ public class NotificationHelper {
     }
 
     public static void sendRealNotification(Context context, String title, String message, String channelId) {
+        String type = "other";
+        if (CHANNEL_CHAT.equals(channelId)) type = "chat";
+        else if (CHANNEL_RANKING.equals(channelId)) type = "ranking";
+        else if (CHANNEL_REWARDS.equals(channelId)) type = "rewards";
+
+        NotificationDbHelper dbHelper = new NotificationDbHelper(context);
+        dbHelper.addNotification(new com.example.slagalica.models.Notification(
+                null, title, message, "danas", type, false
+        ));
+
+        android.content.Intent intent = new android.content.Intent(context, NotificationsActivity.class);
+        android.app.PendingIntent pendingIntent = android.app.PendingIntent.getActivity(context, 0, intent, android.app.PendingIntent.FLAG_IMMUTABLE);
+
         NotificationCompat.Builder builder = new NotificationCompat.Builder(context, channelId)
                 .setSmallIcon(R.drawable.ic_launcher_foreground)
                 .setContentTitle(title)
                 .setContentText(message)
                 .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+                .setContentIntent(pendingIntent)
                 .setAutoCancel(true);
 
         NotificationManagerCompat notificationManager = NotificationManagerCompat.from(context);

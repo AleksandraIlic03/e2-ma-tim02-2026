@@ -18,13 +18,13 @@ public class HomeActivity extends AppCompatActivity {
 
         MaterialButton btnAsocijacije = findViewById(R.id.btnAsocijacije);
         btnAsocijacije.setOnClickListener(v -> {
-            Intent intent = new Intent(HomeActivity.this, AsocijacijeActivity.class);
+            Intent intent = new Intent(HomeActivity.this, WaitingRoomActivity.class);
             startActivity(intent);
         });
 
         MaterialButton btnSkocko = findViewById(R.id.btnSkocko);
         btnSkocko.setOnClickListener(v -> {
-            Intent intent = new Intent(HomeActivity.this, SkockoActivity.class);
+            Intent intent = new Intent(HomeActivity.this, WaitingRoomActivity.class);
             startActivity(intent);
         });
 
