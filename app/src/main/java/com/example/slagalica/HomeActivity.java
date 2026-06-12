@@ -54,5 +54,8 @@ public class HomeActivity extends AppCompatActivity {
             Intent intent = new Intent(HomeActivity.this, WaitingRoomActivity.class);
             startActivity(intent);
         });
+
+//         Intent importIntent = new Intent(this, DataImportActivity.class);
+//         startActivity(importIntent);
     }
 }

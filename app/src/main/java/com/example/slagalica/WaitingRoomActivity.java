@@ -146,7 +146,7 @@ public class WaitingRoomActivity extends AppCompatActivity {
             room.put("currentGame", "korakPoKorak");
             room.put("koZnaZnaQuestions", selectedQuestions);
             room.put("currentQuestionIndex", 0);
-            room.put("questionStartTime", 0);
+            room.put("questionStartTime", 0L);
             room.put("answers_q0", new HashMap<String, Object>());
             room.put("answers_q1", new HashMap<String, Object>());
             room.put("answers_q2", new HashMap<String, Object>());
@@ -157,25 +157,6 @@ public class WaitingRoomActivity extends AppCompatActivity {
             room.put("korak_phase", "p1_playing");
             room.put("korak_currentStep", -1);
             room.put("korak_currentStepText", "");
-            // Legacy polja (ostaviti za kompatibilnost)
-            room.put("korakPoKorak_round", 1);
-            room.put("korakPoKorak_turn", "p1");
-            room.put("korakPoKorak_p1_guessed", false);
-            room.put("korakPoKorak_p2_guessed", false);
-            room.put("korakPoKorak_p1_score", 0);
-            room.put("korakPoKorak_p2_score", 0);
-
-            // Moj broj
-            room.put("mojbroj_phase", "p1_playing");
-            room.put("mojbroj_numbersRevealed", false);
-            room.put("mojbroj_p1Finished", false);
-            room.put("mojbroj_p2Finished", false);
-            room.put("mojbroj_p1Result", -1);
-            room.put("mojbroj_p2Result", -1);
-            room.put("r1Target", -1);
-            room.put("r1Numbers", new ArrayList<>());
-            room.put("r2Target", -1);
-            room.put("r2Numbers", new ArrayList<>());
 
             // Spojnice
             room.put("spojnica1", variants.get(0));
@@ -220,7 +201,6 @@ public class WaitingRoomActivity extends AppCompatActivity {
                 updates.put("player2Id", currentUserId);
                 updates.put("player2Name", currentUserName);
                 updates.put("status", "playing");
-                updates.put("questionStartTime", System.currentTimeMillis());
                 roomRef.update(updates)
                         .addOnSuccessListener(aVoid -> listenForOpponent(false));
             } else {

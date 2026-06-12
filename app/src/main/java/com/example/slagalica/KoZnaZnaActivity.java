@@ -221,39 +221,71 @@ public class KoZnaZnaActivity extends AppCompatActivity {
         int correctIdx = ((Long) qMap.get("correctAnswerIndex")).intValue();
 
         resetButtonColors();
-
-        // 1. Show wrong clicks in red immediately
-        if (p1Idx != -1 && !p1Corr) highlightButtonWithColor(p1Idx, COLOR_WRONG);
-        if (p2Idx != -1 && !p2Corr) highlightButtonWithColor(p2Idx, COLOR_WRONG);
-
-        // 2. Handle correct answer coloring logic
-        if (p1Corr && p2Corr) {
-            // Both correct: show split color initially
-            if (p1Time < p2Time) highlightButtonWithBothColors(correctIdx, COLOR_P1, COLOR_P2);
-            else highlightButtonWithBothColors(correctIdx, COLOR_P2, COLOR_P1);
-            
-            // After 1 second, transition to the winner's color and update points
-            tvTimer.postDelayed(() -> {
-                highlightButtonWithColor(correctIdx, p1Time < p2Time ? COLOR_P1 : COLOR_P2);
-                if (isPlayer1) calculatePointsAndNext(snap, answers);
-            }, 1000);
-        } else if (p1Corr) {
-            highlightButtonWithColor(correctIdx, COLOR_P1);
-            tvTimer.postDelayed(() -> {
-                if (isPlayer1) calculatePointsAndNext(snap, answers);
-            }, 1000);
-        } else if (p2Corr) {
-            highlightButtonWithColor(correctIdx, COLOR_P2);
-            tvTimer.postDelayed(() -> {
-                if (isPlayer1) calculatePointsAndNext(snap, answers);
-            }, 1000);
+        if (p1Idx != -1 && p1Idx == p2Idx) {
+            if (p1Time < p2Time) highlightButtonWithBothColors(p1Idx, COLOR_P1, COLOR_P2);
+            else highlightButtonWithBothColors(p1Idx, COLOR_P2, COLOR_P1);
         } else {
-            // No one correct: show Yellow
-            highlightButtonWithColor(correctIdx, "#FFEB3B"); // Yellow
-            tvTimer.postDelayed(() -> {
-                if (isPlayer1) calculatePointsAndNext(snap, answers);
-            }, 1000);
+            if (p1Idx != -1) highlightButtonWithColor(p1Idx, COLOR_P1);
+            if (p2Idx != -1) highlightButtonWithColor(p2Idx, COLOR_P2);
         }
+
+        tvTimer.postDelayed(() -> {
+            resetButtonColors();
+
+            // Odredi boju tačnog odgovora
+            if (p1Corr && p2Corr) {
+                highlightButtonWithColor(correctIdx, p1Time < p2Time ? COLOR_P1 : COLOR_P2);
+            } else if (p1Corr) {
+                highlightButtonWithColor(correctIdx, COLOR_P1);
+            } else if (p2Corr) {
+                highlightButtonWithColor(correctIdx, COLOR_P2);
+            } else {
+                highlightButtonWithColor(correctIdx, "#FFEB3B");
+            }
+
+            // Poeni se ažuriraju istovremeno sa promenom boje
+            if (isPlayer1) {
+                calculatePointsAndScheduleNext(snap, answers, p1Corr, p2Corr, p1Time, p2Time,
+                        p1Idx, p2Idx);
+            }
+        }, 1000);
+    }
+
+    private void calculatePointsAndScheduleNext(DocumentSnapshot snap, Map<String, Object> answers,
+                                                boolean p1Corr, boolean p2Corr, long p1Time, long p2Time, int p1Idx, int p2Idx) {
+
+        long p1ScoreAdd = 0, p2ScoreAdd = 0;
+
+        if (p1Corr && p2Corr) {
+            if (p1Time < p2Time) p1ScoreAdd = 10; else p2ScoreAdd = 10;
+        } else {
+            if (p1Corr) p1ScoreAdd = 10;
+            else if (p1Idx != -1) p1ScoreAdd = -5;
+
+            if (p2Corr) p2ScoreAdd = 10;
+            else if (p2Idx != -1) p2ScoreAdd = -5;
+        }
+
+        Map<String, Object> updates = new HashMap<>();
+        Long s1 = snap.getLong("player1Score");
+        Long s2 = snap.getLong("player2Score");
+        updates.put("player1Score", (s1 != null ? s1 : 0) + p1ScoreAdd);
+        updates.put("player2Score", (s2 != null ? s2 : 0) + p2ScoreAdd);
+        db.collection("gameRooms").document(roomId).update(updates);
+
+        tvTimer.postDelayed(() -> {
+            Map<String, Object> nextUpdates = new HashMap<>();
+            if (currentQuestionIndex < 4) {
+                nextUpdates.put("currentQuestionIndex", currentQuestionIndex + 1);
+                nextUpdates.put("questionStartTime", System.currentTimeMillis());
+                db.collection("gameRooms").document(roomId).update(nextUpdates);
+            } else {
+                db.collection("gameRooms").document(roomId).update(
+                        "currentGame", "spojnice",
+                        "status", "playing",
+                        "roundStartTime", System.currentTimeMillis());
+            }
+        }, 3000);
     }
 
     private ImageButton getButtonByIndex(int index) {
@@ -281,45 +313,6 @@ public class KoZnaZnaActivity extends AppCompatActivity {
         ImageButton btn = getButtonByIndex(index);
         if (btn != null) {
             btn.setBackgroundTintList(android.content.res.ColorStateList.valueOf(Color.parseColor(colorHex)));
-        }
-    }
-
-    private void calculatePointsAndNext(DocumentSnapshot snap, Map<String, Object> answers) {
-        Map<String, Object> p1 = (Map<String, Object>) answers.get("p1");
-        Map<String, Object> p2 = (Map<String, Object>) answers.get("p2");
-
-        long p1ScoreAdd = 0, p2ScoreAdd = 0;
-        Boolean p1Corr = (Boolean) p1.get("correct");
-        Boolean p2Corr = (Boolean) p2.get("correct");
-
-        if (p1Corr != null && p2Corr != null && p1Corr && p2Corr) {
-            Long t1 = (Long) p1.get("time");
-            Long t2 = (Long) p2.get("time");
-            if (t1 != null && t2 != null) {
-                if (t1 < t2) p1ScoreAdd = 10; else p2ScoreAdd = 10;
-            }
-        } else {
-            if (p1Corr != null && p1Corr) p1ScoreAdd = 10; 
-            else if (p1.get("index") != null && ((Long)p1.get("index")).intValue() != -1) p1ScoreAdd = -5;
-            
-            if (p2Corr != null && p2Corr) p2ScoreAdd = 10; 
-            else if (p2.get("index") != null && ((Long)p2.get("index")).intValue() != -1) p2ScoreAdd = -5;
-        }
-
-        Map<String, Object> updates = new HashMap<>();
-        Long s1 = snap.getLong("player1Score");
-        Long s2 = snap.getLong("player2Score");
-        updates.put("player1Score", (s1 != null ? s1 : 0) + p1ScoreAdd);
-        updates.put("player2Score", (s2 != null ? s2 : 0) + p2ScoreAdd);
-
-        if (currentQuestionIndex < 4) {
-            updates.put("currentQuestionIndex", currentQuestionIndex + 1);
-            updates.put("questionStartTime", System.currentTimeMillis() + 2000);
-            db.collection("gameRooms").document(roomId).update(updates);
-        } else {
-            updates.put("currentGame", "transitioning");
-            db.collection("gameRooms").document(roomId).update(updates);
-            tvTimer.postDelayed(() -> db.collection("gameRooms").document(roomId).update("currentGame", "spojnice", "roundStartTime", System.currentTimeMillis()), 2000);
         }
     }
 
