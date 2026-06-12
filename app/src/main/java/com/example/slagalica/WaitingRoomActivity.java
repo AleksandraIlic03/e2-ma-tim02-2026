@@ -58,7 +58,7 @@ public class WaitingRoomActivity extends AppCompatActivity {
 
         btnCreateRoom.setOnClickListener(v -> createRoom());
         btnJoinRoom.setOnClickListener(v -> joinRoom());
-        seedAsocijacije();
+        seedData();
     }
 
     private void initViews() {
@@ -70,11 +70,47 @@ public class WaitingRoomActivity extends AppCompatActivity {
         progressBar = findViewById(R.id.progressBar);
     }
 
-    private void seedAsocijacije() {
+    private void seedData() {
         FirebaseFirestore db = FirebaseFirestore.getInstance();
 
+        // 1. Seed Ko Zna Zna
+        db.collection("ko_zna_zna_questions").get().addOnSuccessListener(snap -> {
+            if (snap.isEmpty()) {
+                Map<String, Object> q1 = new HashMap<>();
+                q1.put("question", "Koji je glavni grad Francuske?");
+                q1.put("answers", java.util.Arrays.asList("London", "Berlin", "Pariz", "Rim"));
+                q1.put("correctAnswerIndex", 2);
+                db.collection("ko_zna_zna_questions").add(q1);
+
+                Map<String, Object> q2 = new HashMap<>();
+                q2.put("question", "Koliko planeta ima Sunčev sistem?");
+                q2.put("answers", java.util.Arrays.asList("7", "8", "9", "10"));
+                q2.put("correctAnswerIndex", 1);
+                db.collection("ko_zna_zna_questions").add(q2);
+
+                Map<String, Object> q3 = new HashMap<>();
+                q3.put("question", "Ko je napisao 'Na Drini ćuprija'?");
+                q3.put("answers", java.util.Arrays.asList("Ivo Andrić", "Meša Selimović", "Miloš Crnjanski", "Bora Stanković"));
+                q3.put("correctAnswerIndex", 0);
+                db.collection("ko_zna_zna_questions").add(q3);
+            }
+        });
+
+        // 2. Seed Spojnice
+        db.collection("spojnice").get().addOnSuccessListener(snap -> {
+            if (snap.isEmpty()) {
+                Map<String, Object> s1 = new HashMap<>();
+                s1.put("naslov", "Spoji države i glavne gradove");
+                s1.put("levaKolona", java.util.Arrays.asList("Srbija", "Hrvatska", "Grčka", "Italija", "Španija"));
+                s1.put("desnaKolona", java.util.Arrays.asList("Rim", "Madrid", "Beograd", "Zagreb", "Atina"));
+                s1.put("tacniIndeksi", java.util.Arrays.asList(2, 3, 4, 0, 1));
+                db.collection("spojnice").add(s1);
+            }
+        });
+
+        // 3. Seed Asocijacije
         db.collection("asocijacije").get().addOnSuccessListener(snap -> {
-            if (snap.size() >= 2) return; // već ima podataka, ne dodavaj
+            if (snap.size() >= 2) return;
 
             Map<String, Object> a1 = new HashMap<>();
             a1.put("kolonaA", java.util.Arrays.asList("PAPIR", "OLOVKA", "SKOLA", "DJAK"));
@@ -91,7 +127,7 @@ public class WaitingRoomActivity extends AppCompatActivity {
             Map<String, Object> a2 = new HashMap<>();
             a2.put("kolonaA", java.util.Arrays.asList("KRALJ", "KRALJICA", "DVOR", "KRUNA"));
             a2.put("resenjeA", "MONARHIJA");
-            a2.put("kolonaB", java.util.Arrays.asList("TOP", "LOVAC", "PEŠAK", "KRALJ"));
+            a2.put("kolonaB", java.util.Arrays.asList("TOP", "LOVAC", "PESAK", "KRALJ"));
             a2.put("resenjeB", "SAH");
             a2.put("kolonaV", java.util.Arrays.asList("GLAVA", "TELO", "RUKE", "NOGE"));
             a2.put("resenjeV", "COVEK");

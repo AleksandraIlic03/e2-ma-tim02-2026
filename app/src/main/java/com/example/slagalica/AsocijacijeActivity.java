@@ -286,6 +286,7 @@ public class AsocijacijeActivity extends AppCompatActivity {
     }
 
     private void startNextRound() {
+        if (!isPlayer1) return;
         Map<String, Object> updates = new HashMap<>();
         updates.put("asoc_currentRound", 2);
         updates.put("asoc_turn", "p2");
@@ -307,6 +308,7 @@ public class AsocijacijeActivity extends AppCompatActivity {
     }
 
     private void transitionToKoZnaZna() {
+        if (!isPlayer1) return;
         Map<String, Object> updates = new HashMap<>();
         updates.put("status", "koznazna");
         updates.put("roundStartTime", System.currentTimeMillis());
@@ -438,10 +440,12 @@ public class AsocijacijeActivity extends AppCompatActivity {
         long remaining = 120000 - (System.currentTimeMillis() - startTime);
         if (remaining <= 0) { 
             tvTimer.setText("🕒 00:00"); 
-            if (currentRound == 1) {
-                startNextRound();
-            } else {
-                transitionToKoZnaZna();
+            if (isPlayer1) {
+                if (currentRound == 1) {
+                    startNextRound();
+                } else {
+                    transitionToKoZnaZna();
+                }
             }
             return; 
         }
@@ -451,10 +455,12 @@ public class AsocijacijeActivity extends AppCompatActivity {
             }
             public void onFinish() {
                 tvTimer.setText("🕒 00:00");
-                if (currentRound == 1) {
-                    startNextRound();
-                } else {
-                    transitionToKoZnaZna();
+                if (isPlayer1) {
+                    if (currentRound == 1) {
+                        startNextRound();
+                    } else {
+                        transitionToKoZnaZna();
+                    }
                 }
             }
         }.start();
