@@ -38,6 +38,32 @@ public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapte
         holder.tvTime.setText(notification.getTimestamp());
         holder.ivUnreadDot.setVisibility(notification.isRead() ? View.GONE : View.VISIBLE);
 
+        holder.itemView.setOnClickListener(v -> {
+            if (!notification.isRead()) {
+                notification.setRead(true);
+                notifyItemChanged(position);
+            }
+        });
+
+        // Show/Hide actions based on type
+        if ("friend".equals(notification.getType())) {
+            holder.layoutActions.setVisibility(View.VISIBLE);
+            holder.btnAccept.setOnClickListener(v -> {
+                // Logic to accept friend request
+                notification.setRead(true);
+                holder.layoutActions.setVisibility(View.GONE);
+                notifyItemChanged(position);
+            });
+            holder.btnDecline.setOnClickListener(v -> {
+                // Logic to decline
+                notification.setRead(true);
+                holder.layoutActions.setVisibility(View.GONE);
+                notifyItemChanged(position);
+            });
+        } else {
+            holder.layoutActions.setVisibility(View.GONE);
+        }
+
         switch (notification.getType()) {
             case "rewards":
                 holder.tvIcon.setText("🎁");
@@ -69,7 +95,8 @@ public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapte
 
     public static class ViewHolder extends RecyclerView.ViewHolder {
         TextView tvTitle, tvMessage, tvTime, tvIcon;
-        View viewIconBg, ivUnreadDot;
+        View viewIconBg, ivUnreadDot, layoutActions;
+        android.widget.Button btnAccept, btnDecline;
 
         public ViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -79,6 +106,9 @@ public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapte
             tvIcon = itemView.findViewById(R.id.tvNotifIcon);
             viewIconBg = itemView.findViewById(R.id.viewIconBg);
             ivUnreadDot = itemView.findViewById(R.id.ivUnreadDot);
+            layoutActions = itemView.findViewById(R.id.layoutActions);
+            btnAccept = itemView.findViewById(R.id.btnActionAccept);
+            btnDecline = itemView.findViewById(R.id.btnActionDecline);
         }
     }
 }

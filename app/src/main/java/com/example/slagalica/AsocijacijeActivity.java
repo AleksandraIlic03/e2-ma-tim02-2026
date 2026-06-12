@@ -21,17 +21,21 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.slagalica.models.AsocijacijaModel;
 import com.google.android.material.button.MaterialButton;
+import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.ListenerRegistration;
 
+import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 public class AsocijacijeActivity extends AppCompatActivity {
 
     private AsocijacijaModel currentAsocijacija;
-    private int totalPoints = 0;
-    private int initialPoints = 0;
-    private int roundPoints = 0;
-    private String player1Name;
-    private TextView tvTimer, tvPoints;
+    private int player1Score = 0, player2Score = 0;
+    private String player1Name, player2Name;
+    private TextView tvTimer, tvPoints, tvPlayer1Name, tvPlayer2Name, tvPlayer1Points, tvPlayer2Points;
     private CountDownTimer countDownTimer;
     private MaterialButton btnNextAction;
 
@@ -47,26 +51,41 @@ public class AsocijacijeActivity extends AppCompatActivity {
     private int currentRound = 1;
 
     private final boolean[][] openedFields = new boolean[4][4];
+    
+    private FirebaseFirestore db;
+    private String roomId;
+    private boolean isPlayer1;
+    private String currentTurn = "p1";
+    private ListenerRegistration gameListener;
+    private boolean hasOpenedThisTurn = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_asocijacije);
 
-        player1Name = getIntent().getStringExtra("player1Name");
-        initialPoints = getIntent().getIntExtra("player1Score", 0);
-        totalPoints = initialPoints;
+        db = FirebaseFirestore.getInstance();
+        roomId = getIntent().getStringExtra("roomId");
+        if (roomId == null) {
+            android.widget.Toast.makeText(this, "Greška: Soba nije pronađena!", android.widget.Toast.LENGTH_SHORT).show();
+            finish();
+            return;
+        }
+        isPlayer1 = getIntent().getBooleanExtra("isPlayer1", true);
 
         initViews();
-        updateScoreUI();
-        loadRoundData(currentRound);
-        startTimer();
+        attachGameListener();
     }
 
     private void initViews() {
         tvTimer = findViewById(R.id.tvTimer);
         tvPoints = findViewById(R.id.tvPoints);
         btnNextAction = findViewById(R.id.btnNextGame);
+        
+        tvPlayer1Name = findViewById(R.id.tvPlayer1Name);
+        tvPlayer2Name = findViewById(R.id.tvPlayer2Name);
+        tvPlayer1Points = findViewById(R.id.tvPlayer1Points);
+        tvPlayer2Points = findViewById(R.id.tvPlayer2Points);
 
         buttonsA[0] = findViewById(R.id.btnA1); buttonsA[1] = findViewById(R.id.btnA2);
         buttonsA[2] = findViewById(R.id.btnA3); buttonsA[3] = findViewById(R.id.btnA4);
@@ -84,6 +103,153 @@ public class AsocijacijeActivity extends AppCompatActivity {
         etKonacnoResenje = findViewById(R.id.etKonacnoResenje);
 
         setupListeners();
+    }
+
+    private void attachGameListener() {
+        gameListener = db.collection("gameRooms").document(roomId)
+                .addSnapshotListener((snapshot, e) -> {
+                    if (snapshot == null || !snapshot.exists()) return;
+
+                    String status = snapshot.getString("status");
+                    android.util.Log.d("Asocijacije", "Room status: " + status);
+                    if ("koznazna".equals(status)) {
+                        navigateToKoZnaZna();
+                        return;
+                    }
+
+                    Long p1s = snapshot.getLong("player1Score");
+                    Long p2s = snapshot.getLong("player2Score");
+                    player1Score = (p1s != null) ? p1s.intValue() : 0;
+                    player2Score = (p2s != null) ? p2s.intValue() : 0;
+                    
+                    player1Name = snapshot.getString("player1Name") != null ? snapshot.getString("player1Name") : "Igrač 1";
+                    player2Name = snapshot.getString("player2Name") != null ? snapshot.getString("player2Name") : "Igrač 2";
+                    
+                    if (tvPlayer1Name != null) tvPlayer1Name.setText(player1Name);
+                    if (tvPlayer2Name != null) tvPlayer2Name.setText(player2Name);
+                    if (tvPlayer1Points != null) tvPlayer1Points.setText(String.valueOf(player1Score));
+                    if (tvPlayer2Points != null) tvPlayer2Points.setText(String.valueOf(player2Score));
+                    tvPoints.setText("⭐ " + (isPlayer1 ? player1Score : player2Score));
+
+                    currentRound = snapshot.getLong("asoc_currentRound") != null ? snapshot.getLong("asoc_currentRound").intValue() : 1;
+                    currentTurn = snapshot.getString("asoc_turn") != null ? snapshot.getString("asoc_turn") : "p1";
+                    
+                    Map<String, Object> asocData = (Map<String, Object>) snapshot.get("asocijacija" + currentRound);
+                    if (asocData != null) {
+                        try {
+                            String[] kolA = extractList(asocData.get("kolonaA"));
+                            String[] kolB = extractList(asocData.get("kolonaB"));
+                            String[] kolV = extractList(asocData.get("kolonaV"));
+                            String[] kolG = extractList(asocData.get("kolonaG"));
+                            
+                            currentAsocijacija = new AsocijacijaModel(
+                                kolA, (String) asocData.get("resenjeA"),
+                                kolB, (String) asocData.get("resenjeB"),
+                                kolV, (String) asocData.get("resenjeV"),
+                                kolG, (String) asocData.get("resenjeG"),
+                                (String) asocData.get("konacnoResenje")
+                            );
+                        } catch (Exception ex) {
+                            android.util.Log.e("Asocijacije", "Greška pri parsiranju modela: " + ex.getMessage());
+                        }
+                    }
+
+                    syncState(snapshot);
+                    
+                    if (snapshot.contains("roundStartTime")) {
+                        startLocalTimer(snapshot.getLong("roundStartTime"));
+                    }
+                });
+    }
+
+    private void syncState(DocumentSnapshot snap) {
+        isA_Solved = snap.getBoolean("asoc_solvedA") != null && snap.getBoolean("asoc_solvedA");
+        isB_Solved = snap.getBoolean("asoc_solvedB") != null && snap.getBoolean("asoc_solvedB");
+        isV_Solved = snap.getBoolean("asoc_solvedV") != null && snap.getBoolean("asoc_solvedV");
+        isG_Solved = snap.getBoolean("asoc_solvedG") != null && snap.getBoolean("asoc_solvedG");
+        isFinalSolved = snap.getBoolean("asoc_solvedFinal") != null && snap.getBoolean("asoc_solvedFinal");
+
+        try {
+            Map<String, List<Boolean>> opened = (Map<String, List<Boolean>>) snap.get("asoc_opened");
+            if (opened != null) {
+                for (int i = 0; i < 4; i++) {
+                    List<Boolean> row = opened.get(String.valueOf(i));
+                    if (row != null && row.size() >= 4) {
+                        for (int j = 0; j < 4; j++) {
+                            openedFields[i][j] = row.get(j);
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            android.util.Log.e("Asocijacije", "Error syncing opened fields", e);
+        }
+
+        updateUI();
+    }
+
+    private void updateUI() {
+        if (currentAsocijacija == null || etKonacnoResenje == null) {
+            android.util.Log.w("Asocijacije", "UI Update skipped: Missing data or views");
+            return;
+        }
+        boolean isMyTurn = currentTurn.equals(isPlayer1 ? "p1" : "p2");
+        char[] cols = {'A', 'B', 'V', 'G'};
+        for (char col : cols) {
+            int colIdx = colToIdx(col);
+            MaterialButton[] btns = getBtns(col);
+            String[] data = getColData(col);
+            boolean solved = isColSolved(col);
+            
+            if (btns == null || data == null) continue;
+
+            for (int i = 0; i < 4; i++) {
+                if (btns[i] == null) continue;
+                if (openedFields[colIdx][i] || solved || isFinalSolved) {
+                    btns[i].setText(data[i] != null ? data[i] : "");
+                    btns[i].setEnabled(false);
+                } else {
+                    btns[i].setText(col + "" + (i + 1));
+                    btns[i].setEnabled(isMyTurn && !hasOpenedThisTurn);
+                }
+            }
+            
+            EditText et = getET(col);
+            if (et == null) continue;
+            
+            if (solved || isFinalSolved) {
+                String res = getCorrectRes(col);
+                et.setText(res != null ? res.toUpperCase() : "");
+                et.setEnabled(false);
+                et.setBackgroundResource(R.drawable.input_success_bg);
+            } else {
+                et.setEnabled(isMyTurn);
+                if (!et.hasFocus()) et.setText("");
+            }
+        }
+
+        if (isFinalSolved) {
+            String fr = currentAsocijacija.getKonacnoResenje();
+            etKonacnoResenje.setText(fr != null ? fr.toUpperCase() : "");
+            etKonacnoResenje.setEnabled(false);
+            etKonacnoResenje.setBackgroundResource(R.drawable.final_success_bg);
+            if (btnNextAction != null) {
+                btnNextAction.setVisibility(View.VISIBLE);
+                btnNextAction.setText(currentRound == 1 ? "SLEDEĆA RUNDA" : "SLEDEĆA IGRA");
+            }
+        } else {
+            etKonacnoResenje.setEnabled(isMyTurn);
+            if (!etKonacnoResenje.hasFocus()) etKonacnoResenje.setText("");
+            
+            if (btnNextAction != null) {
+                if (isMyTurn) {
+                    btnNextAction.setVisibility(View.VISIBLE);
+                    btnNextAction.setText("DALJE");
+                } else {
+                    btnNextAction.setVisibility(View.GONE);
+                }
+            }
+        }
     }
 
     private void setupListeners() {
@@ -105,15 +271,132 @@ public class AsocijacijeActivity extends AppCompatActivity {
         });
 
         btnNextAction.setOnClickListener(v -> {
-            if (currentRound == 1) {
-                currentRound = 2;
-                btnNextAction.setVisibility(View.GONE);
-                loadRoundData(currentRound);
-                startTimer();
+            if (isFinalSolved) {
+                if (currentRound == 1) {
+                    startNextRound();
+                } else {
+                    transitionToKoZnaZna();
+                }
             } else {
-                finishGame();
+                // Pass turn
+                db.collection("gameRooms").document(roomId).update("asoc_turn", isPlayer1 ? "p2" : "p1");
+                hasOpenedThisTurn = false;
             }
         });
+    }
+
+    private void startNextRound() {
+        Map<String, Object> updates = new HashMap<>();
+        updates.put("asoc_currentRound", 2);
+        updates.put("asoc_turn", "p2");
+        updates.put("asoc_solvedA", false);
+        updates.put("asoc_solvedB", false);
+        updates.put("asoc_solvedV", false);
+        updates.put("asoc_solvedG", false);
+        updates.put("asoc_solvedFinal", false);
+
+        Map<String, Object> asocOpened = new HashMap<>();
+        asocOpened.put("0", java.util.Arrays.asList(false, false, false, false));
+        asocOpened.put("1", java.util.Arrays.asList(false, false, false, false));
+        asocOpened.put("2", java.util.Arrays.asList(false, false, false, false));
+        asocOpened.put("3", java.util.Arrays.asList(false, false, false, false));
+        updates.put("asoc_opened", asocOpened);
+
+        updates.put("roundStartTime", System.currentTimeMillis());
+        db.collection("gameRooms").document(roomId).update(updates);
+    }
+
+    private void transitionToKoZnaZna() {
+        Map<String, Object> updates = new HashMap<>();
+        updates.put("status", "koznazna");
+        updates.put("roundStartTime", System.currentTimeMillis());
+        updates.put("questionStartTime", System.currentTimeMillis());
+        db.collection("gameRooms").document(roomId).update(updates);
+    }
+
+    private void navigateToKoZnaZna() {
+        if (gameListener != null) gameListener.remove();
+        Intent intent = new Intent(this, KoZnaZnaActivity.class);
+        intent.putExtra("roomId", roomId);
+        intent.putExtra("isPlayer1", isPlayer1);
+        startActivity(intent);
+        finish();
+    }
+
+    private void openField(char col, int idx) {
+        if (!currentTurn.equals(isPlayer1 ? "p1" : "p2")) return;
+        if (hasOpenedThisTurn) return;
+        
+        int colIdx = colToIdx(col);
+        if (openedFields[colIdx][idx]) return;
+
+        openedFields[colIdx][idx] = true;
+        hasOpenedThisTurn = true;
+        
+        Map<String, Object> updates = new HashMap<>();
+        Map<String, Object> asocOpened = new HashMap<>();
+        for (int i = 0; i < 4; i++) {
+            asocOpened.put(String.valueOf(i), java.util.Arrays.asList(openedFields[i][0], openedFields[i][1], openedFields[i][2], openedFields[i][3]));
+        }
+        updates.put("asoc_opened", asocOpened);
+        db.collection("gameRooms").document(roomId).update(updates);
+        
+        Toast.makeText(this, "Možete pogađati ili kliknuti 'DALJE'", Toast.LENGTH_SHORT).show();
+    }
+
+    private void checkColumn(char col) {
+        String input = getET(col).getText().toString().trim();
+        if (input.equalsIgnoreCase(getCorrectRes(col))) {
+            int unopened = 0;
+            int colIdx = colToIdx(col);
+            for (int i = 0; i < 4; i++) if (!openedFields[colIdx][i]) unopened++;
+            
+            Map<String, Object> updates = new HashMap<>();
+            updates.put("asoc_solved" + col, true);
+            String scoreField = isPlayer1 ? "player1Score" : "player2Score";
+            updates.put(scoreField, (isPlayer1 ? player1Score : player2Score) + 2 + unopened);
+            db.collection("gameRooms").document(roomId).update(updates);
+            hasOpenedThisTurn = false; // Can keep opening or guessing
+        } else {
+            handleWrongInput(getET(col));
+            db.collection("gameRooms").document(roomId).update("asoc_turn", isPlayer1 ? "p2" : "p1");
+            hasOpenedThisTurn = false;
+        }
+    }
+
+    private void checkFinal() {
+        String input = etKonacnoResenje.getText().toString().trim();
+        if (input.equalsIgnoreCase(currentAsocijacija.getKonacnoResenje())) {
+            int points = 7;
+            points += getUnsolvedColPoints('A');
+            points += getUnsolvedColPoints('B');
+            points += getUnsolvedColPoints('V');
+            points += getUnsolvedColPoints('G');
+            
+            Map<String, Object> updates = new HashMap<>();
+            updates.put("asoc_solvedFinal", true);
+            updates.put("asoc_solvedA", true);
+            updates.put("asoc_solvedB", true);
+            updates.put("asoc_solvedV", true);
+            updates.put("asoc_solvedG", true);
+
+            String scoreField = isPlayer1 ? "player1Score" : "player2Score";
+            updates.put(scoreField, (isPlayer1 ? player1Score : player2Score) + points);
+            db.collection("gameRooms").document(roomId).update(updates);
+            hasOpenedThisTurn = false;
+        } else {
+            handleWrongFinalInput();
+            db.collection("gameRooms").document(roomId).update("asoc_turn", isPlayer1 ? "p2" : "p1");
+            hasOpenedThisTurn = false;
+        }
+    }
+
+    private int getUnsolvedColPoints(char col) {
+        if (isColSolved(col)) return 0;
+        int opened = 0;
+        int colIdx = colToIdx(col);
+        for (int i = 0; i < 4; i++) if (openedFields[colIdx][i]) opened++;
+        return 2 + (4 - opened);
     }
 
     private boolean handleInput(int id, KeyEvent e, char col) {
@@ -126,83 +409,16 @@ public class AsocijacijeActivity extends AppCompatActivity {
                (e != null && e.getKeyCode() == KeyEvent.KEYCODE_ENTER && e.getAction() == KeyEvent.ACTION_DOWN);
     }
 
-    private void openField(char col, int idx) {
-        if (isFinalSolved) return;
-        int colIdx = colToIdx(col);
-        if (openedFields[colIdx][idx] || isColSolved(col)) return;
-
-        openedFields[colIdx][idx] = true;
-        MaterialButton btn = getBtns(col)[idx];
-        btn.setText(getColData(col)[idx]);
-        getET(col).requestFocus();
-    }
-
-    private void checkColumn(char col) {
-        if (isColSolved(col)) return;
-        EditText et = getET(col);
-        String input = et.getText().toString().trim();
-        if (input.equalsIgnoreCase(getCorrectRes(col))) {
-            hideKeyboard();
-            et.setBackgroundResource(R.drawable.input_success_bg);
-            et.setTextColor(Color.parseColor("#2E7D32"));
-            solveColumn(col, true);
-        } else if (!input.isEmpty()) {
-            handleWrongInput(et);
-        }
-    }
-
     private void handleWrongInput(EditText et) {
         et.setBackgroundResource(R.drawable.input_error_bg);
         et.setTextColor(Color.parseColor("#C62828"));
         Animation shake = AnimationUtils.loadAnimation(this, R.anim.shake);
         et.startAnimation(shake);
-        
         new Handler(Looper.getMainLooper()).postDelayed(() -> {
             et.setText("");
             et.setBackgroundResource(R.drawable.input_bg_rounded);
-            et.setTextColor(Color.parseColor("#6A1B9A")); // Match layout
+            et.setTextColor(Color.parseColor("#6A1B9A"));
         }, 1000);
-    }
-
-    private void solveColumn(char col, boolean isManual) {
-        if (isColSolved(col)) return;
-        setColSolved(col, true);
-
-        int unopenedInCol = 0;
-        MaterialButton[] btns = getBtns(col);
-        String[] data = getColData(col);
-        int colIdx = colToIdx(col);
-
-        for (int i = 0; i < 4; i++) {
-            if (!openedFields[colIdx][i]) {
-                unopenedInCol++;
-                openedFields[colIdx][i] = true;
-                btns[i].setText(data[i]);
-            }
-        }
-
-        EditText et = getET(col);
-        et.setText(getCorrectRes(col).toUpperCase());
-        et.setEnabled(false);
-        et.setBackgroundResource(R.drawable.input_success_bg);
-
-        if (isManual) {
-            roundPoints += (2 + unopenedInCol);
-            updateScoreUI();
-        }
-    }
-
-    private void checkFinal() {
-        if (isFinalSolved) return;
-        String input = etKonacnoResenje.getText().toString().trim();
-        if (input.equalsIgnoreCase(currentAsocijacija.getKonacnoResenje())) {
-            hideKeyboard();
-            etKonacnoResenje.setBackgroundResource(R.drawable.final_success_bg);
-            calculateFinalPoints();
-            finishRound();
-        } else if (!input.isEmpty()) {
-            handleWrongFinalInput();
-        }
     }
 
     private void handleWrongFinalInput() {
@@ -210,7 +426,6 @@ public class AsocijacijeActivity extends AppCompatActivity {
         etKonacnoResenje.setTextColor(Color.parseColor("#C62828"));
         Animation shake = AnimationUtils.loadAnimation(this, R.anim.shake);
         etKonacnoResenje.startAnimation(shake);
-
         new Handler(Looper.getMainLooper()).postDelayed(() -> {
             etKonacnoResenje.setText("");
             etKonacnoResenje.setBackgroundResource(R.drawable.final_resenje_bg);
@@ -218,133 +433,48 @@ public class AsocijacijeActivity extends AppCompatActivity {
         }, 1000);
     }
 
-    private void calculateFinalPoints() {
-        int finalRoundPoints = 7;
-        finalRoundPoints += getPointsForColumnAfterFinal('A');
-        finalRoundPoints += getPointsForColumnAfterFinal('B');
-        finalRoundPoints += getPointsForColumnAfterFinal('V');
-        finalRoundPoints += getPointsForColumnAfterFinal('G');
-        roundPoints += finalRoundPoints;
-        updateScoreUI();
-    }
-
-    private int getPointsForColumnAfterFinal(char col) {
-        if (isColSolved(col)) return 0;
-        int colIdx = colToIdx(col);
-        int openedCount = 0;
-        for (int i = 0; i < 4; i++) {
-            if (openedFields[colIdx][i]) openedCount++;
-        }
-        return 2 + (4 - openedCount);
-    }
-
-    private void finishRound() {
+    private void startLocalTimer(long startTime) {
         if (countDownTimer != null) countDownTimer.cancel();
-        isFinalSolved = true;
-        etKonacnoResenje.setText(currentAsocijacija.getKonacnoResenje().toUpperCase());
-        etKonacnoResenje.setEnabled(false);
-        etKonacnoResenje.setBackgroundResource(R.drawable.final_success_bg);
-
-        String msg = "Osvojili ste " + totalPoints + " zvezdica u igri Asocijacije!";
-        NotificationHelper.sendRealNotification(this, "Kraj Runde " + currentRound, msg, NotificationHelper.CHANNEL_REWARDS);
-        
-        com.example.slagalica.models.NotificationRepository.addNotification(
-            new com.example.slagalica.models.Notification(
-                String.valueOf(System.currentTimeMillis()), 
-                "Asocijacije - Rezultat", 
-                msg, 
-                "sada", 
-                "rewards", 
-                false
-            )
-        );
-
-        solveColumn('A', false); solveColumn('B', false);
-        solveColumn('V', false); solveColumn('G', false);
-
-        btnNextAction.setVisibility(View.VISIBLE);
-        if (currentRound == 1) {
-            btnNextAction.setText("SLEDEĆA RUNDA");
-            tvTimer.setText("🕒 00:00");
-        } else {
-            btnNextAction.setText("ZAVRŠI IGRU");
-            tvTimer.setText("🕒 00:00");
+        long remaining = 120000 - (System.currentTimeMillis() - startTime);
+        if (remaining <= 0) { 
+            tvTimer.setText("🕒 00:00"); 
+            if (currentRound == 1) {
+                startNextRound();
+            } else {
+                transitionToKoZnaZna();
+            }
+            return; 
         }
-    }
-
-    private void updateScoreUI() {
-        totalPoints = initialPoints + roundPoints;
-        tvPoints.setText(String.format(Locale.getDefault(), "⭐ %d", totalPoints));
-    }
-
-    private void finishGame() {
-        Intent intent = new Intent(this, HomeActivity.class);
-        intent.putExtra("player1Score", totalPoints);
-        startActivity(intent);
-        finish();
-    }
-
-    private void hideKeyboard() {
-        View view = this.getCurrentFocus();
-        if (view != null) {
-            InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
-            imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
-        }
-    }
-
-    private void loadRoundData(int r) {
-        isA_Solved = isB_Solved = isV_Solved = isG_Solved = isFinalSolved = false;
-        for(int i=0; i<4; i++) for(int j=0; j<4; j++) openedFields[i][j] = false;
-        resetUI();
-
-        if (r == 1) {
-            currentAsocijacija = new AsocijacijaModel(
-                new String[]{"PAPIR", "OLOVKA", "ŠKOLA", "ĐAK"}, "KNJIGA",
-                new String[]{"GLUMAC", "SCENA", "DRAMA", "MASKA"}, "POZORIŠTE",
-                new String[]{"KLAVIR", "NOTA", "PESMA", "PEVAČ"}, "MUZIKA",
-                new String[]{"SLIKA", "MUZEJ", "BOJA", "ČETKICA"}, "UMETNOST", "KULTURA"
-            );
-        } else {
-            currentAsocijacija = new AsocijacijaModel(
-                new String[]{"KRALJ", "KRALJICA", "DVOR", "KRUNA"}, "MONARHIJA",
-                new String[]{"TOP", "LOVAC", "PEŠAK", "KRALJ"}, "ŠAH",
-                new String[]{"GLAVA", "TELO", "RUKE", "NOGE"}, "ČOVEK",
-                new String[]{"ZIMA", "SNEG", "LED", "MRAZ"}, "HLADNOĆA", "DRŽAVA"
-            );
-        }
-    }
-
-    private void resetUI() {
-        etKonacnoResenje.setEnabled(true); etKonacnoResenje.setText("");
-        etKonacnoResenje.setBackgroundResource(R.drawable.final_resenje_bg);
-        etKonacnoResenje.setTextColor(Color.WHITE);
-
-        EditText[] ets = {etResenjeA, etResenjeB, etResenjeV, etResenjeG};
-        for(EditText e : ets) { 
-            e.setEnabled(true); e.setText(""); 
-            e.setBackgroundResource(R.drawable.input_bg_rounded);
-            e.setTextColor(Color.parseColor("#6A1B9A"));
-        }
-        
-        char[] cols = {'A', 'B', 'V', 'G'};
-        for(char c : cols) {
-            MaterialButton[] btns = getBtns(c);
-            for(int i=0; i<4; i++) btns[i].setText(c + "" + (i+1));
-        }
-    }
-
-    private void startTimer() {
-        if (countDownTimer != null) countDownTimer.cancel();
-        countDownTimer = new CountDownTimer(120000, 1000) {
+        countDownTimer = new CountDownTimer(remaining, 1000) {
             public void onTick(long ms) {
                 tvTimer.setText(String.format(Locale.getDefault(), "🕒 %02d:%02d", (ms/1000)/60, (ms/1000)%60));
             }
-            public void onFinish() { finishRound(); }
+            public void onFinish() {
+                tvTimer.setText("🕒 00:00");
+                if (currentRound == 1) {
+                    startNextRound();
+                } else {
+                    transitionToKoZnaZna();
+                }
+            }
         }.start();
     }
 
     private int colToIdx(char c) {
         if(c=='A') return 0; if(c=='B') return 1; if(c=='V') return 2; return 3;
+    }
+
+    private String[] extractList(Object obj) {
+        if (obj instanceof List) {
+            List<?> list = (List<?>) obj;
+            String[] result = new String[list.size()];
+            for (int i = 0; i < list.size(); i++) {
+                Object item = list.get(i);
+                result[i] = item != null ? item.toString() : "";
+            }
+            return result;
+        }
+        return new String[]{"", "", "", ""};
     }
     private EditText getET(char c) {
         if(c=='A') return etResenjeA; if(c=='B') return etResenjeB;
@@ -366,8 +496,11 @@ public class AsocijacijeActivity extends AppCompatActivity {
         if(c=='A') return isA_Solved; if(c=='B') return isB_Solved;
         if(c=='V') return isV_Solved; return isG_Solved;
     }
-    private void setColSolved(char c, boolean v) {
-        if(c=='A') isA_Solved = v; else if(c=='B') isB_Solved = v;
-        else if(c=='V') isV_Solved = v; else isG_Solved = v;
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (gameListener != null) gameListener.remove();
+        if (countDownTimer != null) countDownTimer.cancel();
     }
 }
