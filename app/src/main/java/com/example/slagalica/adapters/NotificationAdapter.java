@@ -38,6 +38,14 @@ public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapte
         holder.tvTime.setText(notification.getTimestamp());
         holder.ivUnreadDot.setVisibility(notification.isRead() ? View.GONE : View.VISIBLE);
 
+        holder.itemView.setOnClickListener(v -> {
+            if (!notification.isRead()) {
+                notification.setRead(true);
+                holder.ivUnreadDot.setVisibility(View.GONE);
+                notifyItemChanged(position);
+            }
+        });
+
         switch (notification.getType()) {
             case "rewards":
                 holder.tvIcon.setText("🎁");

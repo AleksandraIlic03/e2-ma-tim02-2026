@@ -385,7 +385,7 @@ public class AsocijacijeActivity extends AppCompatActivity {
             String scoreField = isPlayer1 ? "player1Score" : "player2Score";
             updates.put(scoreField, (isPlayer1 ? player1Score : player2Score) + 2 + unopened);
             db.collection("gameRooms").document(roomId).update(updates);
-            hasOpenedThisTurn = false;
+            
         } else {
             handleWrongInput(getET(col));
             db.collection("gameRooms").document(roomId).update("asoc_turn", isPlayer1 ? "p2" : "p1");
