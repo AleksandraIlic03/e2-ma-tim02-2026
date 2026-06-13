@@ -14,6 +14,8 @@ import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.example.slagalica.NotificationHelper;
+
 import com.google.android.material.button.MaterialButton;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
@@ -44,6 +46,7 @@ public class SkockoActivity extends AppCompatActivity {
     private long lastRoundStartTime = -1;
     private boolean wasOpponentChance = false;
     private boolean gameStatsRecordedThisMatch = false;
+    private int[] previousRoundTarget = null;
 
     private final int[] symbolDrawables = {
             R.drawable.img,
@@ -148,6 +151,14 @@ public class SkockoActivity extends AppCompatActivity {
                             currentSymbolIndex = 0;
                             if (newRound == 2) {
                                 Toast.makeText(SkockoActivity.this, "POČINJE DRUGA RUNDA!", Toast.LENGTH_SHORT).show();
+                                // Save round 1 solution before targetCombination gets overwritten
+                                previousRoundTarget = targetCombination.clone();
+                                new android.os.Handler(getMainLooper()).postDelayed(() -> {
+                                    previousRoundTarget = null;
+                                    if (layoutSolution != null && !isGameOver) {
+                                        layoutSolution.setVisibility(View.GONE);
+                                    }
+                                }, 3000);
                             }
                         }
                         currentRound = newRound;
@@ -224,7 +235,11 @@ public class SkockoActivity extends AppCompatActivity {
                 for (int j = 0; j < 4; j++) stealAttempt[j] = -1;
                 updateStealRowUI();
                 resetHints(6);
-                layoutSolution.setVisibility(View.GONE);
+                if (previousRoundTarget != null) {
+                    showSolution(previousRoundTarget);
+                } else {
+                    layoutSolution.setVisibility(View.GONE);
+                }
             }
 
             if (!solved && stealDone) isGameOver = true;
@@ -264,7 +279,16 @@ public class SkockoActivity extends AppCompatActivity {
             if (!wasOpponentChance) {
                 stealAttempt = new int[]{-1, -1, -1, -1};
                 updateStealRowUI();
-                Toast.makeText(this, "ŠANSA ZA PROTIVNIKA!", Toast.LENGTH_SHORT).show();
+                boolean isMyStealTurn = currentTurn.equals(isPlayer1 ? "p1" : "p2");
+                if (isMyStealTurn) {
+                    Toast.makeText(this, "Tvoja šansa! Imaš 10 sekundi!", Toast.LENGTH_SHORT).show();
+                    NotificationHelper.sendRealNotification(this,
+                            "Skočko — tvoja šansa!",
+                            "Protivnik nije pogodio kombinaciju. Imaš 10s!",
+                            NotificationHelper.CHANNEL_OTHER);
+                } else {
+                    Toast.makeText(this, "Protivnik pokušava da ukrade!", Toast.LENGTH_SHORT).show();
+                }
             }
             wasOpponentChance = true;
         } else {
@@ -548,9 +572,13 @@ public class SkockoActivity extends AppCompatActivity {
     }
 
     private void showTargetCombination() {
+        showSolution(targetCombination);
+    }
+
+    private void showSolution(int[] combo) {
         layoutSolution.setVisibility(View.VISIBLE);
         for (int i = 0; i < 4; i++) {
-            ivSolutions[i].setImageResource(symbolDrawables[targetCombination[i]]);
+            ivSolutions[i].setImageResource(symbolDrawables[combo[i]]);
             ivSolutions[i].setBackgroundTintList(null);
             ivSolutions[i].setPadding(6, 6, 6, 6);
         }

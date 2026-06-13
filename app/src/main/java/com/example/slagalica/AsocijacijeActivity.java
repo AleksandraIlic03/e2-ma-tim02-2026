@@ -141,6 +141,7 @@ public class AsocijacijeActivity extends AppCompatActivity {
                             lastRecordedRound = newRound;
                             asocStatsUpdatedThisRound = false;
                             pointsAtRoundStart = isPlayer1 ? player1Score : player2Score;
+                            hasOpenedThisTurn = false;
                         }
                         currentRound = newRound;
                         currentTurn = snapshot.getString("asoc_turn") != null ? snapshot.getString("asoc_turn") : "p1";
@@ -385,7 +386,7 @@ public class AsocijacijeActivity extends AppCompatActivity {
             String scoreField = isPlayer1 ? "player1Score" : "player2Score";
             updates.put(scoreField, (isPlayer1 ? player1Score : player2Score) + 2 + unopened);
             db.collection("gameRooms").document(roomId).update(updates);
-            hasOpenedThisTurn = false;
+            
         } else {
             handleWrongInput(getET(col));
             db.collection("gameRooms").document(roomId).update("asoc_turn", isPlayer1 ? "p2" : "p1");
