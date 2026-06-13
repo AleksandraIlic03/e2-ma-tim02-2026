@@ -68,6 +68,9 @@ public class NotificationsActivity extends AppCompatActivity {
             case "Nepročitane":
                 for (Notification n : all) if (!n.isRead()) displayedNotifications.add(n);
                 break;
+            case "Pročitane":
+                for (Notification n : all) if (n.isRead()) displayedNotifications.add(n);
+                break;
             case "Čet":
                 for (Notification n : all) if (n.getType().equals("chat")) displayedNotifications.add(n);
                 break;
@@ -76,6 +79,9 @@ public class NotificationsActivity extends AppCompatActivity {
                 break;
             case "Nagrade":
                 for (Notification n : all) if (n.getType().equals("rewards")) displayedNotifications.add(n);
+                break;
+            case "Ostalo":
+                for (Notification n : all) if (n.getType().equals("other")) displayedNotifications.add(n);
                 break;
         }
         adapter.notifyDataSetChanged();
