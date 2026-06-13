@@ -44,6 +44,7 @@ public class SpojniceActivity extends AppCompatActivity {
     private List<String> whoMatched = new ArrayList<>();
     private boolean isMyTurn = false;
     private long lastWrongTrigger = 0;
+    private boolean transitioning = false;
 
     private final String COLOR_P1 = "#823FAB"; // Purple
     private final String COLOR_P2 = "#2196F3"; // Blue
@@ -109,6 +110,12 @@ public class SpojniceActivity extends AppCompatActivity {
         gameListener = db.collection("gameRooms").document(roomId)
                 .addSnapshotListener((snapshot, e) -> {
                     if (snapshot == null || !snapshot.exists()) return;
+
+                    String currentGame = snapshot.getString("currentGame");
+                    if ("asocijacije".equals(currentGame)) {
+                        navigateToAsocijacije();
+                        return;
+                    }
 
                     currentRound = snapshot.getLong("currentRound") != null ? snapshot.getLong("currentRound").intValue() : 1;
                     currentTurn = snapshot.getString("spojnice_turn") != null ? snapshot.getString("spojnice_turn") : "p1";
@@ -270,16 +277,25 @@ public class SpojniceActivity extends AppCompatActivity {
             updates.put("roundStartTime", System.currentTimeMillis());
             db.collection("gameRooms").document(roomId).update(updates);
         } else {
-            db.collection("gameRooms").document(roomId).get().addOnSuccessListener(this::showFinalResults);
+            if (isPlayer1) {
+                Map<String, Object> upd = new HashMap<>();
+                upd.put("currentGame", "asocijacije");
+                upd.put("roundStartTime", System.currentTimeMillis());
+                db.collection("gameRooms").document(roomId).update(upd);
+            }
         }
     }
 
-    private void showFinalResults(DocumentSnapshot snap) {
-        long p1Score = snap.getLong("player1Score");
-        long p2Score = snap.getLong("player2Score");
-        String winner = p1Score > p2Score ? snap.getString("player1Name") : (p2Score > p1Score ? snap.getString("player2Name") : "Nerešeno");
-        new AlertDialog.Builder(this).setTitle("Kraj igre").setMessage("Pobednik: " + winner).setCancelable(false)
-                .setPositiveButton("U redu", (d, w) -> { startActivity(new Intent(this, HomeActivity.class)); finish(); }).show();
+    private void navigateToAsocijacije() {
+        if (transitioning) return;
+        transitioning = true;
+        if (timer != null) timer.cancel();
+        if (gameListener != null) gameListener.remove();
+        Intent intent = new Intent(this, AsocijacijeActivity.class);
+        intent.putExtra("roomId", roomId);
+        intent.putExtra("isPlayer1", isPlayer1);
+        startActivity(intent);
+        finish();
     }
 
     @Override
