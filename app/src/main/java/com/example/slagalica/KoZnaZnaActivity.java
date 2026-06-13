@@ -39,6 +39,7 @@ public class KoZnaZnaActivity extends AppCompatActivity {
     private int lastProcessedQuestionIndex = -1;
     private CountDownTimer questionTimer;
     private boolean answered = false;
+    private boolean nextGameButtonShown = false;
     private ListenerRegistration gameListener;
 
     private final String COLOR_P1 = "#823FAB";
@@ -134,6 +135,14 @@ public class KoZnaZnaActivity extends AppCompatActivity {
                     }
                     
                     checkBothAnswered(snapshot);
+
+                    if (newIdx >= 4 && !nextGameButtonShown) {
+                        Map<String, Object> answers = (Map<String, Object>) snapshot.get("answers_q4");
+                        if (answers != null && answers.size() == 2) {
+                            nextGameButtonShown = true;
+                            tvTimer.postDelayed(this::showNextGameButton, 2000);
+                        }
+                    }
                 });
     }
 
@@ -225,7 +234,7 @@ public class KoZnaZnaActivity extends AppCompatActivity {
 
         Map<String, Object> answers = (Map<String, Object>) snap.get("answers_q" + currentQuestionIndex);
         if (answers != null && answers.size() == 2) {
-            if (isPlayer1) lastProcessedQuestionIndex = currentQuestionIndex;
+            lastProcessedQuestionIndex = currentQuestionIndex;
             showBothSelections(answers, snap);
         }
     }
@@ -271,7 +280,7 @@ public class KoZnaZnaActivity extends AppCompatActivity {
             int myCorrect = (isPlayer1 ? p1Corr : p2Corr) ? 1 : 0;
             int myIdx = isPlayer1 ? p1Idx : p2Idx;
             int myWrong = (!(isPlayer1 ? p1Corr : p2Corr) && myIdx != -1) ? 1 : 0;
-            int myPointsAdd = 0;
+            int myPointsAdd;
             if (p1Corr && p2Corr) {
                 if (isPlayer1) myPointsAdd = (p1Time < p2Time) ? 10 : 0;
                 else myPointsAdd = (p2Time < p1Time) ? 10 : 0;
@@ -281,27 +290,24 @@ public class KoZnaZnaActivity extends AppCompatActivity {
             }
             StatisticsManager.updateKZZStats(myCorrect, myWrong, myPointsAdd, currentQuestionIndex == 0);
 
-            // Poeni se ažuriraju istovremeno sa promenom boje
             if (isPlayer1) {
-                calculatePointsAndScheduleNext(snap, answers, p1Corr, p2Corr, p1Time, p2Time,
-                        p1Idx, p2Idx);
+                updateFirestoreScoresAndNextQuestion(snap, p1Corr, p2Corr, p1Time, p2Time, p1Idx, p2Idx);
+            }
+
+            if (currentQuestionIndex >= 4) {
+                showNextGameButton();
             }
         }, 1000);
     }
 
-    private void calculatePointsAndScheduleNext(DocumentSnapshot snap, Map<String, Object> answers,
-                                                boolean p1Corr, boolean p2Corr, long p1Time, long p2Time, int p1Idx, int p2Idx) {
-
+    private void updateFirestoreScoresAndNextQuestion(DocumentSnapshot snap, boolean p1Corr, boolean p2Corr,
+                                                       long p1Time, long p2Time, int p1Idx, int p2Idx) {
         long p1ScoreAdd = 0, p2ScoreAdd = 0;
-
         if (p1Corr && p2Corr) {
             if (p1Time < p2Time) p1ScoreAdd = 10; else p2ScoreAdd = 10;
         } else {
-            if (p1Corr) p1ScoreAdd = 10;
-            else if (p1Idx != -1) p1ScoreAdd = -5;
-
-            if (p2Corr) p2ScoreAdd = 10;
-            else if (p2Idx != -1) p2ScoreAdd = -5;
+            if (p1Corr) p1ScoreAdd = 10; else if (p1Idx != -1) p1ScoreAdd = -5;
+            if (p2Corr) p2ScoreAdd = 10; else if (p2Idx != -1) p2ScoreAdd = -5;
         }
 
         Map<String, Object> updates = new HashMap<>();
@@ -311,16 +317,14 @@ public class KoZnaZnaActivity extends AppCompatActivity {
         updates.put("player2Score", (s2 != null ? s2 : 0) + p2ScoreAdd);
         db.collection("gameRooms").document(roomId).update(updates);
 
-        tvTimer.postDelayed(() -> {
-            if (currentQuestionIndex < 4) {
+        if (currentQuestionIndex < 4) {
+            tvTimer.postDelayed(() -> {
                 Map<String, Object> nextUpdates = new HashMap<>();
                 nextUpdates.put("currentQuestionIndex", currentQuestionIndex + 1);
                 nextUpdates.put("questionStartTime", System.currentTimeMillis());
                 db.collection("gameRooms").document(roomId).update(nextUpdates);
-            } else {
-                showNextGameButton();
-            }
-        }, 2000);
+            }, 2000);
+        }
     }
 
     private void showNextGameButton() {
@@ -346,7 +350,6 @@ public class KoZnaZnaActivity extends AppCompatActivity {
     }
 
     private void triggerNextGame() {
-        if (!isPlayer1) return;
         if (questionTimer != null) questionTimer.cancel();
         db.collection("gameRooms").document(roomId).update(
                 "currentGame", "spojnice",

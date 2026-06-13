@@ -315,7 +315,6 @@ public class SpojniceActivity extends AppCompatActivity {
 
     private void handleNextRound() {
         if (timer != null) timer.cancel();
-        if (!isPlayer1) return;
         if (currentRound == 1) {
             Map<String, Object> updates = new HashMap<>();
             updates.put("currentRound", 2);

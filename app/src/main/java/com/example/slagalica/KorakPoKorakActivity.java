@@ -460,7 +460,6 @@ public class KorakPoKorakActivity extends AppCompatActivity {
     }
 
     private void triggerNextGame() {
-        if (!isPlayer1) return;
         if (stepTimer != null) stepTimer.cancel();
         Map<String, Object> updates = new HashMap<>();
         updates.put("currentGame", "mojBroj");

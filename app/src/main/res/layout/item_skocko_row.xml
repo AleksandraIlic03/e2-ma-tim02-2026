@@ -19,9 +19,8 @@
 
         <ImageView
             android:id="@+id/ivSymbol1"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
+            android:layout_width="42dp"
+            android:layout_height="42dp"
             android:layout_margin="3dp"
             android:background="@drawable/circle_placeholder"
             android:backgroundTint="#C8BDD9"
@@ -30,9 +29,8 @@
 
         <ImageView
             android:id="@+id/ivSymbol2"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
+            android:layout_width="42dp"
+            android:layout_height="42dp"
             android:layout_margin="3dp"
             android:background="@drawable/circle_placeholder"
             android:backgroundTint="#C8BDD9"
@@ -41,9 +39,8 @@
 
         <ImageView
             android:id="@+id/ivSymbol3"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
+            android:layout_width="42dp"
+            android:layout_height="42dp"
             android:layout_margin="3dp"
             android:background="@drawable/circle_placeholder"
             android:backgroundTint="#C8BDD9"
@@ -52,9 +49,8 @@
 
         <ImageView
             android:id="@+id/ivSymbol4"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
+            android:layout_width="42dp"
+            android:layout_height="42dp"
             android:layout_margin="3dp"
             android:background="@drawable/circle_placeholder"
             android:backgroundTint="#C8BDD9"

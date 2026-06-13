@@ -357,7 +357,6 @@ public class AsocijacijeActivity extends AppCompatActivity {
 
     private void startNextRound() {
         if (countDownTimer != null) countDownTimer.cancel();
-        if (!isPlayer1) return;
         Map<String, Object> updates = new HashMap<>();
         updates.put("asoc_currentRound", 2);
         updates.put("asoc_turn", "p2");
@@ -380,7 +379,6 @@ public class AsocijacijeActivity extends AppCompatActivity {
 
     private void transitionToSkocko() {
         if (countDownTimer != null) countDownTimer.cancel();
-        if (!isPlayer1) return;
         Map<String, Object> updates = new HashMap<>();
         updates.put("currentGame", "skocko");
         updates.put("roundStartTime", System.currentTimeMillis());

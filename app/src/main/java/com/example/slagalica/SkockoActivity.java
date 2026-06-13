@@ -490,7 +490,6 @@ public class SkockoActivity extends AppCompatActivity {
 
     private void startNextRound() {
         if (countDownTimer != null) countDownTimer.cancel();
-        if (!isPlayer1) return;
         Map<String, Object> updates = new HashMap<>();
         updates.put("skocko_currentRound", 2);
         updates.put("skocko_turn", "p2");
@@ -502,7 +501,6 @@ public class SkockoActivity extends AppCompatActivity {
 
     private void transitionToNextGame() {
         if (countDownTimer != null) countDownTimer.cancel();
-        if (!isPlayer1) return;
         Map<String, Object> updates = new HashMap<>();
         updates.put("currentGame", "korakPoKorak");
         updates.put("roundStartTime", System.currentTimeMillis());

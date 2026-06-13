@@ -333,7 +333,6 @@ public class MojBrojActivity extends AppCompatActivity {
 
     private void calculateAndMove() {
         if (roundTimer != null) roundTimer.cancel();
-        if (!isRoundHost()) return;
         db.collection("gameRooms").document(roomId).get()
                 .addOnSuccessListener(freshSnap -> {
                     Long r1Long = freshSnap.getLong("mojbroj_p1Result");
