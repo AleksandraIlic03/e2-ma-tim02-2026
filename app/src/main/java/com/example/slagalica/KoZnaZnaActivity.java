@@ -243,6 +243,20 @@ public class KoZnaZnaActivity extends AppCompatActivity {
                 highlightButtonWithColor(correctIdx, "#FFEB3B");
             }
 
+            // Update local statistics
+            int myCorrect = (isPlayer1 ? p1Corr : p2Corr) ? 1 : 0;
+            int myIdx = isPlayer1 ? p1Idx : p2Idx;
+            int myWrong = (!(isPlayer1 ? p1Corr : p2Corr) && myIdx != -1) ? 1 : 0;
+            int myPointsAdd = 0;
+            if (p1Corr && p2Corr) {
+                if (isPlayer1) myPointsAdd = (p1Time < p2Time) ? 10 : 0;
+                else myPointsAdd = (p2Time < p1Time) ? 10 : 0;
+            } else {
+                if (isPlayer1) myPointsAdd = p1Corr ? 10 : (p1Idx != -1 ? -5 : 0);
+                else myPointsAdd = p2Corr ? 10 : (p2Idx != -1 ? -5 : 0);
+            }
+            StatisticsManager.updateKZZStats(myCorrect, myWrong, myPointsAdd, currentQuestionIndex == 0);
+
             // Poeni se ažuriraju istovremeno sa promenom boje
             if (isPlayer1) {
                 calculatePointsAndScheduleNext(snap, answers, p1Corr, p2Corr, p1Time, p2Time,

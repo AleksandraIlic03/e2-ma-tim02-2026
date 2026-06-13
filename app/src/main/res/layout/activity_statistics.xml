@@ -85,9 +85,10 @@
                             android:padding="16dp"
                             android:gravity="center">
                             <TextView
+                                android:id="@+id/tvTotalPlayed"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="100"
+                                android:text="0"
                                 android:textSize="28sp"
                                 android:fontFamily="@font/fredoka_bold"
                                 android:textColor="#823FAB"/>
@@ -117,9 +118,10 @@
                             android:padding="16dp"
                             android:gravity="center">
                             <TextView
+                                android:id="@+id/tvWinRate"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="64%"
+                                android:text="0%"
                                 android:textSize="28sp"
                                 android:fontFamily="@font/fredoka_bold"
                                 android:textColor="#FFCA28"/>
@@ -149,9 +151,10 @@
                             android:padding="16dp"
                             android:gravity="center">
                             <TextView
+                                android:id="@+id/tvAvgPoints"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="115"
+                                android:text="0"
                                 android:textSize="28sp"
                                 android:fontFamily="@font/fredoka_bold"
                                 android:textColor="#823FAB"/>
@@ -165,6 +168,7 @@
                         </LinearLayout>
                     </androidx.cardview.widget.CardView>
 
+                    <!-- Porazi % -->
                     <androidx.cardview.widget.CardView
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
@@ -180,9 +184,10 @@
                             android:padding="16dp"
                             android:gravity="center">
                             <TextView
+                                android:id="@+id/tvLossRate"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="36%"
+                                android:text="0%"
                                 android:textSize="28sp"
                                 android:fontFamily="@font/fredoka_bold"
                                 android:textColor="#F44336"/>
@@ -214,14 +219,16 @@
                     android:background="@drawable/input_bg_rounded"
                     android:clipToOutline="true">
                     <View
+                        android:id="@+id/viewWinBar"
                         android:layout_width="0dp"
                         android:layout_height="match_parent"
-                        android:layout_weight="6.4"
+                        android:layout_weight="0.5"
                         android:background="#823FAB"/>
                     <View
+                        android:id="@+id/viewLossBar"
                         android:layout_width="0dp"
                         android:layout_height="match_parent"
-                        android:layout_weight="3.6"
+                        android:layout_weight="0.5"
                         android:background="#E0D8E8"/>
                 </LinearLayout>
                 <LinearLayout
@@ -229,17 +236,19 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="6dp">
                     <TextView
+                        android:id="@+id/tvWinCount"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="64 Pobede"
+                        android:text="0 Pobede"
                         android:textSize="13sp"
                         android:textColor="#823FAB"
                         android:fontFamily="@font/fredoka_semibold"/>
                     <TextView
+                        android:id="@+id/tvLossCount"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="36 Poraza"
+                        android:text="0 Poraza"
                         android:textSize="13sp"
                         android:textColor="#823FAB"
                         android:fontFamily="@font/fredoka_semibold"/>
@@ -269,8 +278,8 @@
                         android:layout_weight="1"
                         android:gravity="center_horizontal|bottom"
                         android:orientation="vertical">
-                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="18" android:textSize="12sp" android:fontFamily="@font/fredoka_semibold"/>
-                        <View android:layout_width="28dp" android:layout_height="160dp" android:background="#823FAB" android:layout_marginBottom="4dp"/>
+                        <TextView android:id="@+id/tvAvgKZZ" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="0" android:textSize="12sp" android:fontFamily="@font/fredoka_semibold"/>
+                        <View android:id="@+id/barKZZ" android:layout_width="28dp" android:layout_height="0dp" android:background="#823FAB" android:layout_marginBottom="4dp"/>
                         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="KZZ" android:textSize="11sp" android:fontFamily="@font/fredoka_regular"/>
                     </LinearLayout>
                     <!-- MB -->
@@ -280,8 +289,8 @@
                         android:layout_weight="1"
                         android:gravity="center_horizontal|bottom"
                         android:orientation="vertical">
-                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="12" android:textSize="12sp" android:fontFamily="@font/fredoka_semibold"/>
-                        <View android:layout_width="28dp" android:layout_height="100dp" android:background="#823FAB" android:layout_marginBottom="4dp"/>
+                        <TextView android:id="@+id/tvAvgMB" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="0" android:textSize="12sp" android:fontFamily="@font/fredoka_semibold"/>
+                        <View android:id="@+id/barMB" android:layout_width="28dp" android:layout_height="0dp" android:background="#823FAB" android:layout_marginBottom="4dp"/>
                         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="MB" android:textSize="11sp" android:fontFamily="@font/fredoka_regular"/>
                     </LinearLayout>
                     <!-- KPK -->
@@ -291,8 +300,8 @@
                         android:layout_weight="1"
                         android:gravity="center_horizontal|bottom"
                         android:orientation="vertical">
-                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="15" android:textSize="12sp" android:fontFamily="@font/fredoka_semibold"/>
-                        <View android:layout_width="28dp" android:layout_height="140dp" android:background="#823FAB" android:layout_marginBottom="4dp"/>
+                        <TextView android:id="@+id/tvAvgKPK" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="0" android:textSize="12sp" android:fontFamily="@font/fredoka_semibold"/>
+                        <View android:id="@+id/barKPK" android:layout_width="28dp" android:layout_height="0dp" android:background="#823FAB" android:layout_marginBottom="4dp"/>
                         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="KPK" android:textSize="11sp" android:fontFamily="@font/fredoka_regular"/>
                     </LinearLayout>
                     <!-- SK -->
@@ -302,8 +311,8 @@
                         android:layout_weight="1"
                         android:gravity="center_horizontal|bottom"
                         android:orientation="vertical">
-                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="22" android:textSize="12sp" android:fontFamily="@font/fredoka_semibold"/>
-                        <View android:layout_width="28dp" android:layout_height="200dp" android:background="#823FAB" android:layout_marginBottom="4dp"/>
+                        <TextView android:id="@+id/tvAvgSK" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="0" android:textSize="12sp" android:fontFamily="@font/fredoka_semibold"/>
+                        <View android:id="@+id/barSK" android:layout_width="28dp" android:layout_height="0dp" android:background="#823FAB" android:layout_marginBottom="4dp"/>
                         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="SK" android:textSize="11sp" android:fontFamily="@font/fredoka_regular"/>
                     </LinearLayout>
                     <!-- AS -->
@@ -313,8 +322,8 @@
                         android:layout_weight="1"
                         android:gravity="center_horizontal|bottom"
                         android:orientation="vertical">
-                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="14" android:textSize="12sp" android:fontFamily="@font/fredoka_semibold"/>
-                        <View android:layout_width="28dp" android:layout_height="130dp" android:background="#823FAB" android:layout_marginBottom="4dp"/>
+                        <TextView android:id="@+id/tvAvgAS" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="0" android:textSize="12sp" android:fontFamily="@font/fredoka_semibold"/>
+                        <View android:id="@+id/barAS" android:layout_width="28dp" android:layout_height="0dp" android:background="#823FAB" android:layout_marginBottom="4dp"/>
                         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="AS" android:textSize="11sp" android:fontFamily="@font/fredoka_regular"/>
                     </LinearLayout>
                     <!-- SP -->
@@ -324,8 +333,8 @@
                         android:layout_weight="1"
                         android:gravity="center_horizontal|bottom"
                         android:orientation="vertical">
-                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="20" android:textSize="12sp" android:fontFamily="@font/fredoka_semibold"/>
-                        <View android:layout_width="28dp" android:layout_height="180dp" android:background="#823FAB" android:layout_marginBottom="4dp"/>
+                        <TextView android:id="@+id/tvAvgSP" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="0" android:textSize="12sp" android:fontFamily="@font/fredoka_semibold"/>
+                        <View android:id="@+id/barSP" android:layout_width="28dp" android:layout_height="0dp" android:background="#823FAB" android:layout_marginBottom="4dp"/>
                         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="SP" android:textSize="11sp" android:fontFamily="@font/fredoka_regular"/>
                     </LinearLayout>
                 </LinearLayout>
@@ -361,10 +370,10 @@
                         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Ko zna zna" android:fontFamily="@font/fredoka_bold" android:textColor="#823FAB" android:layout_marginBottom="12dp"/>
                         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Tačni vs Netačni odgovori" android:textSize="12sp" android:textColor="#877777" android:fontFamily="@font/fredoka_regular" android:layout_marginBottom="8dp"/>
                         <LinearLayout android:layout_width="match_parent" android:layout_height="12dp" android:orientation="horizontal" android:background="#F5F5F5" android:clipToOutline="true">
-                            <View android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="7.5" android:background="#823FAB"/>
-                            <View android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="2.5" android:background="#F44336"/>
+                            <View android:id="@+id/kzzCorrectBar" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="0.5" android:background="#823FAB"/>
+                            <View android:id="@+id/kzzWrongBar" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="0.5" android:background="#F44336"/>
                         </LinearLayout>
-                        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="75% Tačno" android:textSize="11sp" android:fontFamily="@font/fredoka_semibold" android:layout_marginTop="4dp" android:textColor="#823FAB"/>
+                        <TextView android:id="@+id/tvKZZCorrectPercent" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="0% Tačno" android:textSize="11sp" android:fontFamily="@font/fredoka_semibold" android:layout_marginTop="4dp" android:textColor="#823FAB"/>
                     </LinearLayout>
                 </androidx.cardview.widget.CardView>
 
@@ -385,14 +394,28 @@
                             <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Moj broj" android:fontFamily="@font/fredoka_bold" android:textColor="#FFCA28" android:layout_marginBottom="4dp"/>
                             <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Uspešnost pronalaženja tačnog broja" android:textSize="12sp" android:textColor="#877777" android:fontFamily="@font/fredoka_regular"/>
                         </LinearLayout>
-                        <com.google.android.material.progressindicator.CircularProgressIndicator
+                        <FrameLayout
                             android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:progress="42"
-                            app:indicatorSize="60dp"
-                            app:trackThickness="8dp"
-                            app:indicatorColor="#FFCA28"
-                            app:trackColor="#FFF9C4"/>
+                            android:layout_height="wrap_content">
+                            <com.google.android.material.progressindicator.CircularProgressIndicator
+                                android:id="@+id/mbProgress"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:progress="0"
+                                app:indicatorSize="60dp"
+                                app:trackThickness="8dp"
+                                app:indicatorColor="#FFCA28"
+                                app:trackColor="#FFF9C4"/>
+                            <TextView
+                                android:id="@+id/tvMBPercent"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_gravity="center"
+                                android:text="0%"
+                                android:textSize="12sp"
+                                android:fontFamily="@font/fredoka_bold"
+                                android:textColor="#321C1C"/>
+                        </FrameLayout>
                     </LinearLayout>
                 </androidx.cardview.widget.CardView>
 
@@ -413,23 +436,38 @@
                         <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical">
                             <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center_vertical" android:layout_marginBottom="4dp">
                                 <TextView android:layout_width="50dp" android:layout_height="wrap_content" android:text="Korak 1" android:textSize="11sp" android:fontFamily="@font/fredoka_semibold"/>
-                                <ProgressBar android:layout_width="0dp" android:layout_height="8dp" android:layout_weight="1" android:progress="10" style="@android:style/Widget.ProgressBar.Horizontal" android:progressTint="#823FAB"/>
+                                <ProgressBar android:id="@+id/pbKPK1" android:layout_width="0dp" android:layout_height="8dp" android:layout_weight="1" android:progress="0" style="@android:style/Widget.ProgressBar.Horizontal" android:progressTint="#823FAB"/>
+                                <TextView android:id="@+id/tvKPK1Percent" android:layout_width="35dp" android:layout_height="wrap_content" android:text="0%" android:textSize="10sp" android:gravity="end" android:fontFamily="@font/fredoka_semibold"/>
                             </LinearLayout>
                             <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center_vertical" android:layout_marginBottom="4dp">
                                 <TextView android:layout_width="50dp" android:layout_height="wrap_content" android:text="Korak 2" android:textSize="11sp" android:fontFamily="@font/fredoka_semibold"/>
-                                <ProgressBar android:layout_width="0dp" android:layout_height="8dp" android:layout_weight="1" android:progress="25" style="@android:style/Widget.ProgressBar.Horizontal" android:progressTint="#823FAB"/>
+                                <ProgressBar android:id="@+id/pbKPK2" android:layout_width="0dp" android:layout_height="8dp" android:layout_weight="1" android:progress="0" style="@android:style/Widget.ProgressBar.Horizontal" android:progressTint="#823FAB"/>
+                                <TextView android:id="@+id/tvKPK2Percent" android:layout_width="35dp" android:layout_height="wrap_content" android:text="0%" android:textSize="10sp" android:gravity="end" android:fontFamily="@font/fredoka_semibold"/>
                             </LinearLayout>
                             <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center_vertical" android:layout_marginBottom="4dp">
                                 <TextView android:layout_width="50dp" android:layout_height="wrap_content" android:text="Korak 3" android:textSize="11sp" android:fontFamily="@font/fredoka_semibold"/>
-                                <ProgressBar android:layout_width="0dp" android:layout_height="8dp" android:layout_weight="1" android:progress="45" style="@android:style/Widget.ProgressBar.Horizontal" android:progressTint="#823FAB"/>
+                                <ProgressBar android:id="@+id/pbKPK3" android:layout_width="0dp" android:layout_height="8dp" android:layout_weight="1" android:progress="0" style="@android:style/Widget.ProgressBar.Horizontal" android:progressTint="#823FAB"/>
+                                <TextView android:id="@+id/tvKPK3Percent" android:layout_width="35dp" android:layout_height="wrap_content" android:text="0%" android:textSize="10sp" android:gravity="end" android:fontFamily="@font/fredoka_semibold"/>
                             </LinearLayout>
                             <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center_vertical" android:layout_marginBottom="4dp">
                                 <TextView android:layout_width="50dp" android:layout_height="wrap_content" android:text="Korak 4" android:textSize="11sp" android:fontFamily="@font/fredoka_semibold"/>
-                                <ProgressBar android:layout_width="0dp" android:layout_height="8dp" android:layout_weight="1" android:progress="70" style="@android:style/Widget.ProgressBar.Horizontal" android:progressTint="#823FAB"/>
+                                <ProgressBar android:id="@+id/pbKPK4" android:layout_width="0dp" android:layout_height="8dp" android:layout_weight="1" android:progress="0" style="@android:style/Widget.ProgressBar.Horizontal" android:progressTint="#823FAB"/>
+                                <TextView android:id="@+id/tvKPK4Percent" android:layout_width="35dp" android:layout_height="wrap_content" android:text="0%" android:textSize="10sp" android:gravity="end" android:fontFamily="@font/fredoka_semibold"/>
+                            </LinearLayout>
+                            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center_vertical" android:layout_marginBottom="4dp">
+                                <TextView android:layout_width="50dp" android:layout_height="wrap_content" android:text="Korak 5" android:textSize="11sp" android:fontFamily="@font/fredoka_semibold"/>
+                                <ProgressBar android:id="@+id/pbKPK5" android:layout_width="0dp" android:layout_height="8dp" android:layout_weight="1" android:progress="0" style="@android:style/Widget.ProgressBar.Horizontal" android:progressTint="#823FAB"/>
+                                <TextView android:id="@+id/tvKPK5Percent" android:layout_width="35dp" android:layout_height="wrap_content" android:text="0%" android:textSize="10sp" android:gravity="end" android:fontFamily="@font/fredoka_semibold"/>
+                            </LinearLayout>
+                             <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center_vertical" android:layout_marginBottom="4dp">
+                                <TextView android:layout_width="50dp" android:layout_height="wrap_content" android:text="Korak 6" android:textSize="11sp" android:fontFamily="@font/fredoka_semibold"/>
+                                <ProgressBar android:id="@+id/pbKPK6" android:layout_width="0dp" android:layout_height="8dp" android:layout_weight="1" android:progress="0" style="@android:style/Widget.ProgressBar.Horizontal" android:progressTint="#823FAB"/>
+                                <TextView android:id="@+id/tvKPK6Percent" android:layout_width="35dp" android:layout_height="wrap_content" android:text="0%" android:textSize="10sp" android:gravity="end" android:fontFamily="@font/fredoka_semibold"/>
                             </LinearLayout>
                             <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center_vertical">
-                                <TextView android:layout_width="50dp" android:layout_height="wrap_content" android:text="Korak 5" android:textSize="11sp" android:fontFamily="@font/fredoka_semibold"/>
-                                <ProgressBar android:layout_width="0dp" android:layout_height="8dp" android:layout_weight="1" android:progress="90" style="@android:style/Widget.ProgressBar.Horizontal" android:progressTint="#823FAB"/>
+                                <TextView android:layout_width="50dp" android:layout_height="wrap_content" android:text="Korak 7" android:textSize="11sp" android:fontFamily="@font/fredoka_semibold"/>
+                                <ProgressBar android:id="@+id/pbKPK7" android:layout_width="0dp" android:layout_height="8dp" android:layout_weight="1" android:progress="0" style="@android:style/Widget.ProgressBar.Horizontal" android:progressTint="#823FAB"/>
+                                <TextView android:id="@+id/tvKPK7Percent" android:layout_width="35dp" android:layout_height="wrap_content" android:text="0%" android:textSize="10sp" android:gravity="end" android:fontFamily="@font/fredoka_semibold"/>
                             </LinearLayout>
                         </LinearLayout>
                     </LinearLayout>
@@ -450,10 +488,10 @@
                         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Asocijacije" android:fontFamily="@font/fredoka_bold" android:textColor="#823FAB" android:layout_marginBottom="12dp"/>
                         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Rešene vs Nerešene" android:textSize="12sp" android:textColor="#877777" android:fontFamily="@font/fredoka_regular" android:layout_marginBottom="8dp"/>
                         <LinearLayout android:layout_width="match_parent" android:layout_height="12dp" android:orientation="horizontal" android:background="#F5F5F5" android:clipToOutline="true">
-                            <View android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="5.8" android:background="#823FAB"/>
-                            <View android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="4.2" android:background="#D5C4E0"/>
+                            <View android:id="@+id/asSolvedBar" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="0.5" android:background="#823FAB"/>
+                            <View android:id="@+id/asUnsolvedBar" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="0.5" android:background="#D5C4E0"/>
                         </LinearLayout>
-                        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="58% Rešeno" android:textSize="11sp" android:fontFamily="@font/fredoka_semibold" android:layout_marginTop="4dp" android:textColor="#823FAB"/>
+                        <TextView android:id="@+id/tvASSolvedPercent" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="0% Rešeno" android:textSize="11sp" android:fontFamily="@font/fredoka_semibold" android:layout_marginTop="4dp" android:textColor="#823FAB"/>
                     </LinearLayout>
                 </androidx.cardview.widget.CardView>
 
@@ -471,13 +509,14 @@
                         android:padding="16dp">
                         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Skočko" android:fontFamily="@font/fredoka_bold" android:textColor="#823FAB" android:layout_marginBottom="12dp"/>
                         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Uspešnost po pokušaju" android:textSize="12sp" android:textColor="#877777" android:fontFamily="@font/fredoka_regular" android:layout_marginBottom="12dp"/>
-                        <GridLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:columnCount="2" android:rowCount="3">
-                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="1. Pokušaj: 5%" android:textSize="11sp" android:layout_gravity="start" android:layout_columnWeight="1" android:fontFamily="@font/fredoka_semibold" android:layout_marginBottom="4dp"/>
-                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="2. Pokušaj: 12%" android:textSize="11sp" android:layout_gravity="start" android:layout_columnWeight="1" android:fontFamily="@font/fredoka_semibold" android:layout_marginBottom="4dp"/>
-                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="3. Pokušaj: 25%" android:textSize="11sp" android:layout_gravity="start" android:layout_columnWeight="1" android:fontFamily="@font/fredoka_semibold" android:layout_marginBottom="4dp"/>
-                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="4. Pokušaj: 40%" android:textSize="11sp" android:layout_gravity="start" android:layout_columnWeight="1" android:fontFamily="@font/fredoka_semibold" android:layout_marginBottom="4dp"/>
-                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="5. Pokušaj: 65%" android:textSize="11sp" android:layout_gravity="start" android:fontFamily="@font/fredoka_semibold" android:layout_columnWeight="1"/>
-                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="6. Pokušaj: 85%" android:textSize="11sp" android:layout_gravity="start" android:fontFamily="@font/fredoka_semibold" android:layout_columnWeight="1"/>
+                        <GridLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:columnCount="2" android:rowCount="4">
+                            <TextView android:id="@+id/tvSK1" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="1. Pokušaj: 0%" android:textSize="11sp" android:layout_gravity="start" android:layout_columnWeight="1" android:fontFamily="@font/fredoka_semibold" android:layout_marginBottom="4dp"/>
+                            <TextView android:id="@+id/tvSK2" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="2. Pokušaj: 0%" android:textSize="11sp" android:layout_gravity="start" android:layout_columnWeight="1" android:fontFamily="@font/fredoka_semibold" android:layout_marginBottom="4dp"/>
+                            <TextView android:id="@+id/tvSK3" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="3. Pokušaj: 0%" android:textSize="11sp" android:layout_gravity="start" android:layout_columnWeight="1" android:fontFamily="@font/fredoka_semibold" android:layout_marginBottom="4dp"/>
+                            <TextView android:id="@+id/tvSK4" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="4. Pokušaj: 0%" android:textSize="11sp" android:layout_gravity="start" android:layout_columnWeight="1" android:fontFamily="@font/fredoka_semibold" android:layout_marginBottom="4dp"/>
+                            <TextView android:id="@+id/tvSK5" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="5. Pokušaj: 0%" android:textSize="11sp" android:layout_gravity="start" android:fontFamily="@font/fredoka_semibold" android:layout_columnWeight="1" android:layout_marginBottom="4dp"/>
+                            <TextView android:id="@+id/tvSK6" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="6. Pokušaj: 0%" android:textSize="11sp" android:layout_gravity="start" android:fontFamily="@font/fredoka_semibold" android:layout_columnWeight="1" android:layout_marginBottom="4dp"/>
+                            <TextView android:id="@+id/tvSKSteal" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Šansa: 0%" android:textSize="11sp" android:layout_gravity="start" android:fontFamily="@font/fredoka_semibold" android:layout_columnWeight="1"/>
                         </GridLayout>
                     </LinearLayout>
                 </androidx.cardview.widget.CardView>
@@ -499,14 +538,28 @@
                             <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Spojnice" android:fontFamily="@font/fredoka_bold" android:textColor="#823FAB" android:layout_marginBottom="4dp"/>
                             <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Procenat uspešno spojenih pojmova" android:textSize="12sp" android:textColor="#877777" android:fontFamily="@font/fredoka_regular"/>
                         </LinearLayout>
-                        <com.google.android.material.progressindicator.CircularProgressIndicator
+                        <FrameLayout
                             android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:progress="88"
-                            app:indicatorSize="60dp"
-                            app:trackThickness="8dp"
-                            app:indicatorColor="#823FAB"
-                            app:trackColor="#EADFFF"/>
+                            android:layout_height="wrap_content">
+                            <com.google.android.material.progressindicator.CircularProgressIndicator
+                                android:id="@+id/spProgress"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:progress="0"
+                                app:indicatorSize="60dp"
+                                app:trackThickness="8dp"
+                                app:indicatorColor="#823FAB"
+                                app:trackColor="#EADFFF"/>
+                            <TextView
+                                android:id="@+id/tvSPPercent"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_gravity="center"
+                                android:text="0%"
+                                android:textSize="12sp"
+                                android:fontFamily="@font/fredoka_bold"
+                                android:textColor="#321C1C"/>
+                        </FrameLayout>
                     </LinearLayout>
                 </androidx.cardview.widget.CardView>
 

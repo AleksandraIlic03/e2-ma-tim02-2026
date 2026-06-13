@@ -38,6 +38,8 @@ public class KorakPoKorakActivity extends AppCompatActivity {
     private int lastSeenStep = -1;
     private int myPoints = 0;
     private boolean transitioning = false;
+    private boolean kpkStatsUpdatedThisRound = false;
+    private boolean gameStatsRecordedThisMatch = false;
 
     private CountDownTimer stepTimer;
 
@@ -189,6 +191,7 @@ public class KorakPoKorakActivity extends AppCompatActivity {
                 currentAnswer = "Rim";
                 tvRound.setText("Runda 1/2");
                 showGameScreen();
+                kpkStatsUpdatedThisRound = false;
                 if (isPlayer1) {
                     enableInput(true);
                     tvCurrentPoints.setText("Tvoj red");
@@ -218,6 +221,7 @@ public class KorakPoKorakActivity extends AppCompatActivity {
                 currentAnswer = "Egipat";
                 tvRound.setText("Runda 2/2");
                 showGameScreen();
+                kpkStatsUpdatedThisRound = false;
                 if (!isPlayer1) {
                     enableInput(true);
                     tvCurrentPoints.setText("Tvoj red");
@@ -330,6 +334,13 @@ public class KorakPoKorakActivity extends AppCompatActivity {
         if (userAnswer.equalsIgnoreCase(currentAnswer)) {
             boolean isBonus = phase.equals("p2_bonus") || phase.equals("p1_bonus");
             int points = isBonus ? BONUS_POINTS : POINTS_PER_STEP[Math.min(currentStep, POINTS_PER_STEP.length - 1)];
+            
+            if (!kpkStatsUpdatedThisRound) {
+                kpkStatsUpdatedThisRound = true;
+                StatisticsManager.updateKPKStats(isBonus ? 6 : currentStep, points, !gameStatsRecordedThisMatch);
+                gameStatsRecordedThisMatch = true;
+            }
+            
             myPoints += points;
             Toast.makeText(this, "Tacno! +" + points + " bodova", Toast.LENGTH_SHORT).show();
             onRoundGuessed();
@@ -357,6 +368,11 @@ public class KorakPoKorakActivity extends AppCompatActivity {
 
     private void onRoundFailed() {
         if (stepTimer != null) stepTimer.cancel();
+        if (!kpkStatsUpdatedThisRound && (phase.equals("p1_playing") && isPlayer1 || phase.equals("p2_playing") && !isPlayer1)) {
+            kpkStatsUpdatedThisRound = true;
+            StatisticsManager.updateKPKStats(-1, 0, !gameStatsRecordedThisMatch);
+            gameStatsRecordedThisMatch = true;
+        }
         saveMyScore();
         switch (phase) {
             case "p1_playing": setPhase("p2_bonus"); break;
@@ -366,6 +382,11 @@ public class KorakPoKorakActivity extends AppCompatActivity {
 
     private void onBonusFailed() {
         if (stepTimer != null) stepTimer.cancel();
+        if (!kpkStatsUpdatedThisRound && (phase.equals("p2_bonus") && !isPlayer1 || phase.equals("p1_bonus") && isPlayer1)) {
+            kpkStatsUpdatedThisRound = true;
+            StatisticsManager.updateKPKStats(-1, 0, !gameStatsRecordedThisMatch);
+            gameStatsRecordedThisMatch = true;
+        }
         saveMyScore();
         switch (phase) {
             case "p2_bonus": setPhase("p2_playing"); break;

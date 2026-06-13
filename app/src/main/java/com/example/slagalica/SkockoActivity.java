@@ -43,6 +43,7 @@ public class SkockoActivity extends AppCompatActivity {
     private boolean isGameOver = false;
     private long lastRoundStartTime = -1;
     private boolean wasOpponentChance = false;
+    private boolean gameStatsRecordedThisMatch = false;
 
     private final int[] symbolDrawables = {
             R.drawable.img,
@@ -284,6 +285,8 @@ public class SkockoActivity extends AppCompatActivity {
             if (!isGameOver) {
                 boolean isMyTurn = currentTurn.equals(isPlayer1 ? "p1" : "p2");
                 if (!isMyTurn) return;
+                StatisticsManager.updateSKStats(-1, 0, !gameStatsRecordedThisMatch);
+                gameStatsRecordedThisMatch = true;
                 if (!isOpponentChance) {
                     Map<String, Object> updates = new HashMap<>();
                     updates.put("skocko_turn", currentRound == 1 ? "p2" : "p1");
@@ -314,6 +317,8 @@ public class SkockoActivity extends AppCompatActivity {
                 if (!isGameOver) {
                     boolean isMyTurn = currentTurn.equals(isPlayer1 ? "p1" : "p2");
                     if (!isMyTurn) return;
+                    StatisticsManager.updateSKStats(-1, 0, !gameStatsRecordedThisMatch);
+                    gameStatsRecordedThisMatch = true;
                     if (!isOpponentChance) {
                         Map<String, Object> updates = new HashMap<>();
                         updates.put("skocko_turn", currentRound == 1 ? "p2" : "p1");
@@ -439,6 +444,9 @@ public class SkockoActivity extends AppCompatActivity {
                 else if (finalAttemptIdx < 4) points = 15;
                 else points = 10;
 
+                StatisticsManager.updateSKStats(isOpponentChance ? 6 : finalAttemptIdx, points, !gameStatsRecordedThisMatch);
+                gameStatsRecordedThisMatch = true;
+
                 String scoreField = isPlayer1 ? "player1Score" : "player2Score";
                 updates.put(scoreField, (isPlayer1 ? player1Score : player2Score) + points);
                 updates.put("skocko_isSteal", false);
@@ -452,11 +460,15 @@ public class SkockoActivity extends AppCompatActivity {
                     }, 2500);
                 });
             } else if (syncAttempts.size() >= 6 && !isOpponentChance) {
+                StatisticsManager.updateSKStats(-1, 0, !gameStatsRecordedThisMatch);
+                gameStatsRecordedThisMatch = true;
                 updates.put("skocko_turn", currentRound == 1 ? "p2" : "p1");
                 updates.put("skocko_isSteal", true);
                 updates.put("roundStartTime", System.currentTimeMillis());
                 db.collection("gameRooms").document(roomId).update(updates);
             } else if (isOpponentChance) {
+                StatisticsManager.updateSKStats(-1, 0, !gameStatsRecordedThisMatch);
+                gameStatsRecordedThisMatch = true;
                 db.collection("gameRooms").document(roomId).update(updates).addOnSuccessListener(v -> {
                     new android.os.Handler(getMainLooper()).postDelayed(() -> {
                         if (!isFinishing()) {
