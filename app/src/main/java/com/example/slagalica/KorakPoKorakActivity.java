@@ -5,6 +5,7 @@ import android.os.Bundle;
 import android.os.CountDownTimer;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -12,6 +13,7 @@ import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.cardview.widget.CardView;
 
+import com.google.android.material.button.MaterialButton;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.ListenerRegistration;
@@ -24,6 +26,7 @@ import java.util.Map;
 public class KorakPoKorakActivity extends AppCompatActivity {
 
     private TextView tvPlayer1Name, tvPlayer1Points, tvPlayer2Name, tvPlayer2Points;
+    private ImageView ivPlayer1Avatar, ivPlayer2Avatar;
     private TextView tvRound, tvStepTimer, tvCurrentPoints;
     private TextInputEditText etAnswer;
     private LinearLayout layoutWaiting, layoutGame, llSteps;
@@ -71,6 +74,8 @@ public class KorakPoKorakActivity extends AppCompatActivity {
         tvPlayer1Points = findViewById(R.id.tvPlayer1Points);
         tvPlayer2Name = findViewById(R.id.tvPlayer2Name);
         tvPlayer2Points = findViewById(R.id.tvPlayer2Points);
+        ivPlayer1Avatar = findViewById(R.id.ivPlayer1Avatar);
+        ivPlayer2Avatar = findViewById(R.id.ivPlayer2Avatar);
         tvRound = findViewById(R.id.tvRound);
         tvStepTimer = findViewById(R.id.tvStepTimer);
         tvCurrentPoints = findViewById(R.id.tvCurrentPoints);
@@ -132,6 +137,9 @@ public class KorakPoKorakActivity extends AppCompatActivity {
         tvPlayer1Points.setText(String.valueOf(p1Score + (isPlayer1 ? myPoints : 0)));
         tvPlayer2Points.setText(String.valueOf(p2Score + (!isPlayer1 ? myPoints : 0)));
 
+        setAvatar(ivPlayer1Avatar, snapshot.getString("player1Avatar"));
+        setAvatar(ivPlayer2Avatar, snapshot.getString("player2Avatar"));
+
         String newPhase = snapshot.getString("korak_phase");
         if (newPhase == null) newPhase = "p1_playing";
 
@@ -156,6 +164,14 @@ public class KorakPoKorakActivity extends AppCompatActivity {
                     tvStepTimer.setText("");
                 }
             }
+        }
+    }
+
+    private void setAvatar(ImageView iv, String avatarName) {
+        if (iv == null || avatarName == null || avatarName.isEmpty()) return;
+        int resId = getResources().getIdentifier(avatarName, "drawable", getPackageName());
+        if (resId != 0) {
+            iv.setImageResource(resId);
         }
     }
 
@@ -424,19 +440,30 @@ public class KorakPoKorakActivity extends AppCompatActivity {
     private void finishGame() {
         if (stepTimer != null) stepTimer.cancel();
 
-        if (isPlayer1) {
-            if (gameListener != null) gameListener.remove();
-            Map<String, Object> updates = new HashMap<>();
-            updates.put("currentGame", "mojBroj");
-            db.collection("gameRooms").document(roomId).update(updates)
-                    .addOnSuccessListener(unused -> {
-                        Intent intent = new Intent(this, MojBrojActivity.class);
-                        intent.putExtra("roomId", roomId);
-                        intent.putExtra("isPlayer1", true);
-                        startActivity(intent);
-                        finish();
-                    });
-        }
+        findViewById(R.id.btnNext).setVisibility(View.VISIBLE);
+        findViewById(R.id.btnNext).setOnClickListener(v -> triggerNextGame());
+
+        tvCurrentPoints.setText("Igra završena!");
+
+        stepTimer = new CountDownTimer(5000, 1000) {
+            @Override
+            public void onTick(long ms) {
+                tvStepTimer.setText("⏱️ " + (ms / 1000 + 1) + "s");
+            }
+
+            @Override
+            public void onFinish() {
+                tvStepTimer.setText("⏱️ 0s");
+                triggerNextGame();
+            }
+        }.start();
+    }
+
+    private void triggerNextGame() {
+        if (stepTimer != null) stepTimer.cancel();
+        Map<String, Object> updates = new HashMap<>();
+        updates.put("currentGame", "mojBroj");
+        db.collection("gameRooms").document(roomId).update(updates);
     }
     @Override
     protected void onDestroy() {
