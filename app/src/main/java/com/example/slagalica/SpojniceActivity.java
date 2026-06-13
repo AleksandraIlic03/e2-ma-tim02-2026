@@ -45,6 +45,9 @@ public class SpojniceActivity extends AppCompatActivity {
     private boolean isMyTurn = false;
     private long lastWrongTrigger = 0;
     private boolean transitioning = false;
+    private boolean statsUpdatedThisRound = false;
+    private boolean gameStatsRecordedThisMatch = false;
+    private int lastRecordedRound = 0;
 
     private final String COLOR_P1 = "#823FAB"; // Purple
     private final String COLOR_P2 = "#2196F3"; // Blue
@@ -117,7 +120,12 @@ public class SpojniceActivity extends AppCompatActivity {
                         return;
                     }
 
-                    currentRound = snapshot.getLong("currentRound") != null ? snapshot.getLong("currentRound").intValue() : 1;
+                    int newRound = snapshot.getLong("currentRound") != null ? snapshot.getLong("currentRound").intValue() : 1;
+                    if (newRound != lastRecordedRound) {
+                        lastRecordedRound = newRound;
+                        statsUpdatedThisRound = false;
+                    }
+                    currentRound = newRound;
                     currentTurn = snapshot.getString("spojnice_turn") != null ? snapshot.getString("spojnice_turn") : "p1";
                     currentLeftIndex = snapshot.getLong("spojnice_currentLeftIndex") != null ? snapshot.getLong("spojnice_currentLeftIndex").intValue() : 0;
                     matchedRightIndices = (List<Long>) snapshot.get("spojnice_matchedRightIndices");
@@ -260,6 +268,16 @@ public class SpojniceActivity extends AppCompatActivity {
 
     private void endRoundLocally() {
         if (timer != null) timer.cancel();
+        if (!statsUpdatedThisRound && whoMatched != null) {
+            statsUpdatedThisRound = true;
+            int correctCount = 0;
+            String me = isPlayer1 ? "p1" : "p2";
+            for (String owner : whoMatched) {
+                if (me.equals(owner)) correctCount++;
+            }
+            StatisticsManager.updateSPStats(correctCount, 5, correctCount * 2, !gameStatsRecordedThisMatch);
+            gameStatsRecordedThisMatch = true;
+        }
         btnNext.setVisibility(View.VISIBLE);
         btnNext.setText(currentRound == 1 ? "SLEDEĆA RUNDA" : "ZAVRŠI IGRU");
     }

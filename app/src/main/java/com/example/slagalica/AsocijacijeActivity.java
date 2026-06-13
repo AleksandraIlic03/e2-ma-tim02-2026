@@ -57,6 +57,10 @@ public class AsocijacijeActivity extends AppCompatActivity {
     private ListenerRegistration gameListener;
     private boolean hasOpenedThisTurn = false;
     private boolean gameTransitioning = false;
+    private boolean asocStatsUpdatedThisRound = false;
+    private boolean gameStatsRecordedThisMatch = false;
+    private int lastRecordedRound = 0;
+    private int pointsAtRoundStart = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -132,7 +136,13 @@ public class AsocijacijeActivity extends AppCompatActivity {
 
                         if (snapshot.get("asocijacija1") == null) return;
 
-                        currentRound = snapshot.getLong("asoc_currentRound") != null ? snapshot.getLong("asoc_currentRound").intValue() : 1;
+                        int newRound = snapshot.getLong("asoc_currentRound") != null ? snapshot.getLong("asoc_currentRound").intValue() : 1;
+                        if (newRound != lastRecordedRound) {
+                            lastRecordedRound = newRound;
+                            asocStatsUpdatedThisRound = false;
+                            pointsAtRoundStart = isPlayer1 ? player1Score : player2Score;
+                        }
+                        currentRound = newRound;
                         currentTurn = snapshot.getString("asoc_turn") != null ? snapshot.getString("asoc_turn") : "p1";
 
                         Map<String, Object> asocData = (Map<String, Object>) snapshot.get("asocijacija" + currentRound);
@@ -236,6 +246,20 @@ public class AsocijacijeActivity extends AppCompatActivity {
             etKonacnoResenje.setText(fr != null ? fr.toUpperCase() : "");
             etKonacnoResenje.setEnabled(false);
             etKonacnoResenje.setBackgroundResource(R.drawable.final_success_bg);
+
+            if (!asocStatsUpdatedThisRound) {
+                asocStatsUpdatedThisRound = true;
+                int currentPoints = isPlayer1 ? player1Score : player2Score;
+                int earned = currentPoints - pointsAtRoundStart;
+                // Proveravamo da li smo mi rešili konacno (npr. ako je nas turn i solvedFinal je true)
+                // Ali snap listener moze kasniti. Bolje je pratiti ko je poslao update.
+                // Za sad, koristimo jednostavnu logiku: ako smo osvojili bar poene za konacno (7), smatramo da smo resili.
+                // Zapravo, checkFinal() postavlja asoc_solvedFinal.
+                // Mozemo dodati polje u Firestore "asoc_solvedBy"
+                StatisticsManager.updateASStats(earned >= 7, earned, !gameStatsRecordedThisMatch);
+                gameStatsRecordedThisMatch = true;
+            }
+
             if (btnNextAction != null) {
                 btnNextAction.setVisibility(View.VISIBLE);
                 btnNextAction.setText(currentRound == 1 ? "SLEDEĆA RUNDA" : "SLEDEĆA IGRA");
@@ -443,6 +467,12 @@ public class AsocijacijeActivity extends AppCompatActivity {
         long remaining = 120000 - (System.currentTimeMillis() - startTime);
         if (remaining <= 0) {
             tvTimer.setText("🕒 00:00");
+            if (!asocStatsUpdatedThisRound) {
+                asocStatsUpdatedThisRound = true;
+                int currentPoints = isPlayer1 ? player1Score : player2Score;
+                int earned = currentPoints - pointsAtRoundStart;
+                StatisticsManager.updateASStats(false, earned, currentRound == 1);
+            }
             if (isPlayer1) {
                 if (currentRound == 1) {
                     startNextRound();
@@ -458,6 +488,13 @@ public class AsocijacijeActivity extends AppCompatActivity {
             }
             public void onFinish() {
                 tvTimer.setText("🕒 00:00");
+                if (!asocStatsUpdatedThisRound) {
+                    asocStatsUpdatedThisRound = true;
+                    int currentPoints = isPlayer1 ? player1Score : player2Score;
+                    int earned = currentPoints - pointsAtRoundStart;
+                    StatisticsManager.updateASStats(false, earned, !gameStatsRecordedThisMatch);
+                    gameStatsRecordedThisMatch = true;
+                }
                 if (isPlayer1) {
                     if (currentRound == 1) {
                         startNextRound();

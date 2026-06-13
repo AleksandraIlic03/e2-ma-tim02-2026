@@ -40,9 +40,11 @@ public class MojBrojActivity extends AppCompatActivity {
     private boolean transitioning = false;
     private boolean isFinalizingRound = false;
     private boolean myTurnFinished = false;
+    private boolean gameStatsRecordedThisMatch = false;
 
     private String phase = "";
     private CountDownTimer roundTimer;
+    private boolean statsUpdatedThisRound = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -135,6 +137,7 @@ public class MojBrojActivity extends AppCompatActivity {
         if (Boolean.TRUE.equals(snapshot.getBoolean("mojbroj_p1Finished"))
                 && Boolean.TRUE.equals(snapshot.getBoolean("mojbroj_p2Finished"))) {
             showComparison(snapshot);
+            updateLocalStats(snapshot);
             // Samo jedan igrač (P1 ili Host faze) pokreće prelaz nakon pauze
             if (isRoundHost() && !isFinalizingRound) {
                 isFinalizingRound = true;
@@ -147,6 +150,7 @@ public class MojBrojActivity extends AppCompatActivity {
         if (roundTimer != null) roundTimer.cancel();
         isFinalizingRound = false;
         myTurnFinished = false;
+        statsUpdatedThisRound = false;
         targetNumber = -1;
         numbersLoaded = false;
         generateCalled = false;
@@ -256,6 +260,38 @@ public class MojBrojActivity extends AppCompatActivity {
         int d2 = v2 >= 0 ? Math.abs(v2 - targetNumber) : 999;
         tvResult.setText("P1: " + (v1 < 0 ? "/" : v1) + " (" + d1 + ") | P2: "
                 + (v2 < 0 ? "/" : v2) + " (" + d2 + ")");
+    }
+
+    private void updateLocalStats(com.google.firebase.firestore.DocumentSnapshot snap) {
+        if (statsUpdatedThisRound) return;
+        statsUpdatedThisRound = true;
+
+        Long r1Long = snap.getLong("mojbroj_p1Result");
+        Long r2Long = snap.getLong("mojbroj_p2Result");
+        if (r1Long == null || r2Long == null) return;
+
+        int r1 = r1Long.intValue(), r2 = r2Long.intValue();
+        int p1Add = 0, p2Add = 0;
+
+        if (r1 == targetNumber) p1Add = 10;
+        if (r2 == targetNumber) p2Add = 10;
+
+        if (p1Add == 0 && p2Add == 0) {
+            int d1 = r1 >= 0 ? Math.abs(r1 - targetNumber) : 1000;
+            int d2 = r2 >= 0 ? Math.abs(r2 - targetNumber) : 1000;
+            if (d1 < d2) p1Add = 5;
+            else if (d2 < d1) p2Add = 5;
+            else if (d1 != 1000) {
+                if (phase.equals("p1_playing")) p1Add = 5; else p2Add = 5;
+            }
+        }
+
+        if (isPlayer1) {
+            StatisticsManager.updateMBStats(r1 == targetNumber, p1Add, !gameStatsRecordedThisMatch);
+        } else {
+            StatisticsManager.updateMBStats(r2 == targetNumber, p2Add, !gameStatsRecordedThisMatch);
+        }
+        gameStatsRecordedThisMatch = true;
     }
 
     private void calculateAndMove() {
@@ -412,6 +448,13 @@ public class MojBrojActivity extends AppCompatActivity {
                     long p2Score = snap.getLong("player2Score") != null ? snap.getLong("player2Score") : 0;
                     String p1Name = snap.getString("player1Name") != null ? snap.getString("player1Name") : "Igrač 1";
                     String p2Name = snap.getString("player2Name") != null ? snap.getString("player2Name") : "Igrač 2";
+
+                    String result;
+                    if (p1Score > p2Score) result = isPlayer1 ? "win" : "loss";
+                    else if (p2Score > p1Score) result = isPlayer1 ? "loss" : "win";
+                    else result = "draw";
+                    StatisticsManager.updateMatchResult(result);
+
                     String winner = p1Score > p2Score ? p1Name : (p2Score > p1Score ? p2Name : "Nerešeno");
                     new AlertDialog.Builder(this)
                             .setTitle("Kraj igre!")
