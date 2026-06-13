@@ -42,6 +42,7 @@ public class WaitingRoomActivity extends AppCompatActivity {
     private FirebaseAuth mAuth;
     private String currentUserId;
     private String currentUserName = "Gost";
+    private String currentUserAvatar = "ic_user";
     private String roomId;
     private ListenerRegistration roomListener;
 
@@ -57,7 +58,7 @@ public class WaitingRoomActivity extends AppCompatActivity {
                 : UUID.randomUUID().toString();
 
         initViews();
-        fetchUserName();
+        fetchUserData();
 
         btnCreateRoom.setOnClickListener(v -> createRoom());
         btnJoinRoom.setOnClickListener(v -> joinRoom());
@@ -72,12 +73,16 @@ public class WaitingRoomActivity extends AppCompatActivity {
         progressBar = findViewById(R.id.progressBar);
     }
 
-    private void fetchUserName() {
+    private void fetchUserData() {
         if (mAuth.getCurrentUser() != null) {
             db.collection("users").document(currentUserId).get()
                     .addOnSuccessListener(documentSnapshot -> {
                         if (documentSnapshot.exists()) {
                             currentUserName = documentSnapshot.getString("username");
+                            String avatar = documentSnapshot.getString("avatarUrl");
+                            if (avatar != null && !avatar.isEmpty()) {
+                                currentUserAvatar = avatar;
+                            }
                         }
                     });
         }
@@ -154,8 +159,10 @@ public class WaitingRoomActivity extends AppCompatActivity {
             // Osnovni podaci
             room.put("player1Id", currentUserId);
             room.put("player1Name", currentUserName);
+            room.put("player1Avatar", currentUserAvatar);
             room.put("player2Id", null);
             room.put("player2Name", null);
+            room.put("player2Avatar", null);
             room.put("player1Score", 0);
             room.put("player2Score", 0);
             room.put("status", "waiting");
@@ -301,6 +308,7 @@ public class WaitingRoomActivity extends AppCompatActivity {
                 Map<String, Object> updates = new HashMap<>();
                 updates.put("player2Id", currentUserId);
                 updates.put("player2Name", currentUserName);
+                updates.put("player2Avatar", currentUserAvatar);
                 updates.put("status", "playing");
                 roomRef.update(updates)
                         .addOnSuccessListener(aVoid -> listenForOpponent(false));

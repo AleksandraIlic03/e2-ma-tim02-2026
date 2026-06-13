@@ -6,10 +6,12 @@ import android.os.Bundle;
 import android.os.CountDownTimer;
 import android.view.View;
 import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.google.android.material.button.MaterialButton;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.google.firebase.firestore.DocumentSnapshot;
@@ -24,6 +26,7 @@ import java.util.Map;
 public class KoZnaZnaActivity extends AppCompatActivity {
 
     private TextView tvTimer, tvQuestion, tvPlayer1Points, tvPlayer1Name, tvPlayer2Points, tvPlayer2Name;
+    private ImageView ivPlayer1Avatar, ivPlayer2Avatar;
     private TextView tvAnswer1, tvAnswer2, tvAnswer3, tvAnswer4;
     private ImageButton btnAnswer1, btnAnswer2, btnAnswer3, btnAnswer4;
     private LinearLayout llProgress;
@@ -36,6 +39,7 @@ public class KoZnaZnaActivity extends AppCompatActivity {
     private int lastProcessedQuestionIndex = -1;
     private CountDownTimer questionTimer;
     private boolean answered = false;
+    private boolean nextGameButtonShown = false;
     private ListenerRegistration gameListener;
 
     private final String COLOR_P1 = "#823FAB";
@@ -62,6 +66,9 @@ public class KoZnaZnaActivity extends AppCompatActivity {
         tvPlayer1Name = findViewById(R.id.tvPlayer1Name);
         tvPlayer2Points = findViewById(R.id.tvPlayer2Points);
         tvPlayer2Name = findViewById(R.id.tvPlayer2Name);
+
+        ivPlayer1Avatar = findViewById(R.id.ivPlayer1Avatar);
+        ivPlayer2Avatar = findViewById(R.id.ivPlayer2Avatar);
 
         tvAnswer1 = findViewById(R.id.tvAnswer1);
         tvAnswer2 = findViewById(R.id.tvAnswer2);
@@ -99,6 +106,12 @@ public class KoZnaZnaActivity extends AppCompatActivity {
 
                     tvPlayer1Name.setText(snapshot.getString("player1Name"));
                     tvPlayer2Name.setText(snapshot.getString("player2Name"));
+
+                    String avatar1 = snapshot.getString("player1Avatar");
+                    String avatar2 = snapshot.getString("player2Avatar");
+                    setAvatar(ivPlayer1Avatar, avatar1);
+                    setAvatar(ivPlayer2Avatar, avatar2);
+
                     tvPlayer1Points.setText(String.valueOf(snapshot.getLong("player1Score")));
                     tvPlayer2Points.setText(String.valueOf(snapshot.getLong("player2Score")));
 
@@ -115,10 +128,30 @@ public class KoZnaZnaActivity extends AppCompatActivity {
                     }
 
                     Long startLong = snapshot.getLong("questionStartTime");
-                    if (startLong != null) syncTimer(startLong);
+                    if (startLong != null && startLong > 0) {
+                        syncTimer(startLong);
+                    } else if (isPlayer1 && (startLong == null || startLong == 0)) {
+                        db.collection("gameRooms").document(roomId).update("questionStartTime", System.currentTimeMillis());
+                    }
                     
                     checkBothAnswered(snapshot);
+
+                    if (newIdx >= 4 && !nextGameButtonShown) {
+                        Map<String, Object> answers = (Map<String, Object>) snapshot.get("answers_q4");
+                        if (answers != null && answers.size() == 2) {
+                            nextGameButtonShown = true;
+                            tvTimer.postDelayed(this::showNextGameButton, 2000);
+                        }
+                    }
                 });
+    }
+
+    private void setAvatar(ImageView iv, String avatarName) {
+        if (iv == null || avatarName == null || avatarName.isEmpty()) return;
+        int resId = getResources().getIdentifier(avatarName, "drawable", getPackageName());
+        if (resId != 0) {
+            iv.setImageResource(resId);
+        }
     }
 
     private void displayQuestion() {
@@ -201,7 +234,7 @@ public class KoZnaZnaActivity extends AppCompatActivity {
 
         Map<String, Object> answers = (Map<String, Object>) snap.get("answers_q" + currentQuestionIndex);
         if (answers != null && answers.size() == 2) {
-            if (isPlayer1) lastProcessedQuestionIndex = currentQuestionIndex;
+            lastProcessedQuestionIndex = currentQuestionIndex;
             showBothSelections(answers, snap);
         }
     }
@@ -247,7 +280,7 @@ public class KoZnaZnaActivity extends AppCompatActivity {
             int myCorrect = (isPlayer1 ? p1Corr : p2Corr) ? 1 : 0;
             int myIdx = isPlayer1 ? p1Idx : p2Idx;
             int myWrong = (!(isPlayer1 ? p1Corr : p2Corr) && myIdx != -1) ? 1 : 0;
-            int myPointsAdd = 0;
+            int myPointsAdd;
             if (p1Corr && p2Corr) {
                 if (isPlayer1) myPointsAdd = (p1Time < p2Time) ? 10 : 0;
                 else myPointsAdd = (p2Time < p1Time) ? 10 : 0;
@@ -257,27 +290,24 @@ public class KoZnaZnaActivity extends AppCompatActivity {
             }
             StatisticsManager.updateKZZStats(myCorrect, myWrong, myPointsAdd, currentQuestionIndex == 0);
 
-            // Poeni se ažuriraju istovremeno sa promenom boje
             if (isPlayer1) {
-                calculatePointsAndScheduleNext(snap, answers, p1Corr, p2Corr, p1Time, p2Time,
-                        p1Idx, p2Idx);
+                updateFirestoreScoresAndNextQuestion(snap, p1Corr, p2Corr, p1Time, p2Time, p1Idx, p2Idx);
+            }
+
+            if (currentQuestionIndex >= 4) {
+                showNextGameButton();
             }
         }, 1000);
     }
 
-    private void calculatePointsAndScheduleNext(DocumentSnapshot snap, Map<String, Object> answers,
-                                                boolean p1Corr, boolean p2Corr, long p1Time, long p2Time, int p1Idx, int p2Idx) {
-
+    private void updateFirestoreScoresAndNextQuestion(DocumentSnapshot snap, boolean p1Corr, boolean p2Corr,
+                                                       long p1Time, long p2Time, int p1Idx, int p2Idx) {
         long p1ScoreAdd = 0, p2ScoreAdd = 0;
-
         if (p1Corr && p2Corr) {
             if (p1Time < p2Time) p1ScoreAdd = 10; else p2ScoreAdd = 10;
         } else {
-            if (p1Corr) p1ScoreAdd = 10;
-            else if (p1Idx != -1) p1ScoreAdd = -5;
-
-            if (p2Corr) p2ScoreAdd = 10;
-            else if (p2Idx != -1) p2ScoreAdd = -5;
+            if (p1Corr) p1ScoreAdd = 10; else if (p1Idx != -1) p1ScoreAdd = -5;
+            if (p2Corr) p2ScoreAdd = 10; else if (p2Idx != -1) p2ScoreAdd = -5;
         }
 
         Map<String, Object> updates = new HashMap<>();
@@ -287,19 +317,44 @@ public class KoZnaZnaActivity extends AppCompatActivity {
         updates.put("player2Score", (s2 != null ? s2 : 0) + p2ScoreAdd);
         db.collection("gameRooms").document(roomId).update(updates);
 
-        tvTimer.postDelayed(() -> {
-            Map<String, Object> nextUpdates = new HashMap<>();
-            if (currentQuestionIndex < 4) {
+        if (currentQuestionIndex < 4) {
+            tvTimer.postDelayed(() -> {
+                Map<String, Object> nextUpdates = new HashMap<>();
                 nextUpdates.put("currentQuestionIndex", currentQuestionIndex + 1);
                 nextUpdates.put("questionStartTime", System.currentTimeMillis());
                 db.collection("gameRooms").document(roomId).update(nextUpdates);
-            } else {
-                db.collection("gameRooms").document(roomId).update(
-                        "currentGame", "spojnice",
-                        "status", "playing",
-                        "roundStartTime", System.currentTimeMillis());
+            }, 2000);
+        }
+    }
+
+    private void showNextGameButton() {
+        MaterialButton btnNext = findViewById(R.id.btnNext);
+        btnNext.setVisibility(View.VISIBLE);
+        btnNext.setText("Sledeća igra");
+        btnNext.setOnClickListener(v -> triggerNextGame());
+
+        if (questionTimer != null) questionTimer.cancel();
+        
+        questionTimer = new CountDownTimer(5000, 1000) {
+            @Override
+            public void onTick(long millisUntilFinished) {
+                tvTimer.setText("⏱ " + (millisUntilFinished / 1000 + 1) + "s");
             }
-        }, 3000);
+
+            @Override
+            public void onFinish() {
+                tvTimer.setText("⏱ 0s");
+                triggerNextGame();
+            }
+        }.start();
+    }
+
+    private void triggerNextGame() {
+        if (questionTimer != null) questionTimer.cancel();
+        db.collection("gameRooms").document(roomId).update(
+                "currentGame", "spojnice",
+                "status", "playing",
+                "roundStartTime", System.currentTimeMillis());
     }
 
     private ImageButton getButtonByIndex(int index) {
