@@ -115,7 +115,11 @@ public class KoZnaZnaActivity extends AppCompatActivity {
                     }
 
                     Long startLong = snapshot.getLong("questionStartTime");
-                    if (startLong != null) syncTimer(startLong);
+                    if (startLong != null && startLong > 0) {
+                        syncTimer(startLong);
+                    } else if (isPlayer1 && (startLong == null || startLong == 0)) {
+                        db.collection("gameRooms").document(roomId).update("questionStartTime", System.currentTimeMillis());
+                    }
                     
                     checkBothAnswered(snapshot);
                 });
