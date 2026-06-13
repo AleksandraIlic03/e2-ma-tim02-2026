@@ -7,6 +7,7 @@ import android.view.View;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.google.android.material.button.MaterialButton;
@@ -94,19 +95,6 @@ public class MojBrojActivity extends AppCompatActivity {
 
     private void handleGameUpdate(com.google.firebase.firestore.DocumentSnapshot snapshot) {
         if (transitioning) return;
-
-        String currentGame = snapshot.getString("currentGame");
-        if ("koZnaZna".equals(currentGame)) {
-            transitioning = true;
-            if (roundTimer != null) roundTimer.cancel();
-            if (gameListener != null) gameListener.remove();
-            Intent intent = new Intent(this, KoZnaZnaActivity.class);
-            intent.putExtra("roomId", roomId);
-            intent.putExtra("isPlayer1", isPlayer1);
-            startActivity(intent);
-            finish();
-            return;
-        }
 
         tvPlayer1Name.setText(snapshot.getString("player1Name"));
         tvPlayer2Name.setText(snapshot.getString("player2Name"));
@@ -414,25 +402,26 @@ public class MojBrojActivity extends AppCompatActivity {
     }
 
     private void finishGame() {
-        if (!transitioning) {
-            transitioning = true;
-            if (isPlayer1) {
-                if (gameListener != null) gameListener.remove();
-                Map<String, Object> updates = new HashMap<>();
-                updates.put("currentGame", "koZnaZna");
-                updates.put("currentQuestionIndex", 0);
-                updates.put("questionStartTime", System.currentTimeMillis());
-                db.collection("gameRooms").document(roomId)
-                        .update(updates)
-                        .addOnSuccessListener(unused -> {
-                            Intent intent = new Intent(this, KoZnaZnaActivity.class);
-                            intent.putExtra("roomId", roomId);
-                            intent.putExtra("isPlayer1", isPlayer1);
-                            startActivity(intent);
-                            finish();
-                        });
-            }
-        }
+        if (transitioning) return;
+        transitioning = true;
+        if (roundTimer != null) roundTimer.cancel();
+        if (gameListener != null) gameListener.remove();
+        db.collection("gameRooms").document(roomId).get()
+                .addOnSuccessListener(snap -> {
+                    long p1Score = snap.getLong("player1Score") != null ? snap.getLong("player1Score") : 0;
+                    long p2Score = snap.getLong("player2Score") != null ? snap.getLong("player2Score") : 0;
+                    String p1Name = snap.getString("player1Name") != null ? snap.getString("player1Name") : "Igrač 1";
+                    String p2Name = snap.getString("player2Name") != null ? snap.getString("player2Name") : "Igrač 2";
+                    String winner = p1Score > p2Score ? p1Name : (p2Score > p1Score ? p2Name : "Nerešeno");
+                    new AlertDialog.Builder(this)
+                            .setTitle("Kraj igre!")
+                            .setMessage("Pobednik: " + winner + "\n" + p1Name + ": " + p1Score + "\n" + p2Name + ": " + p2Score)
+                            .setCancelable(false)
+                            .setPositiveButton("U redu", (d, w) -> {
+                                startActivity(new Intent(this, HomeActivity.class));
+                                finish();
+                            }).show();
+                });
     }
 
     @Override

@@ -110,11 +110,11 @@ public class KorakPoKorakActivity extends AppCompatActivity {
 
         // Prelaz na sledecu igru
         String currentGame = snapshot.getString("currentGame");
-        if ("koZnaZna".equals(currentGame)) {
+        if ("mojBroj".equals(currentGame)) {
             transitioning = true;
             if (gameListener != null) gameListener.remove();
             if (stepTimer != null) stepTimer.cancel();
-            Intent intent = new Intent(this, KoZnaZnaActivity.class);
+            Intent intent = new Intent(this, MojBrojActivity.class);
             intent.putExtra("roomId", roomId);
             intent.putExtra("isPlayer1", isPlayer1);
             startActivity(intent);
@@ -406,13 +406,10 @@ public class KorakPoKorakActivity extends AppCompatActivity {
         if (isPlayer1) {
             if (gameListener != null) gameListener.remove();
             Map<String, Object> updates = new HashMap<>();
-            updates.put("currentGame", "koZnaZna");
-            updates.put("currentQuestionIndex", 0);
-            // Postavljamo vreme početka za 3 sekunde u budućnost kako bi oba igrača stigla da učitaju aktivnost
-            updates.put("questionStartTime", System.currentTimeMillis() + 3000);
+            updates.put("currentGame", "mojBroj");
             db.collection("gameRooms").document(roomId).update(updates)
                     .addOnSuccessListener(unused -> {
-                        Intent intent = new Intent(this, KoZnaZnaActivity.class);
+                        Intent intent = new Intent(this, MojBrojActivity.class);
                         intent.putExtra("roomId", roomId);
                         intent.putExtra("isPlayer1", true);
                         startActivity(intent);
