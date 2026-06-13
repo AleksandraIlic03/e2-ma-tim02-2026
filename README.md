@@ -1,44 +1,94 @@
-# Slagalica - Mobilne Aplikacije (Tim 02)
+# Slagalica — Mobilne aplikacije (Tim 02, 2025/26)
 
-Ovaj projekat predstavlja mobilnu aplikaciju po ugledu na popularni kviz "Slagalica", razvijenu u okviru predmeta Mobilne aplikacije.
+Mobilna Android aplikacija po ugledu na kviz "Slagalica". Aplikacija omogućava takmičenje igrača jedan na jedan kroz šest igara, rangiranje, sistem liga, čet po regionima i upravljanje notifikacijama.
+
+---
+
+## Tim
+
+| Student | Funkcionalnosti |
+|---|---|
+| Student 1 | Registracija i logovanje, Korak po korak, Moj broj |
+| Student 2 | Prikaz profila, Ko zna zna, Spojnice |
+| Student 3 | Notifikacije, Asocijacije, Skočko |
+
+---
+
+## Tehnologije
+
+- **Java** — Android aplikacija
+- **Firebase Authentication** — registracija i logovanje
+- **Firebase Firestore** — baza podataka u realnom vremenu
+- **Android API 29+** (Android 10+)
+- **Material Design 3** komponente
+
+---
 
 ## Pokretanje projekta
 
-### Neophodno:
-*   Android Studio (verzija Ladybug ili novija)
-*   Android uređaj (Fizički ili emulator, API level 30+, Android 11+)
 
-## Aplikacija
+### Koraci
 
-*   Kada se otvori aplikacija, može se raditi registracija ili prijava.
-*   Na glavnom ekranu (Home) se nalaze statistike (zvezde, tokeni, trofeji) i odatle se mogu zasebno pokrenuti igre:
-    *   Asocijacije: Rešavanje kolona A, B, V, G radi otkrivanja konačnog rešenja.
-    *   Skočko: Pogađanje kombinacije znakova u 6 pokušaja.
-    *   Korak po korak: Otkrivanje skrivenog pojma kroz niz koraka.
-    *   Spojnice: Povezivanje pojmova iz dve kolone.
-    *   Moj broj: Dobijanje traženog broja pomoću ponuđenih cifara i operacija.
-    *   Ko zna zna: Provera opšteg znanja kroz pitanja sa više ponuđenih odgovora.
-*   Klikom na notifikacije (zvonce u zaglavlju) otvara se istorija obaveštenja gde se mogu pratiti nagrade, poruke iz četa ili obaveštenja o rangu.
-*   Dugme za odjavu (Logout) nas vraća nazad na početni ekran za prijavu.
+1. Klonirati repozitorijum:
+   ```
+   git clone https://github.com/AleksandraIlic03/e2-ma-tim02-2026.git
+   ```
+2. Otvoriti projekat u Android Studio-u: **File > Open** — izabrati folder projekta
+3. Sačekati da Gradle automatski sinhronizuje zavisnosti
+4. Pokrenuti aplikaciju klikom na **Run ▶**
 
-## Pokretanje aplikacije
+> `google-services.json` je uključen u projekat — Firebase je već podešen i nije potrebna dodatna konfiguracija.
 
-Aplikaciju je moguće pokrenuti na fizičkom uređaju ili putem Android virtuelnog uređaja (AVD).
+---
 
-* Pokretanje na fizičkom uređaju
-	1.	Na telefonu omogućiti Developer Options:
-	*	Settings > About Phone > Build Number
-	*	Kliknuti 7 puta na Build Number.
-	2.	Uključiti USB Debugging:
-	*	Settings > System > Developer Options > USB Debugging
-	3.	Povezati uređaj sa računarom putem USB kabla.
-	4.	U Android Studio okruženju izabrati uređaj i kliknuti Run.
+## Pokretanje na fizičkom uređaju
 
-* Pokretanje na virtuelnom uređaju (AVD)
-	1.	U Android Studio otvoriti:
-	*	Tools > Device Manager / AVD Manager
-	2.	Kliknuti na Create Virtual Device.
-	3.	Izabrati model uređaja i odgovarajuću Android verziju.
-	4.	Preuzeti (Download) željeni System Image ukoliko nije instaliran.
-	5.	Završiti konfiguraciju klikom na Finish.
-	6.	Pokrenuti emulator i kliknuti Run za pokretanje aplikacije.
+1. Na telefonu otvoriti: **Podešavanja > O telefonu > Broj verzije** — kliknuti 7 puta zaredom
+2. Otvoriti: **Podešavanja > Sistem > Opcije za programere > USB debagovanje** — uključiti
+3. Povezati telefon sa računarom putem USB kabla
+4. U Android Studio-u izabrati uređaj iz padajuće liste i kliknuti **Run**
+
+---
+
+## Pokretanje na emulatoru (AVD)
+
+1. U Android Studio-u otvoriti: **Tools > Device Manager > Create Virtual Device**
+2. Izabrati uređaj (npr. Pixel 6) i system image sa **API 29+**
+3. Preuzeti system image ako nije instaliran, pa kliknuti **Finish**
+4. Pokrenuti emulator, zatim kliknuti **Run**
+
+> Za testiranje heads-up popup notifikacija preporučuje se emulator sa **API 33+**.
+
+---
+
+## Igre
+
+| Igra | Trajanje | Maks. bodovi |
+|---|---|---|
+| Ko zna zna | 25s | 50 |
+| Spojnice | 2 × 30s | 20 |
+| Asocijacije | 2 × 2 min | 60 |
+| Skočko | 2 × 30s | 40 |
+| Korak po korak | 2 × 70s | 40 |
+| Moj broj | 2 × 1 min | 20 |
+
+Jedna partija se sastoji od svih šest igara koje se igraju jedna za drugom.
+
+---
+
+## Notifikacije
+
+Aplikacija koristi 4 notifikaciona kanala:
+
+- **Čet** — poruke iz regionalnog četa
+- **Rangiranje** — obaveštenja o plasmanu na rang listama
+- **Nagrade** — obaveštenja o nagradama i prelasku u ligu
+- **Ostalo** — ostala obaveštenja (npr. Skočko steal šansa)
+
+Istorija notifikacija dostupna je klikom na ikonicu zvona u zaglavlju. Notifikacije se mogu označiti kao pročitane i filtrirati po statusu (pročitane / nepročitane) ili po kanalu.
+
+---
+
+## Baza podataka
+
+Podaci za igre (pitanja za Ko zna zna, spojnice, asocijacije, korak po korak) nalaze se u Firebase Firestore bazi. Aplikacija automatski popunjava potrebne kolekcije pri prvom pokretanju ukoliko su prazne.
