@@ -151,6 +151,7 @@ public class AsocijacijeActivity extends AppCompatActivity {
                             asocStatsUpdatedThisRound = false;
                             pointsAtRoundStart = isPlayer1 ? player1Score : player2Score;
                             finishTimerStarted = false;
+                            hasOpenedThisTurn = false;
                         }
                         currentRound = newRound;
                         currentTurn = snapshot.getString("asoc_turn") != null ? snapshot.getString("asoc_turn") : "p1";
