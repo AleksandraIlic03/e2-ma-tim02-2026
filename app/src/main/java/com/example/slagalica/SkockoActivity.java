@@ -32,6 +32,7 @@ public class SkockoActivity extends AppCompatActivity {
     private int currentSymbolIndex = 0;
 
     private TextView tvTimer, tvPoints, tvPlayer1Name, tvPlayer2Name, tvPlayer1Points, tvPlayer2Points;
+    private ImageView ivPlayer1Avatar, ivPlayer2Avatar;
     private LinearLayout[] rows = new LinearLayout[7];
     private LinearLayout layoutStealRow;
     private LinearLayout row7;
@@ -91,6 +92,9 @@ public class SkockoActivity extends AppCompatActivity {
         tvPlayer1Points = findViewById(R.id.tvPlayer1Points);
         tvPlayer2Points = findViewById(R.id.tvPlayer2Points);
 
+        ivPlayer1Avatar = findViewById(R.id.ivPlayer1Avatar);
+        ivPlayer2Avatar = findViewById(R.id.ivPlayer2Avatar);
+
         btnConfirm = findViewById(R.id.btnConfirm);
         btnDelete = findViewById(R.id.btnDelete);
         layoutSolution = findViewById(R.id.layoutSolution);
@@ -142,10 +146,15 @@ public class SkockoActivity extends AppCompatActivity {
                         if (tvPlayer1Points != null) tvPlayer1Points.setText(String.valueOf(player1Score));
                         if (tvPlayer2Points != null) tvPlayer2Points.setText(String.valueOf(player2Score));
 
+                        setAvatar(ivPlayer1Avatar, snapshot.getString("player1Avatar"));
+                        setAvatar(ivPlayer2Avatar, snapshot.getString("player2Avatar"));
+
                         Long round = snapshot.getLong("skocko_currentRound");
                         int newRound = round != null ? round.intValue() : 1;
                         if (newRound != currentRound) {
                             currentSymbolIndex = 0;
+                            finishTimerStarted = false;
+                            findViewById(R.id.btnNext).setVisibility(View.GONE);
                             if (newRound == 2) {
                                 Toast.makeText(SkockoActivity.this, "POČINJE DRUGA RUNDA!", Toast.LENGTH_SHORT).show();
                             }
@@ -175,6 +184,14 @@ public class SkockoActivity extends AppCompatActivity {
                         }
                     });
                 });
+    }
+
+    private void setAvatar(ImageView iv, String avatarName) {
+        if (iv == null || avatarName == null || avatarName.isEmpty()) return;
+        int resId = getResources().getIdentifier(avatarName, "drawable", getPackageName());
+        if (resId != 0) {
+            iv.setImageResource(resId);
+        }
     }
 
     private void syncAttempts(DocumentSnapshot snap) {
@@ -274,6 +291,7 @@ public class SkockoActivity extends AppCompatActivity {
 
         if (isGameOver) {
             showTargetCombination();
+            showNextGameButton();
         }
     }
 
@@ -451,14 +469,7 @@ public class SkockoActivity extends AppCompatActivity {
                 updates.put(scoreField, (isPlayer1 ? player1Score : player2Score) + points);
                 updates.put("skocko_isSteal", false);
 
-                db.collection("gameRooms").document(roomId).update(updates).addOnSuccessListener(v -> {
-                    new android.os.Handler(getMainLooper()).postDelayed(() -> {
-                        if (!isFinishing()) {
-                            if (currentRound == 1) startNextRound();
-                            else transitionToNextGame();
-                        }
-                    }, 2500);
-                });
+                db.collection("gameRooms").document(roomId).update(updates);
             } else if (syncAttempts.size() >= 6 && !isOpponentChance) {
                 StatisticsManager.updateSKStats(-1, 0, !gameStatsRecordedThisMatch);
                 gameStatsRecordedThisMatch = true;
@@ -469,14 +480,7 @@ public class SkockoActivity extends AppCompatActivity {
             } else if (isOpponentChance) {
                 StatisticsManager.updateSKStats(-1, 0, !gameStatsRecordedThisMatch);
                 gameStatsRecordedThisMatch = true;
-                db.collection("gameRooms").document(roomId).update(updates).addOnSuccessListener(v -> {
-                    new android.os.Handler(getMainLooper()).postDelayed(() -> {
-                        if (!isFinishing()) {
-                            if (currentRound == 1) startNextRound();
-                            else transitionToNextGame();
-                        }
-                    }, 2500);
-                });
+                db.collection("gameRooms").document(roomId).update(updates);
             } else {
                 db.collection("gameRooms").document(roomId).update(updates);
             }
@@ -485,6 +489,8 @@ public class SkockoActivity extends AppCompatActivity {
     }
 
     private void startNextRound() {
+        if (countDownTimer != null) countDownTimer.cancel();
+        if (!isPlayer1) return;
         Map<String, Object> updates = new HashMap<>();
         updates.put("skocko_currentRound", 2);
         updates.put("skocko_turn", "p2");
@@ -495,6 +501,8 @@ public class SkockoActivity extends AppCompatActivity {
     }
 
     private void transitionToNextGame() {
+        if (countDownTimer != null) countDownTimer.cancel();
+        if (!isPlayer1) return;
         Map<String, Object> updates = new HashMap<>();
         updates.put("currentGame", "korakPoKorak");
         updates.put("roundStartTime", System.currentTimeMillis());
@@ -545,6 +553,36 @@ public class SkockoActivity extends AppCompatActivity {
                 iv.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor("#C8BDD9")));
             }
         }
+    }
+
+    private boolean finishTimerStarted = false;
+
+    private void showNextGameButton() {
+        if (finishTimerStarted) return;
+        finishTimerStarted = true;
+
+        MaterialButton btnNext = findViewById(R.id.btnNext);
+        btnNext.setVisibility(View.VISIBLE);
+        btnNext.setText(currentRound == 1 ? "SLEDEĆA RUNDA" : "SLEDEĆA IGRA");
+        btnNext.setOnClickListener(v -> {
+            if (currentRound == 1) startNextRound();
+            else transitionToNextGame();
+        });
+
+        if (countDownTimer != null) countDownTimer.cancel();
+        countDownTimer = new CountDownTimer(5000, 1000) {
+            @Override
+            public void onTick(long ms) {
+                tvTimer.setText("⏱ " + (ms / 1000 + 1) + "s");
+            }
+
+            @Override
+            public void onFinish() {
+                tvTimer.setText("⏱ 0s");
+                if (currentRound == 1) startNextRound();
+                else transitionToNextGame();
+            }
+        }.start();
     }
 
     private void showTargetCombination() {

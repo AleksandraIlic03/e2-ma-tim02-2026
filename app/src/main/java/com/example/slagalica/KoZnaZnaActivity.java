@@ -6,10 +6,12 @@ import android.os.Bundle;
 import android.os.CountDownTimer;
 import android.view.View;
 import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.google.android.material.button.MaterialButton;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.google.firebase.firestore.DocumentSnapshot;
@@ -24,6 +26,7 @@ import java.util.Map;
 public class KoZnaZnaActivity extends AppCompatActivity {
 
     private TextView tvTimer, tvQuestion, tvPlayer1Points, tvPlayer1Name, tvPlayer2Points, tvPlayer2Name;
+    private ImageView ivPlayer1Avatar, ivPlayer2Avatar;
     private TextView tvAnswer1, tvAnswer2, tvAnswer3, tvAnswer4;
     private ImageButton btnAnswer1, btnAnswer2, btnAnswer3, btnAnswer4;
     private LinearLayout llProgress;
@@ -63,6 +66,9 @@ public class KoZnaZnaActivity extends AppCompatActivity {
         tvPlayer2Points = findViewById(R.id.tvPlayer2Points);
         tvPlayer2Name = findViewById(R.id.tvPlayer2Name);
 
+        ivPlayer1Avatar = findViewById(R.id.ivPlayer1Avatar);
+        ivPlayer2Avatar = findViewById(R.id.ivPlayer2Avatar);
+
         tvAnswer1 = findViewById(R.id.tvAnswer1);
         tvAnswer2 = findViewById(R.id.tvAnswer2);
         tvAnswer3 = findViewById(R.id.tvAnswer3);
@@ -99,6 +105,12 @@ public class KoZnaZnaActivity extends AppCompatActivity {
 
                     tvPlayer1Name.setText(snapshot.getString("player1Name"));
                     tvPlayer2Name.setText(snapshot.getString("player2Name"));
+
+                    String avatar1 = snapshot.getString("player1Avatar");
+                    String avatar2 = snapshot.getString("player2Avatar");
+                    setAvatar(ivPlayer1Avatar, avatar1);
+                    setAvatar(ivPlayer2Avatar, avatar2);
+
                     tvPlayer1Points.setText(String.valueOf(snapshot.getLong("player1Score")));
                     tvPlayer2Points.setText(String.valueOf(snapshot.getLong("player2Score")));
 
@@ -123,6 +135,14 @@ public class KoZnaZnaActivity extends AppCompatActivity {
                     
                     checkBothAnswered(snapshot);
                 });
+    }
+
+    private void setAvatar(ImageView iv, String avatarName) {
+        if (iv == null || avatarName == null || avatarName.isEmpty()) return;
+        int resId = getResources().getIdentifier(avatarName, "drawable", getPackageName());
+        if (resId != 0) {
+            iv.setImageResource(resId);
+        }
     }
 
     private void displayQuestion() {
@@ -292,18 +312,46 @@ public class KoZnaZnaActivity extends AppCompatActivity {
         db.collection("gameRooms").document(roomId).update(updates);
 
         tvTimer.postDelayed(() -> {
-            Map<String, Object> nextUpdates = new HashMap<>();
             if (currentQuestionIndex < 4) {
+                Map<String, Object> nextUpdates = new HashMap<>();
                 nextUpdates.put("currentQuestionIndex", currentQuestionIndex + 1);
                 nextUpdates.put("questionStartTime", System.currentTimeMillis());
                 db.collection("gameRooms").document(roomId).update(nextUpdates);
             } else {
-                db.collection("gameRooms").document(roomId).update(
-                        "currentGame", "spojnice",
-                        "status", "playing",
-                        "roundStartTime", System.currentTimeMillis());
+                showNextGameButton();
             }
-        }, 3000);
+        }, 2000);
+    }
+
+    private void showNextGameButton() {
+        MaterialButton btnNext = findViewById(R.id.btnNext);
+        btnNext.setVisibility(View.VISIBLE);
+        btnNext.setText("Sledeća igra");
+        btnNext.setOnClickListener(v -> triggerNextGame());
+
+        if (questionTimer != null) questionTimer.cancel();
+        
+        questionTimer = new CountDownTimer(5000, 1000) {
+            @Override
+            public void onTick(long millisUntilFinished) {
+                tvTimer.setText("⏱ " + (millisUntilFinished / 1000 + 1) + "s");
+            }
+
+            @Override
+            public void onFinish() {
+                tvTimer.setText("⏱ 0s");
+                triggerNextGame();
+            }
+        }.start();
+    }
+
+    private void triggerNextGame() {
+        if (!isPlayer1) return;
+        if (questionTimer != null) questionTimer.cancel();
+        db.collection("gameRooms").document(roomId).update(
+                "currentGame", "spojnice",
+                "status", "playing",
+                "roundStartTime", System.currentTimeMillis());
     }
 
     private ImageButton getButtonByIndex(int index) {

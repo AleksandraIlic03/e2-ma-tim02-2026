@@ -4,6 +4,7 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.os.CountDownTimer;
 import android.view.View;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
@@ -23,6 +24,7 @@ import java.util.Random;
 public class MojBrojActivity extends AppCompatActivity {
 
     private TextView tvPlayer1Name, tvPlayer1Points, tvPlayer2Name, tvPlayer2Points;
+    private ImageView ivPlayer1Avatar, ivPlayer2Avatar;
     private TextView tvRound, tvTimer, tvTargetNumber, tvExpression, tvResult;
     private LinearLayout llNumberButtons;
 
@@ -64,6 +66,8 @@ public class MojBrojActivity extends AppCompatActivity {
         tvPlayer1Points = findViewById(R.id.tvPlayer1Points);
         tvPlayer2Name = findViewById(R.id.tvPlayer2Name);
         tvPlayer2Points = findViewById(R.id.tvPlayer2Points);
+        ivPlayer1Avatar = findViewById(R.id.ivPlayer1Avatar);
+        ivPlayer2Avatar = findViewById(R.id.ivPlayer2Avatar);
         tvRound = findViewById(R.id.tvRound);
         tvTimer = findViewById(R.id.tvTimer);
         tvTargetNumber = findViewById(R.id.tvTargetNumber);
@@ -103,6 +107,9 @@ public class MojBrojActivity extends AppCompatActivity {
         tvPlayer1Points.setText(String.valueOf(snapshot.getLong("player1Score") != null ? snapshot.getLong("player1Score") : 0));
         tvPlayer2Points.setText(String.valueOf(snapshot.getLong("player2Score") != null ? snapshot.getLong("player2Score") : 0));
 
+        setAvatar(ivPlayer1Avatar, snapshot.getString("player1Avatar"));
+        setAvatar(ivPlayer2Avatar, snapshot.getString("player2Avatar"));
+
         String snapPhase = snapshot.getString("mojbroj_phase");
         if (snapPhase == null) snapPhase = "p1_playing";
 
@@ -138,12 +145,40 @@ public class MojBrojActivity extends AppCompatActivity {
                 && Boolean.TRUE.equals(snapshot.getBoolean("mojbroj_p2Finished"))) {
             showComparison(snapshot);
             updateLocalStats(snapshot);
-            // Samo jedan igrač (P1 ili Host faze) pokreće prelaz nakon pauze
-            if (isRoundHost() && !isFinalizingRound) {
-                isFinalizingRound = true;
-                new android.os.Handler().postDelayed(this::calculateAndMove, 3500);
-            }
+            showNextGameButton();
         }
+    }
+
+    private boolean finishTimerStarted = false;
+    private void showNextGameButton() {
+        if (finishTimerStarted) return;
+        finishTimerStarted = true;
+
+        MaterialButton btnNext = findViewById(R.id.btnNext);
+        btnNext.setVisibility(View.VISIBLE);
+        btnNext.setText(phase.equals("p1_playing") ? "SLEDEĆA RUNDA" : "KRAJ IGRE");
+        btnNext.setOnClickListener(v -> {
+            if (phase.equals("p2_playing")) {
+                // Ako je druga runda gotova, prelazimo u done fazu
+                calculateAndMove();
+            } else {
+                calculateAndMove();
+            }
+        });
+
+        if (roundTimer != null) roundTimer.cancel();
+        roundTimer = new CountDownTimer(5000, 1000) {
+            @Override
+            public void onTick(long ms) {
+                tvTimer.setText("⏱ " + (ms / 1000 + 1) + "s");
+            }
+
+            @Override
+            public void onFinish() {
+                tvTimer.setText("⏱ 0s");
+                calculateAndMove();
+            }
+        }.start();
     }
 
     private void resetRoundUI() {
@@ -154,6 +189,8 @@ public class MojBrojActivity extends AppCompatActivity {
         targetNumber = -1;
         numbersLoaded = false;
         generateCalled = false;
+        finishTimerStarted = false;
+        findViewById(R.id.btnNext).setVisibility(View.GONE);
         numbers.clear();
         expression = new StringBuilder();
         usedIndices.clear();
@@ -295,6 +332,8 @@ public class MojBrojActivity extends AppCompatActivity {
     }
 
     private void calculateAndMove() {
+        if (roundTimer != null) roundTimer.cancel();
+        if (!isRoundHost()) return;
         db.collection("gameRooms").document(roomId).get()
                 .addOnSuccessListener(freshSnap -> {
                     Long r1Long = freshSnap.getLong("mojbroj_p1Result");
@@ -430,6 +469,14 @@ public class MojBrojActivity extends AppCompatActivity {
                 v.setEnabled(e);
                 v.setAlpha(e ? 1f : 0.4f);
             }
+        }
+    }
+
+    private void setAvatar(ImageView iv, String avatarName) {
+        if (iv == null || avatarName == null || avatarName.isEmpty()) return;
+        int resId = getResources().getIdentifier(avatarName, "drawable", getPackageName());
+        if (resId != 0) {
+            iv.setImageResource(resId);
         }
     }
 

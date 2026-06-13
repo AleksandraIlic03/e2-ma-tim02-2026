@@ -27,6 +27,7 @@
             android:padding="8dp">
 
             <ImageView
+                android:id="@+id/ivPlayer1Avatar"
                 android:layout_width="40dp"
                 android:layout_height="40dp"
                 android:contentDescription="Player 1"
@@ -127,6 +128,7 @@
             </LinearLayout>
 
             <ImageView
+                android:id="@+id/ivPlayer2Avatar"
                 android:layout_width="40dp"
                 android:layout_height="40dp"
                 android:contentDescription="Player 2"
@@ -285,6 +287,17 @@
                 android:textColor="#FFFFFF"
                 android:textSize="16sp"
                 app:cornerRadius="100dp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnNext"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:backgroundTint="#24B874"
+                android:fontFamily="@font/fredoka_bold"
+                android:text="SLEDEĆA IGRA"
+                android:visibility="gone"
+                app:cornerRadius="12dp" />
         </LinearLayout>
 
         <LinearLayout

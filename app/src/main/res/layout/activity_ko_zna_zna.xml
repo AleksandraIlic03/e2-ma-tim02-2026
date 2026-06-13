@@ -28,6 +28,7 @@
             android:padding="8dp">
 
             <ImageView
+                android:id="@+id/ivPlayer1Avatar"
                 android:layout_width="40dp"
                 android:layout_height="40dp"
                 android:contentDescription="Player 1"
@@ -104,6 +105,7 @@
             </LinearLayout>
 
             <ImageView
+                android:id="@+id/ivPlayer2Avatar"
                 android:layout_width="40dp"
                 android:layout_height="40dp"
                 android:contentDescription="Player 2"

@@ -12,6 +12,7 @@ import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.view.inputmethod.EditorInfo;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -34,6 +35,7 @@ public class AsocijacijeActivity extends AppCompatActivity {
     private int player1Score = 0, player2Score = 0;
     private String player1Name, player2Name;
     private TextView tvTimer, tvPoints, tvPlayer1Name, tvPlayer2Name, tvPlayer1Points, tvPlayer2Points;
+    private ImageView ivPlayer1Avatar, ivPlayer2Avatar;
     private CountDownTimer countDownTimer;
     private MaterialButton btnNextAction;
 
@@ -90,6 +92,9 @@ public class AsocijacijeActivity extends AppCompatActivity {
         tvPlayer1Points = findViewById(R.id.tvPlayer1Points);
         tvPlayer2Points = findViewById(R.id.tvPlayer2Points);
 
+        ivPlayer1Avatar = findViewById(R.id.ivPlayer1Avatar);
+        ivPlayer2Avatar = findViewById(R.id.ivPlayer2Avatar);
+
         buttonsA[0] = findViewById(R.id.btnA1); buttonsA[1] = findViewById(R.id.btnA2);
         buttonsA[2] = findViewById(R.id.btnA3); buttonsA[3] = findViewById(R.id.btnA4);
         buttonsB[0] = findViewById(R.id.btnB1); buttonsB[1] = findViewById(R.id.btnB2);
@@ -132,6 +137,10 @@ public class AsocijacijeActivity extends AppCompatActivity {
                         if (tvPlayer2Name != null) tvPlayer2Name.setText(player2Name);
                         if (tvPlayer1Points != null) tvPlayer1Points.setText(String.valueOf(player1Score));
                         if (tvPlayer2Points != null) tvPlayer2Points.setText(String.valueOf(player2Score));
+
+                        setAvatar(ivPlayer1Avatar, snapshot.getString("player1Avatar"));
+                        setAvatar(ivPlayer2Avatar, snapshot.getString("player2Avatar"));
+
                         tvPoints.setText("⭐ " + (isPlayer1 ? player1Score : player2Score));
 
                         if (snapshot.get("asocijacija1") == null) return;
@@ -141,6 +150,7 @@ public class AsocijacijeActivity extends AppCompatActivity {
                             lastRecordedRound = newRound;
                             asocStatsUpdatedThisRound = false;
                             pointsAtRoundStart = isPlayer1 ? player1Score : player2Score;
+                            finishTimerStarted = false;
                         }
                         currentRound = newRound;
                         currentTurn = snapshot.getString("asoc_turn") != null ? snapshot.getString("asoc_turn") : "p1";
@@ -172,6 +182,14 @@ public class AsocijacijeActivity extends AppCompatActivity {
                         }
                     });
                 });
+    }
+
+    private void setAvatar(ImageView iv, String avatarName) {
+        if (iv == null || avatarName == null || avatarName.isEmpty()) return;
+        int resId = getResources().getIdentifier(avatarName, "drawable", getPackageName());
+        if (resId != 0) {
+            iv.setImageResource(resId);
+        }
     }
 
     private void syncState(DocumentSnapshot snap) {
@@ -263,6 +281,7 @@ public class AsocijacijeActivity extends AppCompatActivity {
             if (btnNextAction != null) {
                 btnNextAction.setVisibility(View.VISIBLE);
                 btnNextAction.setText(currentRound == 1 ? "SLEDEĆA RUNDA" : "SLEDEĆA IGRA");
+                startFinishTimer();
             }
         } else {
             etKonacnoResenje.setEnabled(isMyTurn);
@@ -313,7 +332,31 @@ public class AsocijacijeActivity extends AppCompatActivity {
         });
     }
 
+    private boolean finishTimerStarted = false;
+
+    private void startFinishTimer() {
+        if (finishTimerStarted) return;
+        finishTimerStarted = true;
+
+        if (countDownTimer != null) countDownTimer.cancel();
+
+        countDownTimer = new CountDownTimer(5000, 1000) {
+            @Override
+            public void onTick(long l) {
+                tvTimer.setText("⏱ " + (l / 1000 + 1) + "s");
+            }
+
+            @Override
+            public void onFinish() {
+                tvTimer.setText("⏱ 0s");
+                if (currentRound == 1) startNextRound();
+                else transitionToSkocko();
+            }
+        }.start();
+    }
+
     private void startNextRound() {
+        if (countDownTimer != null) countDownTimer.cancel();
         if (!isPlayer1) return;
         Map<String, Object> updates = new HashMap<>();
         updates.put("asoc_currentRound", 2);
@@ -336,6 +379,7 @@ public class AsocijacijeActivity extends AppCompatActivity {
     }
 
     private void transitionToSkocko() {
+        if (countDownTimer != null) countDownTimer.cancel();
         if (!isPlayer1) return;
         Map<String, Object> updates = new HashMap<>();
         updates.put("currentGame", "skocko");

@@ -5,6 +5,7 @@ import android.graphics.Color;
 import android.os.Bundle;
 import android.os.CountDownTimer;
 import android.view.View;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -25,6 +26,7 @@ import java.util.Map;
 public class SpojniceActivity extends AppCompatActivity {
 
     private TextView tvPlayer1Name, tvPlayer1Points, tvPlayer2Name, tvPlayer2Points, tvTimer, tvInstruction;
+    private ImageView ivPlayer1Avatar, ivPlayer2Avatar;
     private MaterialButton[] leftButtons = new MaterialButton[5];
     private MaterialButton[] rightButtons = new MaterialButton[5];
     private MaterialButton btnNext;
@@ -73,6 +75,8 @@ public class SpojniceActivity extends AppCompatActivity {
         tvPlayer1Points = findViewById(R.id.tvPlayer1Points);
         tvPlayer2Name = findViewById(R.id.tvPlayer2Name);
         tvPlayer2Points = findViewById(R.id.tvPlayer2Points);
+        ivPlayer1Avatar = findViewById(R.id.ivPlayer1Avatar);
+        ivPlayer2Avatar = findViewById(R.id.ivPlayer2Avatar);
         tvTimer = findViewById(R.id.tvTimer);
         tvInstruction = findViewById(R.id.tvInstruction);
         btnNext = findViewById(R.id.btnNext);
@@ -136,6 +140,10 @@ public class SpojniceActivity extends AppCompatActivity {
 
                     tvPlayer1Name.setText(snapshot.getString("player1Name"));
                     tvPlayer2Name.setText(snapshot.getString("player2Name"));
+
+                    setAvatar(ivPlayer1Avatar, snapshot.getString("player1Avatar"));
+                    setAvatar(ivPlayer2Avatar, snapshot.getString("player2Avatar"));
+
                     tvPlayer1Name.setTextColor(Color.parseColor(COLOR_P1));
                     tvPlayer2Name.setTextColor(Color.parseColor(COLOR_P2));
 
@@ -164,6 +172,14 @@ public class SpojniceActivity extends AppCompatActivity {
                         endRoundLocally();
                     }
                 });
+    }
+
+    private void setAvatar(ImageView iv, String avatarName) {
+        if (iv == null || avatarName == null || avatarName.isEmpty()) return;
+        int resId = getResources().getIdentifier(avatarName, "drawable", getPackageName());
+        if (resId != 0) {
+            iv.setImageResource(resId);
+        }
     }
 
     private void syncTimer(long startTime) {
@@ -278,11 +294,28 @@ public class SpojniceActivity extends AppCompatActivity {
             StatisticsManager.updateSPStats(correctCount, 5, correctCount * 2, !gameStatsRecordedThisMatch);
             gameStatsRecordedThisMatch = true;
         }
+        
         btnNext.setVisibility(View.VISIBLE);
-        btnNext.setText(currentRound == 1 ? "SLEDEĆA RUNDA" : "ZAVRŠI IGRU");
+        btnNext.setText(currentRound == 1 ? "SLEDEĆA RUNDA" : "SLEDEĆA IGRA");
+        btnNext.setOnClickListener(v -> handleNextRound());
+
+        timer = new CountDownTimer(5000, 1000) {
+            @Override
+            public void onTick(long l) {
+                tvTimer.setText("⏱ " + (l / 1000 + 1) + "s");
+            }
+
+            @Override
+            public void onFinish() {
+                tvTimer.setText("⏱ 0s");
+                handleNextRound();
+            }
+        }.start();
     }
 
     private void handleNextRound() {
+        if (timer != null) timer.cancel();
+        if (!isPlayer1) return;
         if (currentRound == 1) {
             Map<String, Object> updates = new HashMap<>();
             updates.put("currentRound", 2);
@@ -295,12 +328,10 @@ public class SpojniceActivity extends AppCompatActivity {
             updates.put("roundStartTime", System.currentTimeMillis());
             db.collection("gameRooms").document(roomId).update(updates);
         } else {
-            if (isPlayer1) {
-                Map<String, Object> upd = new HashMap<>();
-                upd.put("currentGame", "asocijacije");
-                upd.put("roundStartTime", System.currentTimeMillis());
-                db.collection("gameRooms").document(roomId).update(upd);
-            }
+            Map<String, Object> upd = new HashMap<>();
+            upd.put("currentGame", "asocijacije");
+            upd.put("roundStartTime", System.currentTimeMillis());
+            db.collection("gameRooms").document(roomId).update(upd);
         }
     }
 

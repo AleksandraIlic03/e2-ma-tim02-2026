@@ -22,7 +22,12 @@
             android:gravity="center_vertical"
             android:orientation="horizontal"
             android:padding="6dp">
-            <ImageView android:layout_width="28dp" android:layout_height="28dp" android:src="@drawable/circle_placeholder" android:contentDescription="Player 1" />
+            <ImageView
+                android:id="@+id/ivPlayer1Avatar"
+                android:layout_width="28dp"
+                android:layout_height="28dp"
+                android:src="@drawable/circle_placeholder"
+                android:contentDescription="Player 1" />
             <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="5dp" android:orientation="vertical">
                 <TextView android:id="@+id/tvPlayer1Name" android:layout_width="wrap_content" android:layout_height="wrap_content" android:fontFamily="@font/fredoka_semibold" android:text="P1" android:textColor="#877777" android:textSize="10sp" />
                 <TextView android:id="@+id/tvPlayer1Points" android:layout_width="wrap_content" android:layout_height="wrap_content" android:fontFamily="@font/fredoka_bold" android:text="0" android:textColor="#321C1C" android:textSize="15sp" />
@@ -43,7 +48,12 @@
                 <TextView android:id="@+id/tvPlayer2Name" android:layout_width="wrap_content" android:layout_height="wrap_content" android:fontFamily="@font/fredoka_semibold"  android:textColor="#877777" android:textSize="10sp" />
                 <TextView android:id="@+id/tvPlayer2Points" android:layout_width="wrap_content" android:layout_height="wrap_content" android:fontFamily="@font/fredoka_bold" android:text="0" android:textColor="#321C1C" android:textSize="15sp" />
             </LinearLayout>
-            <ImageView android:layout_width="28dp" android:layout_height="28dp" android:src="@drawable/circle_placeholder" android:contentDescription="Player 2" />
+            <ImageView
+                android:id="@+id/ivPlayer2Avatar"
+                android:layout_width="28dp"
+                android:layout_height="28dp"
+                android:src="@drawable/circle_placeholder"
+                android:contentDescription="Player 2" />
         </LinearLayout>
     </LinearLayout>
 
@@ -146,5 +156,16 @@
         <com.google.android.material.button.MaterialButton android:id="@+id/btnDelete" android:layout_width="0dp" android:layout_height="match_parent" android:layout_marginEnd="5dp" android:layout_weight="1" android:backgroundTint="#823FAB" android:fontFamily="@font/fredoka_bold" android:text="OBRIŠI" android:textColor="#FFFFFF" android:textSize="13sp" app:cornerRadius="12dp" />
         <com.google.android.material.button.MaterialButton android:id="@+id/btnConfirm" android:layout_width="0dp" android:layout_height="match_parent" android:layout_marginStart="5dp" android:layout_weight="1" android:backgroundTint="#823FAB" android:fontFamily="@font/fredoka_bold" android:text="POTVRDI" android:textSize="13sp" app:cornerRadius="12dp" />
     </LinearLayout>
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnNext"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="5dp"
+        android:backgroundTint="#24B874"
+        android:fontFamily="@font/fredoka_bold"
+        android:text="SLEDEĆA IGRA"
+        android:visibility="gone"
+        app:cornerRadius="12dp" />
 
 </LinearLayout>
