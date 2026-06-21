@@ -84,7 +84,20 @@ public class WaitingRoomActivity extends AppCompatActivity {
                                 currentUserAvatar = avatar;
                             }
                         }
+                        handleAutoIntent();
                     });
+        }
+    }
+
+    private void handleAutoIntent() {
+        String autoJoinId = getIntent().getStringExtra("autoJoinRoomId");
+        if (autoJoinId != null) {
+            etRoomId.setText(autoJoinId);
+            joinRoom();
+            return;
+        }
+        if (getIntent().getBooleanExtra("autoCreate", false)) {
+            createRoom();
         }
     }
 
@@ -222,8 +235,21 @@ public class WaitingRoomActivity extends AppCompatActivity {
             room.put("skocko_attempts", new ArrayList<>());
             room.put("skocko_isSteal", false);
 
+            // Tournament support: embed tournamentId and winnerKey if launched from tournament
+            String tid = getIntent().getStringExtra("tournamentId");
+            String tWinnerKey = getIntent().getStringExtra("tournamentWinnerKey");
+            if (tid != null) {
+                room.put("tournamentId", tid);
+                room.put("tournamentWinnerKey", tWinnerKey != null ? tWinnerKey : "");
+            }
+
             db.collection("gameRooms").document(roomId).set(room)
                     .addOnSuccessListener(aVoid -> {
+                        // If tournament room, write roomId back to tournament doc
+                        String tRoomKey = getIntent().getStringExtra("tournamentRoomKey");
+                        if (tid != null && tRoomKey != null) {
+                            db.collection("tournaments").document(tid).update(tRoomKey, roomId);
+                        }
                         tvRoomId.setText("Sifra sobe: " + roomId);
                         tvRoomId.setVisibility(View.VISIBLE);
                         tvStatus.setVisibility(View.VISIBLE);

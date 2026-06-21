@@ -1,0 +1,200 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <!-- Sadržaj ekrana turnira -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:background="#FBF7EF">
+
+        <androidx.cardview.widget.CardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:cardElevation="4dp"
+            app:cardCornerRadius="0dp">
+
+            <androidx.appcompat.widget.Toolbar
+                android:id="@+id/toolbar"
+                android:layout_width="match_parent"
+                android:layout_height="?attr/actionBarSize"
+                android:background="#FEFEFE"
+                app:title="Turnir"
+                app:titleTextColor="#321C1C"
+                app:navigationIcon="?attr/homeAsUpIndicator" />
+        </androidx.cardview.widget.CardView>
+
+        <ScrollView
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:padding="20dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:cardCornerRadius="16dp"
+                    app:cardElevation="2dp"
+                    app:strokeWidth="0dp"
+                    android:layout_marginBottom="24dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="20dp"
+                        android:gravity="center">
+
+                        <TextView
+                            android:id="@+id/tvStatus"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Status: Čekanje na igrače"
+                            android:textColor="#321C1C"
+                            android:fontFamily="@font/fredoka_semibold"
+                            android:textSize="16sp" />
+
+                        <ProgressBar
+                            android:id="@+id/pbPlayers"
+                            style="?android:attr/progressBarStyleHorizontal"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:max="4"
+                            android:progress="1"
+                            android:progressTint="#823FAB"
+                            android:layout_marginTop="12dp" />
+
+                        <TextView
+                            android:id="@+id/tvPlayerCount"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="1/4 igrača"
+                            android:textColor="#877777"
+                            android:fontFamily="@font/fredoka_regular"
+                            android:layout_marginTop="6dp" />
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <!-- Bracket vizualizacija -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center"
+                    android:layout_marginBottom="24dp">
+
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:gravity="center">
+                        <include layout="@layout/item_tournament_player" android:id="@+id/player1" />
+                        <View android:layout_width="2dp" android:layout_height="20dp" android:background="#D1D1D1" />
+                        <include layout="@layout/item_tournament_player" android:id="@+id/player2" />
+                    </LinearLayout>
+
+                    <View android:layout_width="24dp" android:layout_height="2dp" android:background="#D1D1D1" />
+
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:gravity="center">
+                        <include layout="@layout/item_tournament_player" android:id="@+id/finalist1" />
+                        <View android:layout_width="2dp" android:layout_height="60dp" android:background="#D1D1D1" />
+                        <include layout="@layout/item_tournament_player" android:id="@+id/finalist2" />
+                    </LinearLayout>
+
+                    <View android:layout_width="24dp" android:layout_height="2dp" android:background="#D1D1D1" />
+
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:gravity="center">
+                        <include layout="@layout/item_tournament_player" android:id="@+id/player3" />
+                        <View android:layout_width="2dp" android:layout_height="20dp" android:background="#D1D1D1" />
+                        <include layout="@layout/item_tournament_player" android:id="@+id/player4" />
+                    </LinearLayout>
+                </LinearLayout>
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnJoinTournament"
+                    android:layout_width="match_parent"
+                    android:layout_height="56dp"
+                    android:text="ZAPOČNI TURNIR (3 tokena)"
+                    android:backgroundTint="#FFD700"
+                    android:textColor="#321C1C"
+                    android:fontFamily="@font/fredoka_bold"
+                    app:cornerRadius="100dp" />
+
+            </LinearLayout>
+        </ScrollView>
+    </LinearLayout>
+
+    <!-- Overlay za rezultat (pobeda/poraz) – Spec 10f animacija -->
+    <FrameLayout
+        android:id="@+id/layoutResult"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#CC000000"
+        android:visibility="gone"
+        android:gravity="center">
+
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="280dp"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            app:cardCornerRadius="24dp"
+            app:cardElevation="8dp"
+            app:cardBackgroundColor="#FEFEFE">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="32dp"
+                android:gravity="center">
+
+                <TextView
+                    android:id="@+id/tvResultTitle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="POBEDIO SI!"
+                    android:textColor="#823FAB"
+                    android:textSize="28sp"
+                    android:fontFamily="@font/fredoka_bold"
+                    android:textAlignment="center" />
+
+                <TextView
+                    android:id="@+id/tvResultDetail"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:text="+2 tokena!"
+                    android:textColor="#321C1C"
+                    android:textSize="16sp"
+                    android:fontFamily="@font/fredoka_semibold"
+                    android:textAlignment="center" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="20dp"
+                    android:text="Dodirni za zatvaranje"
+                    android:textColor="#877777"
+                    android:textSize="12sp"
+                    android:fontFamily="@font/fredoka_regular" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+    </FrameLayout>
+
+</FrameLayout>

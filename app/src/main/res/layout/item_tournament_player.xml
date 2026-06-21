@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="70dp"
+    android:layout_height="wrap_content"
+    android:gravity="center"
+    android:orientation="vertical"
+    android:padding="4dp">
+
+    <androidx.cardview.widget.CardView
+        android:layout_width="44dp"
+        android:layout_height="44dp"
+        app:cardCornerRadius="22dp"
+        app:cardElevation="2dp"
+        app:cardBackgroundColor="#FFFFFF">
+
+        <ImageView
+            android:id="@+id/ivAvatar"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:scaleType="centerCrop"
+            android:src="@drawable/ic_user"
+            android:contentDescription="Avatar" />
+    </androidx.cardview.widget.CardView>
+
+    <TextView
+        android:id="@+id/tvUsername"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:text="Čeka se..."
+        android:textColor="#321C1C"
+        android:textSize="10sp"
+        android:fontFamily="@font/fredoka_semibold"
+        android:maxLines="1"
+        android:ellipsize="end" />
+
+    <!-- Spec 10f: prikazuje se liga igrača -->
+    <TextView
+        android:id="@+id/tvLeague"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="2dp"
+        android:text=""
+        android:textColor="#823FAB"
+        android:textSize="9sp"
+        android:fontFamily="@font/fredoka_regular"
+        android:maxLines="1"
+        android:ellipsize="end" />
+
+</LinearLayout>

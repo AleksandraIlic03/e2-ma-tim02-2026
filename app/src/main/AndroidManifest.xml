@@ -49,6 +49,15 @@
             android:name=".HomeActivity"
             android:exported="false" />
         <activity
+            android:name=".RankingActivity"
+            android:exported="false" />
+        <activity
+            android:name=".TournamentActivity"
+            android:exported="false" />
+        <activity
+            android:name=".DailyMissionsActivity"
+            android:exported="false" />
+        <activity
             android:name=".RegisterActivity"
             android:exported="false" />
         <activity

@@ -12,6 +12,8 @@ import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.google.android.material.button.MaterialButton;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.ListenerRegistration;
 
@@ -494,12 +496,66 @@ public class MojBrojActivity extends AppCompatActivity {
                     long p2Score = snap.getLong("player2Score") != null ? snap.getLong("player2Score") : 0;
                     String p1Name = snap.getString("player1Name") != null ? snap.getString("player1Name") : "Igrač 1";
                     String p2Name = snap.getString("player2Name") != null ? snap.getString("player2Name") : "Igrač 2";
+                    String p1Id = snap.getString("player1Id");
+                    String p2Id = snap.getString("player2Id");
+                    String currentUserId = FirebaseAuth.getInstance().getCurrentUser().getUid();
 
                     String result;
-                    if (p1Score > p2Score) result = isPlayer1 ? "win" : "loss";
-                    else if (p2Score > p1Score) result = isPlayer1 ? "loss" : "win";
-                    else result = "draw";
+                    long myScore = isPlayer1 ? p1Score : p2Score;
+                    int starChange;
+
+                    if (p1Score == p2Score) {
+                        result = "draw";
+                        starChange = (int) (myScore / 40);
+                    } else if ((isPlayer1 && p1Score > p2Score) || (!isPlayer1 && p2Score > p1Score)) {
+                        result = "win";
+                        starChange = 10 + (int) (myScore / 40);
+                    } else {
+                        result = "loss";
+                        starChange = -10 + (int) (myScore / 40);
+                    }
+
                     StatisticsManager.updateMatchResult(result);
+                    RankingManager.updateStars(currentUserId, starChange);
+
+                    if ("win".equals(result)) {
+                        RankingManager.completeMission(currentUserId, "win_game");
+                    }
+
+                    // Spec 4a: beležimo odigranu partiju
+                    if (!gameStatsRecordedThisMatch) {
+                        gameStatsRecordedThisMatch = true;
+                        db.collection("users").document(currentUserId)
+                            .update("gamesPlayed", com.google.firebase.firestore.FieldValue.increment(1));
+                    }
+
+                    // Turnir: ako je ovo turnirska partija, primeni posebna pravila nagrađivanja
+                    String tId = snap.getString("tournamentId");
+                    String tWinnerKey = snap.getString("tournamentWinnerKey");
+                    if (tId != null && !tId.isEmpty() && tWinnerKey != null && !tWinnerKey.isEmpty()) {
+                        String winnerId = p1Score >= p2Score ? p1Id : p2Id;
+                        boolean iWon = winnerId != null && winnerId.equals(currentUserId);
+                        boolean isSemiFinal = tWinnerKey.equals("sf1Winner") || tWinnerKey.equals("sf2Winner");
+
+                        // Spec 10d: SF gubitnik ne dobija NI zvezde ni kaznu
+                        // Spec 10e: Final gubitnik dobija zvezde po regularnim pravilima (starChange već izračunat)
+                        if (!iWon && isSemiFinal) {
+                            // Poništi promenu zvezda za gubitnika polufinala
+                            // (updateStars je već pozvan gore - poništavamo ga negativnim)
+                            RankingManager.updateStars(currentUserId, -starChange);
+                        }
+
+                        db.collection("tournaments").document(tId)
+                            .update(tWinnerKey, winnerId)
+                            .addOnCompleteListener(task -> {
+                                Intent intent = new Intent(this, TournamentActivity.class);
+                                intent.putExtra("tournamentId", tId);
+                                intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+                                startActivity(intent);
+                                finish();
+                            });
+                        return;
+                    }
 
                     String winner = p1Score > p2Score ? p1Name : (p2Score > p1Score ? p2Name : "Nerešeno");
                     new AlertDialog.Builder(this)
