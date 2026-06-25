@@ -83,8 +83,29 @@ public class SkockoActivity extends AppCompatActivity {
         }
         isPlayer1 = getIntent().getBooleanExtra("isPlayer1", true);
 
+        getOnBackPressedDispatcher().addCallback(this, new androidx.activity.OnBackPressedCallback(true) {
+            @Override
+            public void handleOnBackPressed() {
+                showExitConfirmation();
+            }
+        });
+
         initViews();
         attachGameListener();
+    }
+
+    private void showExitConfirmation() {
+        new androidx.appcompat.app.AlertDialog.Builder(this)
+                .setTitle("Napuštanje igre")
+                .setMessage("Ako napustite igru sada, izgubićete meč i 10 zvezdi. Da li ste sigurni?")
+                .setPositiveButton("Da", (d, w) -> {
+                    String uid = com.google.firebase.auth.FirebaseAuth.getInstance().getUid();
+                    if (uid != null) RankingManager.updateStars(uid, -10);
+                    db.collection("gameRooms").document(roomId).update("playerLeft", isPlayer1 ? "p1" : "p2");
+                    finish();
+                })
+                .setNegativeButton("Ne", null)
+                .show();
     }
 
     private void initViews() {
@@ -150,6 +171,15 @@ public class SkockoActivity extends AppCompatActivity {
                         if (tvPlayer1Points != null) tvPlayer1Points.setText(String.valueOf(player1Score));
                         if (tvPlayer2Points != null) tvPlayer2Points.setText(String.valueOf(player2Score));
 
+                        // Spec 3f: protivnik napustio - preskoči njegov red odmah
+                        String playerLeft = snapshot.getString("playerLeft");
+                        if (playerLeft != null && !playerLeft.isEmpty()) {
+                            String opponent = isPlayer1 ? "p2" : "p1";
+                            if (playerLeft.equals(opponent) && currentTurn.equals(opponent)) {
+                                skipOpponentTurnSkocko();
+                            }
+                        }
+
                         setAvatar(ivPlayer1Avatar, snapshot.getString("player1Avatar"));
                         setAvatar(ivPlayer2Avatar, snapshot.getString("player2Avatar"));
 
@@ -175,22 +205,6 @@ public class SkockoActivity extends AppCompatActivity {
 
                         currentTurn = snapshot.getString("skocko_turn") != null
                             ? snapshot.getString("skocko_turn") : "p1";
-
-                        // PROVERA READY STANJA ZA SLEDECU RUNDU/IGRU
-                        p1Ready = snapshot.getBoolean("skocko_p1Ready") != null && snapshot.getBoolean("skocko_p1Ready");
-                        p2Ready = snapshot.getBoolean("skocko_p2Ready") != null && snapshot.getBoolean("skocko_p2Ready");
-
-                        if (p1Ready && p2Ready) {
-                            if (isPlayer1) { // Samo p1 kao host vrši tranziciju
-                                Map<String, Object> resetReady = new HashMap<>();
-                                resetReady.put("skocko_p1Ready", false);
-                                resetReady.put("skocko_p2Ready", false);
-                                db.collection("gameRooms").document(roomId).update(resetReady);
-
-                                if (currentRound == 1) startNextRound();
-                                else transitionToNextGame();
-                            }
-                        }
 
                         Boolean steal = snapshot.getBoolean("skocko_isSteal");
                         isOpponentChance = steal != null && steal;
@@ -278,6 +292,19 @@ public class SkockoActivity extends AppCompatActivity {
 
             if (!solved && stealDone) isGameOver = true;
 
+            if (isGameOver) {
+                db.collection("gameRooms").document(roomId).get().addOnSuccessListener(snapshot -> {
+                    String playerLeft = snapshot.getString("playerLeft");
+                    boolean opponentLeft = playerLeft != null && !playerLeft.isEmpty() && !playerLeft.equals(isPlayer1 ? "p1" : "p2");
+                    if (isPlayer1 || opponentLeft) {
+                        new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
+                            if (currentRound == 1) startNextRound();
+                            else transitionToNextGame();
+                        }, 3000);
+                    }
+                });
+            }
+
             boolean isMyTurn = currentTurn.equals(isPlayer1 ? "p1" : "p2");
             if (!isMyTurn) currentSymbolIndex = 0;
 
@@ -342,40 +369,13 @@ public class SkockoActivity extends AppCompatActivity {
         if (remaining <= 0) {
             tvTimer.setText("⏱ 0s");
             if (!isGameOver) {
-                boolean isMyTurn = currentTurn.equals(isPlayer1 ? "p1" : "p2");
-                if (!isMyTurn) return;
-                StatisticsManager.updateSKStats(-1, 0, !gameStatsRecordedThisMatch);
-                gameStatsRecordedThisMatch = true;
-                if (!isOpponentChance) {
-                    Map<String, Object> updates = new HashMap<>();
-                    updates.put("skocko_turn", currentRound == 1 ? "p2" : "p1");
-                    updates.put("skocko_isSteal", true);
-                    updates.put("roundStartTime", System.currentTimeMillis());
-                    db.collection("gameRooms").document(roomId).update(updates);
-                } else {
-                    Map<String, Object> roundUpdates = new HashMap<>();
-                    roundUpdates.put("skocko_isSteal", false);
-                    if (currentRound == 1) {
-                        roundUpdates.put("skocko_currentRound", 2);
-                        roundUpdates.put("skocko_turn", "p2");
-                        roundUpdates.put("skocko_attempts", new ArrayList<>());
-                        roundUpdates.put("roundStartTime", System.currentTimeMillis());
-                    } else {
-                        roundUpdates.put("currentGame", "korakPoKorak");
-                        roundUpdates.put("roundStartTime", System.currentTimeMillis());
-                    }
-                    db.collection("gameRooms").document(roomId).update(roundUpdates);
-                }
-            }
-            return;
-        }
-        countDownTimer = new CountDownTimer(remaining, 1000) {
-            @Override public void onTick(long ms) { tvTimer.setText("⏱ " + (ms / 1000) + "s"); }
-            @Override public void onFinish() {
-                tvTimer.setText("⏱ 0s");
-                if (!isGameOver) {
+                db.collection("gameRooms").document(roomId).get().addOnSuccessListener(snapshot -> {
+                    String playerLeft = snapshot.getString("playerLeft");
+                    boolean opponentLeft = playerLeft != null && !playerLeft.isEmpty() && !playerLeft.equals(isPlayer1 ? "p1" : "p2");
+                    
                     boolean isMyTurn = currentTurn.equals(isPlayer1 ? "p1" : "p2");
-                    if (!isMyTurn) return;
+                    if (!isMyTurn && !opponentLeft) return;
+
                     StatisticsManager.updateSKStats(-1, 0, !gameStatsRecordedThisMatch);
                     gameStatsRecordedThisMatch = true;
                     if (!isOpponentChance) {
@@ -398,6 +398,45 @@ public class SkockoActivity extends AppCompatActivity {
                         }
                         db.collection("gameRooms").document(roomId).update(roundUpdates);
                     }
+                });
+            }
+            return;
+        }
+        countDownTimer = new CountDownTimer(remaining, 1000) {
+            @Override public void onTick(long ms) { tvTimer.setText("⏱ " + (ms / 1000) + "s"); }
+            @Override public void onFinish() {
+                tvTimer.setText("⏱ 0s");
+                if (!isGameOver) {
+                    db.collection("gameRooms").document(roomId).get().addOnSuccessListener(snapshot -> {
+                        String playerLeft = snapshot.getString("playerLeft");
+                        boolean opponentLeft = playerLeft != null && !playerLeft.isEmpty() && !playerLeft.equals(isPlayer1 ? "p1" : "p2");
+
+                        boolean isMyTurn = currentTurn.equals(isPlayer1 ? "p1" : "p2");
+                        if (!isMyTurn && !opponentLeft) return;
+                        
+                        StatisticsManager.updateSKStats(-1, 0, !gameStatsRecordedThisMatch);
+                        gameStatsRecordedThisMatch = true;
+                        if (!isOpponentChance) {
+                            Map<String, Object> updates = new HashMap<>();
+                            updates.put("skocko_turn", currentRound == 1 ? "p2" : "p1");
+                            updates.put("skocko_isSteal", true);
+                            updates.put("roundStartTime", System.currentTimeMillis());
+                            db.collection("gameRooms").document(roomId).update(updates);
+                        } else {
+                            Map<String, Object> roundUpdates = new HashMap<>();
+                            roundUpdates.put("skocko_isSteal", false);
+                            if (currentRound == 1) {
+                                roundUpdates.put("skocko_currentRound", 2);
+                                roundUpdates.put("skocko_turn", "p2");
+                                roundUpdates.put("skocko_attempts", new ArrayList<>());
+                                roundUpdates.put("roundStartTime", System.currentTimeMillis());
+                            } else {
+                                roundUpdates.put("currentGame", "korakPoKorak");
+                                roundUpdates.put("roundStartTime", System.currentTimeMillis());
+                            }
+                            db.collection("gameRooms").document(roomId).update(roundUpdates);
+                        }
+                    });
                 }
             }
         }.start();
@@ -596,43 +635,7 @@ public class SkockoActivity extends AppCompatActivity {
 
     private boolean finishTimerStarted = false;
 
-    private void showNextGameButton() {
-        if (finishTimerStarted) return;
-        finishTimerStarted = true;
-
-        MaterialButton btnNext = findViewById(R.id.btnNext);
-        btnNext.setVisibility(View.VISIBLE);
-        btnNext.setText(currentRound == 1 ? "SLEDEĆA RUNDA" : "SLEDEĆA IGRA");
-        
-        boolean myReady = isPlayer1 ? p1Ready : p2Ready;
-        if (myReady) {
-            btnNext.setEnabled(false);
-            btnNext.setText("ČEKANJE...");
-        } else {
-            btnNext.setEnabled(true);
-        }
-
-        btnNext.setOnClickListener(v -> {
-            btnNext.setEnabled(false);
-            btnNext.setText("ČEKANJE...");
-            String field = isPlayer1 ? "skocko_p1Ready" : "skocko_p2Ready";
-            db.collection("gameRooms").document(roomId).update(field, true);
-        });
-
-        if (countDownTimer != null) countDownTimer.cancel();
-        countDownTimer = new CountDownTimer(5000, 1000) {
-            @Override
-            public void onTick(long ms) {
-                tvTimer.setText("⏱ " + (ms / 1000 + 1) + "s");
-            }
-
-            @Override
-            public void onFinish() {
-                tvTimer.setText("⏱ 0s");
-                // Uklonjen automatski prelaz - čeka se klik oba igrača
-            }
-        }.start();
-    }
+    private void showNextGameButton() {}
 
     private void showTargetCombination() {
         showSolution(targetCombination);
@@ -665,10 +668,21 @@ public class SkockoActivity extends AppCompatActivity {
         findViewById(R.id.btnSymbol6).setEnabled(true);
     }
 
+    private void skipOpponentTurnSkocko() {
+        if (currentRound == 1) {
+            db.collection("gameRooms").document(roomId).update("skocko_currentRound", 2, "skocko_turn", isPlayer1 ? "p1" : "p2");
+        } else {
+            transitionToNextGame();
+        }
+    }
+
     @Override
     protected void onDestroy() {
         super.onDestroy();
         if (gameListener != null) gameListener.remove();
         if (countDownTimer != null) countDownTimer.cancel();
+        if (!isFinishing()) {
+            db.collection("gameRooms").document(roomId).update("playerLeft", isPlayer1 ? "p1" : "p2");
+        }
     }
 }

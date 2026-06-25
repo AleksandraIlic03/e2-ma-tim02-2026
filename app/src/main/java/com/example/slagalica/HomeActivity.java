@@ -33,28 +33,28 @@ public class HomeActivity extends AppCompatActivity {
 
         listenToUserData();
         checkForRewards();
+        grantTestTokens();
 
         NotificationHelper.createNotificationChannels(this);
 
-        MaterialButton btnAsocijacije = findViewById(R.id.btnAsocijacije);
-        btnAsocijacije.setOnClickListener(v -> {
+        findViewById(R.id.btnStartMatch).setOnClickListener(v -> {
+            Intent intent = new Intent(HomeActivity.this, WaitingRoomActivity.class);
+            intent.putExtra("autoMatch", true);
+            startActivity(intent);
+        });
+
+        findViewById(R.id.btnAsocijacije).setOnClickListener(v -> {
             Intent intent = new Intent(HomeActivity.this, WaitingRoomActivity.class);
             startActivity(intent);
         });
 
-        MaterialButton btnSkocko = findViewById(R.id.btnSkocko);
-        btnSkocko.setOnClickListener(v -> {
+        findViewById(R.id.btnSkocko).setOnClickListener(v -> {
             Intent intent = new Intent(HomeActivity.this, WaitingRoomActivity.class);
             startActivity(intent);
         });
 
         findViewById(R.id.btnNotifications).setOnClickListener(v -> {
             Intent intent = new Intent(HomeActivity.this, NotificationsActivity.class);
-            startActivity(intent);
-        });
-
-        findViewById(R.id.btnStartMatch).setOnClickListener(v -> {
-            Intent intent = new Intent(HomeActivity.this, WaitingRoomActivity.class);
             startActivity(intent);
         });
 
@@ -78,7 +78,10 @@ public class HomeActivity extends AppCompatActivity {
             startActivity(intent);
         });
 
-        findViewById(R.id.btnMojBroj).setVisibility(android.view.View.GONE);
+        findViewById(R.id.btnMojBroj).setOnClickListener(v -> {
+            Intent intent = new Intent(HomeActivity.this, WaitingRoomActivity.class);
+            startActivity(intent);
+        });
 
         findViewById(R.id.btnKoZnaZna).setOnClickListener(v -> {
             Intent intent = new Intent(HomeActivity.this, WaitingRoomActivity.class);
@@ -89,9 +92,6 @@ public class HomeActivity extends AppCompatActivity {
             Intent intent = new Intent(HomeActivity.this, WaitingRoomActivity.class);
             startActivity(intent);
         });
-
-//         Intent importIntent = new Intent(this, DataImportActivity.class);
-//         startActivity(importIntent);
     }
 
     private void listenToUserData() {
@@ -107,7 +107,6 @@ public class HomeActivity extends AppCompatActivity {
                     long tokens = snapshot.getLong("tokens") != null ? snapshot.getLong("tokens") : 0;
                     long league = snapshot.getLong("league") != null ? snapshot.getLong("league") : 0;
 
-                    // Ako je u bazi greškom negativno, prikaži 0
                     if (stars < 0) stars = 0;
                     if (tokens < 0) tokens = 0;
 
@@ -115,6 +114,13 @@ public class HomeActivity extends AppCompatActivity {
                     tvHomeTokens.setText("🎟️ " + tokens);
                     tvHomeLeague.setText("🏆 " + league);
                 });
+    }
+
+    private void grantTestTokens() {
+        String uid = FirebaseAuth.getInstance().getUid();
+        if (uid != null) {
+            db.collection("users").document(uid).update("tokens", 100);
+        }
     }
 
     @Override
@@ -154,7 +160,6 @@ public class HomeActivity extends AppCompatActivity {
         MaterialButton btn = dialogView.findViewById(R.id.btnCollectReward);
         View container = dialogView.findViewById(R.id.rewardContainer);
 
-        // Gradi poruku iz polja koja RankingManager upisuje: tokens, rank, period
         long tokens = rewardData.get("tokens") != null ? (long) rewardData.get("tokens") : 0;
         long rank = rewardData.get("rank") != null ? (long) rewardData.get("rank") : 0;
         String period = rewardData.get("period") != null ? (String) rewardData.get("period") : "";
@@ -164,7 +169,6 @@ public class HomeActivity extends AppCompatActivity {
         tvMsg.setText(period + " rang lista je završena!\nZauzeo si " + rankStr + " i nagrađen si tokenima.");
         tvVal.setText("+" + tokens + " 🎟️");
 
-        // Spec 4g: vizuelna animacija iskakanja (scale + fade in)
         container.setScaleX(0.4f);
         container.setScaleY(0.4f);
         container.setAlpha(0f);
@@ -172,7 +176,6 @@ public class HomeActivity extends AppCompatActivity {
                 .scaleX(1f).scaleY(1f).alpha(1f)
                 .setDuration(500)
                 .withEndAction(() -> {
-                    // Pulsiranje nagrade posle ulaska
                     tvVal.animate().scaleX(1.2f).scaleY(1.2f).setDuration(300)
                             .withEndAction(() ->
                                 tvVal.animate().scaleX(1f).scaleY(1f).setDuration(300).start())
@@ -180,7 +183,6 @@ public class HomeActivity extends AppCompatActivity {
                 })
                 .start();
 
-        // Spec 4g: zvučna animacija – sistemski notifikacioni zvuk
         try {
             android.media.Ringtone r = android.media.RingtoneManager.getRingtone(
                     getApplicationContext(),
@@ -190,7 +192,6 @@ public class HomeActivity extends AppCompatActivity {
 
         btn.setOnClickListener(v -> {
             String userId = FirebaseAuth.getInstance().getCurrentUser().getUid();
-            // Ukloni pendingReward da se dialog ne pojavi opet
             db.collection("users").document(userId)
                     .update("pendingReward", com.google.firebase.firestore.FieldValue.delete());
             dialog.dismiss();

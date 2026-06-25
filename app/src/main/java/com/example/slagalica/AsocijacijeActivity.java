@@ -24,6 +24,8 @@ import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.ListenerRegistration;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -79,8 +81,29 @@ public class AsocijacijeActivity extends AppCompatActivity {
         }
         isPlayer1 = getIntent().getBooleanExtra("isPlayer1", true);
 
+        getOnBackPressedDispatcher().addCallback(this, new androidx.activity.OnBackPressedCallback(true) {
+            @Override
+            public void handleOnBackPressed() {
+                showExitConfirmation();
+            }
+        });
+
         initViews();
         attachGameListener();
+    }
+
+    private void showExitConfirmation() {
+        new androidx.appcompat.app.AlertDialog.Builder(this)
+                .setTitle("Napuštanje igre")
+                .setMessage("Ako napustite igru sada, izgubićete meč i 10 zvezdi. Da li ste sigurni?")
+                .setPositiveButton("Da", (d, w) -> {
+                    String uid = com.google.firebase.auth.FirebaseAuth.getInstance().getUid();
+                    if (uid != null) RankingManager.updateStars(uid, -10);
+                    db.collection("gameRooms").document(roomId).update("playerLeft", isPlayer1 ? "p1" : "p2");
+                    finish();
+                })
+                .setNegativeButton("Ne", null)
+                .show();
     }
 
     private void initViews() {
@@ -151,27 +174,10 @@ public class AsocijacijeActivity extends AppCompatActivity {
                             lastRecordedRound = newRound;
                             asocStatsUpdatedThisRound = false;
                             pointsAtRoundStart = isPlayer1 ? player1Score : player2Score;
-                            finishTimerStarted = false;
                             hasOpenedThisTurn = false;
                         }
                         currentRound = newRound;
                         currentTurn = snapshot.getString("asoc_turn") != null ? snapshot.getString("asoc_turn") : "p1";
-
-                        // PROVERA READY STANJA ZA SLEDECU RUNDU/IGRU
-                        p1Ready = snapshot.getBoolean("asoc_p1Ready") != null && snapshot.getBoolean("asoc_p1Ready");
-                        p2Ready = snapshot.getBoolean("asoc_p2Ready") != null && snapshot.getBoolean("asoc_p2Ready");
-
-                        if (p1Ready && p2Ready) {
-                            if (isPlayer1) { // Samo p1 kao host vrši tranziciju
-                                Map<String, Object> resetReady = new HashMap<>();
-                                resetReady.put("asoc_p1Ready", false);
-                                resetReady.put("asoc_p2Ready", false);
-                                db.collection("gameRooms").document(roomId).update(resetReady);
-                                
-                                if (currentRound == 1) startNextRound();
-                                else transitionToSkocko();
-                            }
-                        }
 
                         Map<String, Object> asocData = (Map<String, Object>) snapshot.get("asocijacija" + currentRound);
                         if (asocData != null) {
@@ -182,14 +188,14 @@ public class AsocijacijeActivity extends AppCompatActivity {
                                 String[] kolG = extractList(asocData.get("kolonaG"));
 
                                 currentAsocijacija = new AsocijacijaModel(
-                                    kolA, (String) asocData.get("resenjeA"),
-                                    kolB, (String) asocData.get("resenjeB"),
-                                    kolV, (String) asocData.get("resenjeV"),
-                                    kolG, (String) asocData.get("resenjeG"),
-                                    (String) asocData.get("konacnoResenje")
+                                        kolA, (String) asocData.get("resenjeA"),
+                                        kolB, (String) asocData.get("resenjeB"),
+                                        kolV, (String) asocData.get("resenjeV"),
+                                        kolG, (String) asocData.get("resenjeG"),
+                                        (String) asocData.get("konacnoResenje")
                                 );
                             } catch (Exception ex) {
-                                android.util.Log.e("Asocijacije", "Greška pri parsiranju modela: " + ex.getMessage());
+                                android.util.Log.e("Asocijacije", "Error parsing model: " + ex.getMessage());
                             }
                         }
 
@@ -197,6 +203,23 @@ public class AsocijacijeActivity extends AppCompatActivity {
 
                         if (snapshot.contains("roundStartTime")) {
                             startLocalTimer(snapshot.getLong("roundStartTime"));
+                        }
+                        
+                        // Spec 3f: protivnik napustio - preskoči čekanje
+                        String playerLeft = snapshot.getString("playerLeft");
+                        if (playerLeft != null && !playerLeft.isEmpty()) {
+                            String opponent = isPlayer1 ? "p2" : "p1";
+                            if (playerLeft.equals(opponent)) {
+                                if (currentTurn.equals(opponent)) {
+                                    db.collection("gameRooms").document(roomId).update("asoc_turn", isPlayer1 ? "p1" : "p2");
+                                }
+                                if (isFinalSolved) {
+                                     new Handler(getMainLooper()).postDelayed(() -> {
+                                         if (currentRound == 1) startNextRound();
+                                         else transitionToSkocko();
+                                     }, 3000);
+                                }
+                            }
                         }
                     });
                 });
@@ -233,14 +256,12 @@ public class AsocijacijeActivity extends AppCompatActivity {
             android.util.Log.e("Asocijacije", "Error syncing opened fields", e);
         }
 
-        updateUI();
+        updateUI(snap);
     }
 
-    private void updateUI() {
-        if (currentAsocijacija == null || etKonacnoResenje == null) {
-            android.util.Log.w("Asocijacije", "UI Update skipped: Missing data or views");
-            return;
-        }
+    private void updateUI(DocumentSnapshot snapshot) {
+        if (currentAsocijacija == null || etKonacnoResenje == null) return;
+        
         boolean isMyTurn = currentTurn.equals(isPlayer1 ? "p1" : "p2");
         char[] cols = {'A', 'B', 'V', 'G'};
         for (char col : cols) {
@@ -254,7 +275,7 @@ public class AsocijacijeActivity extends AppCompatActivity {
             for (int i = 0; i < 4; i++) {
                 if (btns[i] == null) continue;
                 if (openedFields[colIdx][i] || solved || isFinalSolved) {
-                    btns[i].setText(data[i] != null ? data[i] : "");
+                    btns[i].setText(data[i]);
                     btns[i].setEnabled(false);
                 } else {
                     btns[i].setText(col + "" + (i + 1));
@@ -287,27 +308,19 @@ public class AsocijacijeActivity extends AppCompatActivity {
                 asocStatsUpdatedThisRound = true;
                 int currentPoints = isPlayer1 ? player1Score : player2Score;
                 int earned = currentPoints - pointsAtRoundStart;
-                // Proveravamo da li smo mi rešili konacno (npr. ako je nas turn i solvedFinal je true)
-                // Ali snap listener moze kasniti. Bolje je pratiti ko je poslao update.
-                // Za sad, koristimo jednostavnu logiku: ako smo osvojili bar poene za konacno (7), smatramo da smo resili.
-                // Zapravo, checkFinal() postavlja asoc_solvedFinal.
-                // Mozemo dodati polje u Firestore "asoc_solvedBy"
                 StatisticsManager.updateASStats(earned >= 7, earned, !gameStatsRecordedThisMatch);
                 gameStatsRecordedThisMatch = true;
             }
 
-            if (btnNextAction != null) {
-                btnNextAction.setVisibility(View.VISIBLE);
-                btnNextAction.setText(currentRound == 1 ? "SLEDEĆA RUNDA" : "SLEDEĆA IGRA");
-                
-                boolean myReady = isPlayer1 ? p1Ready : p2Ready;
-                if (myReady) {
-                    btnNextAction.setEnabled(false);
-                    btnNextAction.setText("ČEKANJE...");
-                } else {
-                    btnNextAction.setEnabled(true);
-                }
-                startFinishTimer();
+            if (btnNextAction != null) btnNextAction.setVisibility(View.GONE);
+
+            String playerLeft = snapshot.getString("playerLeft"); 
+            boolean opponentLeft = playerLeft != null && !playerLeft.isEmpty() && !playerLeft.equals(isPlayer1 ? "p1" : "p2");
+            if (isPlayer1 || opponentLeft) {
+                 new Handler(Looper.getMainLooper()).postDelayed(() -> {
+                     if (currentRound == 1) startNextRound();
+                     else transitionToSkocko();
+                 }, 3000);
             }
         } else {
             etKonacnoResenje.setEnabled(isMyTurn);
@@ -344,43 +357,11 @@ public class AsocijacijeActivity extends AppCompatActivity {
         });
 
         btnNextAction.setOnClickListener(v -> {
-            if (isFinalSolved) {
-                setReadyForNext();
-            } else {
-                // Pass turn
+            if (!isFinalSolved) {
                 db.collection("gameRooms").document(roomId).update("asoc_turn", isPlayer1 ? "p2" : "p1");
                 hasOpenedThisTurn = false;
             }
         });
-    }
-
-    private void setReadyForNext() {
-        btnNextAction.setEnabled(false);
-        btnNextAction.setText("ČEKANJE...");
-        String field = isPlayer1 ? "asoc_p1Ready" : "asoc_p2Ready";
-        db.collection("gameRooms").document(roomId).update(field, true);
-    }
-
-    private boolean finishTimerStarted = false;
-
-    private void startFinishTimer() {
-        if (finishTimerStarted) return;
-        finishTimerStarted = true;
-
-        if (countDownTimer != null) countDownTimer.cancel();
-
-        countDownTimer = new CountDownTimer(5000, 1000) {
-            @Override
-            public void onTick(long l) {
-                tvTimer.setText("⏱ " + (l / 1000 + 1) + "s");
-            }
-
-            @Override
-            public void onFinish() {
-                tvTimer.setText("⏱ 0s");
-                // Uklonjen automatski prelaz - čeka se klik oba igrača
-            }
-        }.start();
     }
 
     private void startNextRound() {
@@ -395,10 +376,7 @@ public class AsocijacijeActivity extends AppCompatActivity {
         updates.put("asoc_solvedFinal", false);
 
         Map<String, Object> asocOpened = new HashMap<>();
-        asocOpened.put("0", java.util.Arrays.asList(false, false, false, false));
-        asocOpened.put("1", java.util.Arrays.asList(false, false, false, false));
-        asocOpened.put("2", java.util.Arrays.asList(false, false, false, false));
-        asocOpened.put("3", java.util.Arrays.asList(false, false, false, false));
+        for (int i = 0; i < 4; i++) asocOpened.put(String.valueOf(i), Arrays.asList(false, false, false, false));
         updates.put("asoc_opened", asocOpened);
 
         updates.put("roundStartTime", System.currentTimeMillis());
@@ -409,6 +387,9 @@ public class AsocijacijeActivity extends AppCompatActivity {
         if (countDownTimer != null) countDownTimer.cancel();
         Map<String, Object> updates = new HashMap<>();
         updates.put("currentGame", "skocko");
+        updates.put("skocko_currentRound", 1);
+        updates.put("skocko_turn", "p1");
+        updates.put("skocko_attempts", new ArrayList<>());
         updates.put("roundStartTime", System.currentTimeMillis());
         db.collection("gameRooms").document(roomId).update(updates);
     }
@@ -437,7 +418,7 @@ public class AsocijacijeActivity extends AppCompatActivity {
         Map<String, Object> updates = new HashMap<>();
         Map<String, Object> asocOpened = new HashMap<>();
         for (int i = 0; i < 4; i++) {
-            asocOpened.put(String.valueOf(i), java.util.Arrays.asList(openedFields[i][0], openedFields[i][1], openedFields[i][2], openedFields[i][3]));
+            asocOpened.put(String.valueOf(i), Arrays.asList(openedFields[i][0], openedFields[i][1], openedFields[i][2], openedFields[i][3]));
         }
         updates.put("asoc_opened", asocOpened);
         db.collection("gameRooms").document(roomId).update(updates);
@@ -505,7 +486,7 @@ public class AsocijacijeActivity extends AppCompatActivity {
 
     private boolean isConfirmAction(int id, KeyEvent e) {
         return id == EditorInfo.IME_ACTION_DONE || id == EditorInfo.IME_ACTION_GO ||
-               (e != null && e.getKeyCode() == KeyEvent.KEYCODE_ENTER && e.getAction() == KeyEvent.ACTION_DOWN);
+                (e != null && e.getKeyCode() == KeyEvent.KEYCODE_ENTER && e.getAction() == KeyEvent.ACTION_DOWN);
     }
 
     private void handleWrongInput(EditText et) {
@@ -541,15 +522,17 @@ public class AsocijacijeActivity extends AppCompatActivity {
                 asocStatsUpdatedThisRound = true;
                 int currentPoints = isPlayer1 ? player1Score : player2Score;
                 int earned = currentPoints - pointsAtRoundStart;
-                StatisticsManager.updateASStats(false, earned, currentRound == 1);
+                StatisticsManager.updateASStats(false, earned, !gameStatsRecordedThisMatch);
+                gameStatsRecordedThisMatch = true;
             }
-            if (isPlayer1) {
-                if (currentRound == 1) {
-                    startNextRound();
-                } else {
-                    transitionToSkocko();
+            db.collection("gameRooms").document(roomId).get().addOnSuccessListener(snapshot -> {
+                String playerLeft = snapshot.getString("playerLeft");
+                boolean opponentLeft = playerLeft != null && !playerLeft.isEmpty() && !playerLeft.equals(isPlayer1 ? "p1" : "p2");
+                if (isPlayer1 || opponentLeft) {
+                    if (currentRound == 1) startNextRound();
+                    else transitionToSkocko();
                 }
-            }
+            });
             return;
         }
         countDownTimer = new CountDownTimer(remaining, 1000) {
@@ -565,13 +548,14 @@ public class AsocijacijeActivity extends AppCompatActivity {
                     StatisticsManager.updateASStats(false, earned, !gameStatsRecordedThisMatch);
                     gameStatsRecordedThisMatch = true;
                 }
-                if (isPlayer1) {
-                    if (currentRound == 1) {
-                        startNextRound();
-                    } else {
-                        transitionToSkocko();
+                db.collection("gameRooms").document(roomId).get().addOnSuccessListener(snapshot -> {
+                    String playerLeft = snapshot.getString("playerLeft");
+                    boolean opponentLeft = playerLeft != null && !playerLeft.isEmpty() && !playerLeft.equals(isPlayer1 ? "p1" : "p2");
+                    if (isPlayer1 || opponentLeft) {
+                        if (currentRound == 1) startNextRound();
+                        else transitionToSkocko();
                     }
-                }
+                });
             }
         }.start();
     }
@@ -619,5 +603,8 @@ public class AsocijacijeActivity extends AppCompatActivity {
         super.onDestroy();
         if (gameListener != null) gameListener.remove();
         if (countDownTimer != null) countDownTimer.cancel();
+        if (!isFinishing()) {
+            db.collection("gameRooms").document(roomId).update("playerLeft", isPlayer1 ? "p1" : "p2");
+        }
     }
 }

@@ -67,8 +67,19 @@ public class SpojniceActivity extends AppCompatActivity {
         roomId = getIntent().getStringExtra("roomId");
         isPlayer1 = getIntent().getBooleanExtra("isPlayer1", true);
 
+        getOnBackPressedDispatcher().addCallback(this, new androidx.activity.OnBackPressedCallback(true) {
+            @Override
+            public void handleOnBackPressed() {
+                String uid = com.google.firebase.auth.FirebaseAuth.getInstance().getUid();
+                if (uid != null) RankingManager.updateStars(uid, -10);
+                db.collection("gameRooms").document(roomId).update("playerLeft", isPlayer1 ? "p1" : "p2");
+                finish();
+            }
+        });
+
         initViews();
         fetchSpojniceFromRoom();
+        attachGameListener();
     }
 
     private void initViews() {
@@ -148,26 +159,20 @@ public class SpojniceActivity extends AppCompatActivity {
                     tvPlayer1Name.setTextColor(Color.parseColor(COLOR_P1));
                     tvPlayer2Name.setTextColor(Color.parseColor(COLOR_P2));
 
+                    // Spec 3f: protivnik napustio - preskoči njegov red odmah
+                    String playerLeft = snapshot.getString("playerLeft");
+                    if (playerLeft != null && !playerLeft.isEmpty()) {
+                        String opponent = isPlayer1 ? "p2" : "p1";
+                        if (playerLeft.equals(opponent) && currentTurn.equals(opponent)) {
+                            skipOpponentTurn();
+                        }
+                    }
+
                     if (spojnice.size() >= currentRound) {
                         currentSpojnica = spojnice.get(currentRound - 1);
                         tvInstruction.setText(currentSpojnica.getTitle());
                         
                         isMyTurn = currentTurn.equals(isPlayer1 ? "p1" : "p2");
-
-                        // PROVERA READY STANJA ZA SLEDECU RUNDU/IGRU
-                        p1Ready = snapshot.getBoolean("spojnice_p1Ready") != null && snapshot.getBoolean("spojnice_p1Ready");
-                        p2Ready = snapshot.getBoolean("spojnice_p2Ready") != null && snapshot.getBoolean("spojnice_p2Ready");
-
-                        if (p1Ready && p2Ready) {
-                            if (isPlayer1) {
-                                Map<String, Object> resetReady = new HashMap<>();
-                                resetReady.put("spojnice_p1Ready", false);
-                                resetReady.put("spojnice_p2Ready", false);
-                                db.collection("gameRooms").document(roomId).update(resetReady);
-
-                                handleNextRound();
-                            }
-                        }
 
                         updateUIState();
                     }
@@ -204,7 +209,7 @@ public class SpojniceActivity extends AppCompatActivity {
         long remaining = 60000 - (System.currentTimeMillis() - startTime);
         if (remaining <= 0) {
             tvTimer.setText("⏱ 0s");
-            if (currentLeftIndex < 5) endRoundLocally();
+            endRoundLocally();
             return;
         }
 
@@ -301,6 +306,8 @@ public class SpojniceActivity extends AppCompatActivity {
 
     private void endRoundLocally() {
         if (timer != null) timer.cancel();
+        if (transitioning) return;
+
         if (!statsUpdatedThisRound && whoMatched != null) {
             statsUpdatedThisRound = true;
             int correctCount = 0;
@@ -311,37 +318,15 @@ public class SpojniceActivity extends AppCompatActivity {
             StatisticsManager.updateSPStats(correctCount, 5, correctCount * 2, !gameStatsRecordedThisMatch);
             gameStatsRecordedThisMatch = true;
         }
-        
-        btnNext.setVisibility(View.VISIBLE);
-        btnNext.setText(currentRound == 1 ? "SLEDEĆA RUNDA" : "SLEDEĆA IGRA");
 
-        boolean myReady = isPlayer1 ? p1Ready : p2Ready;
-        if (myReady) {
-            btnNext.setEnabled(false);
-            btnNext.setText("ČEKANJE...");
-        } else {
-            btnNext.setEnabled(true);
-        }
-
-        btnNext.setOnClickListener(v -> {
-            btnNext.setEnabled(false);
-            btnNext.setText("ČEKANJE...");
-            String field = isPlayer1 ? "spojnice_p1Ready" : "spojnice_p2Ready";
-            db.collection("gameRooms").document(roomId).update(field, true);
+        db.collection("gameRooms").document(roomId).get().addOnSuccessListener(snapshot -> {
+            String playerLeft = snapshot.getString("playerLeft");
+            boolean opponentLeft = playerLeft != null && !playerLeft.isEmpty() && !playerLeft.equals(isPlayer1 ? "p1" : "p2");
+            if (isPlayer1 || opponentLeft) {
+                transitioning = true;
+                new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(this::handleNextRound, 3000);
+            }
         });
-
-        timer = new CountDownTimer(5000, 1000) {
-            @Override
-            public void onTick(long l) {
-                tvTimer.setText("⏱ " + (l / 1000 + 1) + "s");
-            }
-
-            @Override
-            public void onFinish() {
-                tvTimer.setText("⏱ 0s");
-                // Uklonjen automatski prelaz
-            }
-        }.start();
     }
 
     private void handleNextRound() {
@@ -357,16 +342,18 @@ public class SpojniceActivity extends AppCompatActivity {
             updates.put("spojnice_wrongClickTrigger", 0);
             updates.put("roundStartTime", System.currentTimeMillis());
             db.collection("gameRooms").document(roomId).update(updates);
+            transitioning = false; // Reset for next round
         } else {
             Map<String, Object> upd = new HashMap<>();
             upd.put("currentGame", "asocijacije");
             upd.put("roundStartTime", System.currentTimeMillis());
+            upd.put("asoc_currentRound", 1); // Reset asocijacije state just in case
             db.collection("gameRooms").document(roomId).update(upd);
         }
     }
 
     private void navigateToAsocijacije() {
-        if (transitioning) return;
+        if (transitioning && currentLeftIndex < 5) return; // Prevent double trigger, but allow if it's an end-of-round transition
         transitioning = true;
         if (timer != null) timer.cancel();
         if (gameListener != null) gameListener.remove();
@@ -377,10 +364,20 @@ public class SpojniceActivity extends AppCompatActivity {
         finish();
     }
 
+    private void skipOpponentTurn() {
+        Map<String, Object> updates = new HashMap<>();
+        updates.put("spojnice_currentLeftIndex", currentLeftIndex + 1);
+        updates.put("spojnice_turn", isPlayer1 ? "p1" : "p2");
+        db.collection("gameRooms").document(roomId).update(updates);
+    }
+
     @Override
     protected void onDestroy() {
         super.onDestroy();
         if (gameListener != null) gameListener.remove();
         if (timer != null) timer.cancel();
+        if (!isFinishing()) {
+            db.collection("gameRooms").document(roomId).update("playerLeft", isPlayer1 ? "p1" : "p2");
+        }
     }
 }

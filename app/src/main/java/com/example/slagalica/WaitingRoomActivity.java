@@ -18,6 +18,7 @@ import com.google.android.material.button.MaterialButton;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.ListenerRegistration;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
@@ -60,7 +61,7 @@ public class WaitingRoomActivity extends AppCompatActivity {
         initViews();
         fetchUserData();
 
-        btnCreateRoom.setOnClickListener(v -> createRoom());
+        btnCreateRoom.setOnClickListener(v -> createRoom(false, false));
         btnJoinRoom.setOnClickListener(v -> joinRoom());
     }
 
@@ -86,6 +87,8 @@ public class WaitingRoomActivity extends AppCompatActivity {
                         }
                         handleAutoIntent();
                     });
+        } else {
+            handleAutoIntent();
         }
     }
 
@@ -97,11 +100,57 @@ public class WaitingRoomActivity extends AppCompatActivity {
             return;
         }
         if (getIntent().getBooleanExtra("autoCreate", false)) {
-            createRoom();
+            createRoom(false, false);
+            return;
+        }
+
+        // Spec 3.b.i: Nasumično uparivanje (Matchmaking)
+        if (getIntent().getBooleanExtra("autoMatch", false)) {
+            startMatchmaking();
         }
     }
 
-    private void createRoom() {
+    private void startMatchmaking() {
+        progressBar.setVisibility(View.VISIBLE);
+        tvStatus.setText("Traženje protivnika...");
+        
+        db.collection("gameRooms")
+                .whereEqualTo("status", "waiting")
+                .whereEqualTo("isPublic", true)
+                .limit(1)
+                .get()
+                .addOnSuccessListener(querySnapshot -> {
+                    if (!querySnapshot.isEmpty()) {
+                        DocumentSnapshot doc = querySnapshot.getDocuments().get(0);
+                        etRoomId.setText(doc.getId());
+                        joinRoom();
+                    } else {
+                        createRoom(false, true);
+                    }
+                })
+                .addOnFailureListener(e -> createRoom(false, true));
+    }
+
+    private void createRoom(boolean isFriendly, boolean isPublic) {
+        if (!isFriendly && mAuth.getCurrentUser() != null) {
+            db.collection("users").document(currentUserId).get()
+                    .addOnSuccessListener(userDoc -> {
+                        long tokens = userDoc.getLong("tokens") != null ? userDoc.getLong("tokens") : 0;
+                        if (tokens <= 0) {
+                            Toast.makeText(this, "Nemaš tokena za igranje!", Toast.LENGTH_SHORT).show();
+                            resetUI();
+                            return;
+                        }
+                        db.collection("users").document(currentUserId)
+                                .update("tokens", FieldValue.increment(-1))
+                                .addOnSuccessListener(v -> doCreateRoom(isFriendly, isPublic));
+                    });
+            return;
+        }
+        doCreateRoom(isFriendly, isPublic);
+    }
+
+    private void doCreateRoom(boolean isFriendly, boolean isPublic) {
         progressBar.setVisibility(View.VISIBLE);
         btnCreateRoom.setEnabled(false);
         btnJoinRoom.setEnabled(false);
@@ -120,8 +169,7 @@ public class WaitingRoomActivity extends AppCompatActivity {
                 allQuestions.add(doc.toObject(KoZnaZnaQuestion.class));
 
             if (allQuestions.size() < 5) {
-                Toast.makeText(this, "Nedovoljno pitanja 'Ko zna zna'",
-                        Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Nedovoljno podataka u bazi.", Toast.LENGTH_SHORT).show();
                 resetUI();
                 return;
             }
@@ -142,8 +190,7 @@ public class WaitingRoomActivity extends AppCompatActivity {
             }
 
             if (validTitles.isEmpty()) {
-                Toast.makeText(this, "Nedovoljno spojnica sa istom temom",
-                        Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Nedovoljno spojnica.", Toast.LENGTH_SHORT).show();
                 resetUI();
                 return;
             }
@@ -152,35 +199,26 @@ public class WaitingRoomActivity extends AppCompatActivity {
             List<SpojnicaModel> variants = grouped.get(validTitles.get(0));
             Collections.shuffle(variants);
 
-            List<Map<String, Object>> allAsocData;
-            if (aSnap.size() < 2) {
-                allAsocData = getDefaultAsocijacije();
-                for (Map<String, Object> a : allAsocData) {
-                    db.collection("asocijacije").add(a);
-                }
-            } else {
-                allAsocData = new ArrayList<>();
-                for (DocumentSnapshot doc : aSnap.getDocuments()) {
-                    allAsocData.add(doc.getData());
-                }
+            List<Map<String, Object>> allAsocData = new ArrayList<>();
+            for (DocumentSnapshot doc : aSnap.getDocuments()) {
+                allAsocData.add(doc.getData());
             }
+            if (allAsocData.size() < 2) allAsocData = getDefaultAsocijacije();
             Collections.shuffle(allAsocData);
 
             roomId = UUID.randomUUID().toString().substring(0, 6).toUpperCase();
             Map<String, Object> room = new HashMap<>();
-
-            // Osnovni podaci
             room.put("player1Id", currentUserId);
             room.put("player1Name", currentUserName);
             room.put("player1Avatar", currentUserAvatar);
             room.put("player2Id", null);
-            room.put("player2Name", null);
-            room.put("player2Avatar", null);
             room.put("player1Score", 0);
             room.put("player2Score", 0);
+            room.put("playerLeft", "");
             room.put("status", "waiting");
+            room.put("isFriendly", isFriendly);
+            room.put("isPublic", isPublic);
 
-            // Ko zna zna
             room.put("currentGame", "koZnaZna");
             room.put("koZnaZnaQuestions", selectedQuestions);
             room.put("currentQuestionIndex", 0);
@@ -191,66 +229,35 @@ public class WaitingRoomActivity extends AppCompatActivity {
             room.put("answers_q3", new HashMap<String, Object>());
             room.put("answers_q4", new HashMap<String, Object>());
 
-            // Korak po korak
             room.put("korak_phase", "p1_playing");
             room.put("korak_currentStep", -1);
-            room.put("korak_currentStepText", "");
 
-            // Spojnice
             room.put("spojnica1", variants.get(0));
             room.put("spojnica2", variants.get(1));
             room.put("spojnice_turn", "p1");
             room.put("spojnice_currentLeftIndex", 0);
-            room.put("spojnice_matchedRightIndices",
-                    java.util.Arrays.asList(-1, -1, -1, -1, -1));
-            room.put("spojnice_whoMatched",
-                    java.util.Arrays.asList("", "", "", "", ""));
+            room.put("spojnice_matchedRightIndices", Arrays.asList(-1, -1, -1, -1, -1));
+            room.put("spojnice_whoMatched", Arrays.asList("", "", "", "", ""));
 
-            // Asocijacije
             room.put("asocijacija1", allAsocData.get(0));
             room.put("asocijacija2", allAsocData.get(1));
             room.put("asoc_currentRound", 1L);
             room.put("asoc_turn", "p1");
-            room.put("asoc_solvedA", false);
-            room.put("asoc_solvedB", false);
-            room.put("asoc_solvedV", false);
-            room.put("asoc_solvedG", false);
-            room.put("asoc_solvedFinal", false);
             Map<String, Object> asocOpened = new HashMap<>();
             for (int i = 0; i < 4; i++)
                 asocOpened.put(String.valueOf(i), Arrays.asList(false, false, false, false));
             room.put("asoc_opened", asocOpened);
 
             java.util.Random rand = new java.util.Random();
-            List<Integer> skockoTarget1 = new ArrayList<>();
-            List<Integer> skockoTarget2 = new ArrayList<>();
-            for (int i = 0; i < 4; i++) {
-                skockoTarget1.add(rand.nextInt(6));
-                skockoTarget2.add(rand.nextInt(6));
-            }
-            room.put("skocko_target1", skockoTarget1);
-            room.put("skocko_target2", skockoTarget2);
+            room.put("skocko_target1", Arrays.asList(rand.nextInt(6), rand.nextInt(6), rand.nextInt(6), rand.nextInt(6)));
+            room.put("skocko_target2", Arrays.asList(rand.nextInt(6), rand.nextInt(6), rand.nextInt(6), rand.nextInt(6)));
             room.put("skocko_currentRound", 1);
             room.put("skocko_turn", "p1");
             room.put("skocko_attempts", new ArrayList<>());
-            room.put("skocko_isSteal", false);
-
-            // Tournament support: embed tournamentId and winnerKey if launched from tournament
-            String tid = getIntent().getStringExtra("tournamentId");
-            String tWinnerKey = getIntent().getStringExtra("tournamentWinnerKey");
-            if (tid != null) {
-                room.put("tournamentId", tid);
-                room.put("tournamentWinnerKey", tWinnerKey != null ? tWinnerKey : "");
-            }
 
             db.collection("gameRooms").document(roomId).set(room)
                     .addOnSuccessListener(aVoid -> {
-                        // If tournament room, write roomId back to tournament doc
-                        String tRoomKey = getIntent().getStringExtra("tournamentRoomKey");
-                        if (tid != null && tRoomKey != null) {
-                            db.collection("tournaments").document(tid).update(tRoomKey, roomId);
-                        }
-                        tvRoomId.setText("Sifra sobe: " + roomId);
+                        tvRoomId.setText("Šifra sobe: " + roomId);
                         tvRoomId.setVisibility(View.VISIBLE);
                         tvStatus.setVisibility(View.VISIBLE);
                         progressBar.setVisibility(View.GONE);
@@ -261,7 +268,6 @@ public class WaitingRoomActivity extends AppCompatActivity {
 
     private List<Map<String, Object>> getDefaultAsocijacije() {
         List<Map<String, Object>> list = new ArrayList<>();
-
         Map<String, Object> a1 = new HashMap<>();
         a1.put("kolonaA", Arrays.asList("PAPIR", "OLOVKA", "SKOLA", "DJAK"));
         a1.put("resenjeA", "KNJIGA");
@@ -285,31 +291,6 @@ public class WaitingRoomActivity extends AppCompatActivity {
         a2.put("resenjeG", "HLADNOCA");
         a2.put("konacnoResenje", "DRZAVA");
         list.add(a2);
-
-        Map<String, Object> a3 = new HashMap<>();
-        a3.put("kolonaA", Arrays.asList("GOLMAN", "MREZA", "OFSAJD", "PENAL"));
-        a3.put("resenjeA", "FUDBAL");
-        a3.put("kolonaB", Arrays.asList("KOS", "LOPTA", "PARKET", "TRENER"));
-        a3.put("resenjeB", "KOSARKA");
-        a3.put("kolonaV", Arrays.asList("REKET", "SET", "LOB", "SERVIS"));
-        a3.put("resenjeV", "TENIS");
-        a3.put("kolonaG", Arrays.asList("BAZEN", "STAZA", "PLIVAC", "KAPA"));
-        a3.put("resenjeG", "PLIVANJE");
-        a3.put("konacnoResenje", "SPORT");
-        list.add(a3);
-
-        Map<String, Object> a4 = new HashMap<>();
-        a4.put("kolonaA", Arrays.asList("BUKVA", "HRAST", "BOR", "JELA"));
-        a4.put("resenjeA", "DRVO");
-        a4.put("kolonaB", Arrays.asList("ORAO", "LASTAVICA", "GOLUB", "VRABAC"));
-        a4.put("resenjeB", "PTICA");
-        a4.put("kolonaV", Arrays.asList("VUK", "VEVERICA", "MEDVED", "JELEN"));
-        a4.put("resenjeV", "ZIVOTINJA");
-        a4.put("kolonaG", Arrays.asList("DUNAV", "SAVA", "NERETVA", "TISA"));
-        a4.put("resenjeG", "REKA");
-        a4.put("konacnoResenje", "PRIRODA");
-        list.add(a4);
-
         return list;
     }
 
@@ -323,21 +304,29 @@ public class WaitingRoomActivity extends AppCompatActivity {
         String inputId = etRoomId.getText().toString().trim().toUpperCase();
         if (inputId.isEmpty()) return;
 
-        progressBar.setVisibility(View.VISIBLE);
-        btnJoinRoom.setEnabled(false);
-        btnCreateRoom.setEnabled(false);
-
         DocumentReference roomRef = db.collection("gameRooms").document(inputId);
         roomRef.get().addOnSuccessListener(snapshot -> {
             if (snapshot.exists() && "waiting".equals(snapshot.getString("status"))) {
                 roomId = inputId;
-                Map<String, Object> updates = new HashMap<>();
-                updates.put("player2Id", currentUserId);
-                updates.put("player2Name", currentUserName);
-                updates.put("player2Avatar", currentUserAvatar);
-                updates.put("status", "playing");
-                roomRef.update(updates)
-                        .addOnSuccessListener(aVoid -> listenForOpponent(false));
+                boolean isFriendly = Boolean.TRUE.equals(snapshot.getBoolean("isFriendly"));
+                
+                db.collection("users").document(currentUserId).get().addOnSuccessListener(userDoc -> {
+                    long tokens = userDoc.getLong("tokens") != null ? userDoc.getLong("tokens") : 0;
+                    if (!isFriendly && tokens < 1) {
+                        Toast.makeText(this, "Nemaš tokena!", Toast.LENGTH_SHORT).show();
+                        resetUI();
+                        return;
+                    }
+                    Map<String, Object> updates = new HashMap<>();
+                    updates.put("player2Id", currentUserId);
+                    updates.put("player2Name", currentUserName);
+                    updates.put("player2Avatar", currentUserAvatar);
+                    updates.put("status", "playing");
+                    roomRef.update(updates).addOnSuccessListener(v -> {
+                        if (!isFriendly) db.collection("users").document(currentUserId).update("tokens", FieldValue.increment(-1));
+                        listenForOpponent(false);
+                    });
+                });
             } else {
                 Toast.makeText(this, "Soba nije dostupna", Toast.LENGTH_SHORT).show();
                 resetUI();
@@ -348,27 +337,17 @@ public class WaitingRoomActivity extends AppCompatActivity {
     private void listenForOpponent(boolean isPlayer1) {
         roomListener = db.collection("gameRooms").document(roomId)
                 .addSnapshotListener((snapshot, e) -> {
-                    if (snapshot != null && snapshot.exists()
-                            && "playing".equals(snapshot.getString("status"))) {
+                    if (snapshot != null && snapshot.exists() && "playing".equals(snapshot.getString("status"))) {
                         if (roomListener != null) roomListener.remove();
-
-                        String currentGame = snapshot.getString("currentGame");
+                        
+                        String firstGame = snapshot.getString("currentGame");
+                        if (firstGame == null) firstGame = "koZnaZna";
+                        
                         Intent intent = new Intent();
-
-                        if ("koZnaZna".equals(currentGame)) {
+                        if (firstGame.equals("koZnaZna")) {
                             intent.setClass(this, KoZnaZnaActivity.class);
-                        } else if ("spojnice".equals(currentGame)) {
-                            intent.setClass(this, SpojniceActivity.class);
-                        } else if ("asocijacije".equals(currentGame)) {
-                            intent.setClass(this, AsocijacijeActivity.class);
-                        } else if ("skocko".equals(currentGame)) {
-                            intent.setClass(this, SkockoActivity.class);
-                        } else if ("korakPoKorak".equals(currentGame)) {
-                            intent.setClass(this, KorakPoKorakActivity.class);
-                        } else if ("mojBroj".equals(currentGame)) {
-                            intent.setClass(this, MojBrojActivity.class);
                         } else {
-                            intent.setClass(this, KoZnaZnaActivity.class);
+                            intent.setClass(this, KorakPoKorakActivity.class);
                         }
 
                         intent.putExtra("roomId", roomId);

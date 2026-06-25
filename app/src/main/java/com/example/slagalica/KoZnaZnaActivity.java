@@ -56,6 +56,16 @@ public class KoZnaZnaActivity extends AppCompatActivity {
         roomId = getIntent().getStringExtra("roomId");
         isPlayer1 = getIntent().getBooleanExtra("isPlayer1", true);
 
+        getOnBackPressedDispatcher().addCallback(this, new androidx.activity.OnBackPressedCallback(true) {
+            @Override
+            public void handleOnBackPressed() {
+                String uid = com.google.firebase.auth.FirebaseAuth.getInstance().getUid();
+                if (uid != null) RankingManager.updateStars(uid, -10);
+                db.collection("gameRooms").document(roomId).update("playerLeft", isPlayer1 ? "p1" : "p2");
+                finish();
+            }
+        });
+
         initViews();
         attachGameListener();
     }
@@ -116,6 +126,15 @@ public class KoZnaZnaActivity extends AppCompatActivity {
                     tvPlayer1Points.setText(String.valueOf(snapshot.getLong("player1Score")));
                     tvPlayer2Points.setText(String.valueOf(snapshot.getLong("player2Score")));
 
+                    // Spec 3f: protivnik napustio - automatski odgovori za njega
+                    String playerLeft = snapshot.getString("playerLeft");
+                    if (playerLeft != null && !playerLeft.isEmpty()) {
+                        String opponent = isPlayer1 ? "p2" : "p1";
+                        if (playerLeft.equals(opponent)) {
+                            autoAnswerForOpponent();
+                        }
+                    }
+
                     Long idxLong = snapshot.getLong("currentQuestionIndex");
                     int newIdx = (idxLong != null) ? idxLong.intValue() : 0;
                     
@@ -141,21 +160,10 @@ public class KoZnaZnaActivity extends AppCompatActivity {
                         Map<String, Object> answers = (Map<String, Object>) snapshot.get("answers_q4");
                         if (answers != null && answers.size() == 2) {
                             nextGameButtonShown = true;
-                            tvTimer.postDelayed(this::showNextGameButton, 2000);
-                        }
-                    }
-
-                    // PROVERA READY STANJA ZA SLEDECU IGRU
-                    p1Ready = snapshot.getBoolean("kzz_p1Ready") != null && snapshot.getBoolean("kzz_p1Ready");
-                    p2Ready = snapshot.getBoolean("kzz_p2Ready") != null && snapshot.getBoolean("kzz_p2Ready");
-
-                    if (p1Ready && p2Ready) {
-                        if (isPlayer1) {
-                            Map<String, Object> resetReady = new HashMap<>();
-                            resetReady.put("kzz_p1Ready", false);
-                            resetReady.put("kzz_p2Ready", false);
-                            resetReady.put("currentGame", "spojnice");
-                            db.collection("gameRooms").document(roomId).update(resetReady);
+                            String playerLeftFinal = playerLeft;
+                            if (isPlayer1 || (playerLeftFinal != null && !playerLeftFinal.isEmpty() && !playerLeftFinal.equals(isPlayer1 ? "p1" : "p2"))) {
+                                 new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(this::triggerNextGame, 3000);
+                            }
                         }
                     }
                 });
@@ -208,6 +216,15 @@ public class KoZnaZnaActivity extends AppCompatActivity {
                     enableAnswerButtons(false);
                     submitAnswer(-1);
                 }
+                
+                // Automatski preskoči na sledeće pitanje ako protivnik ne odgovara (solo mod)
+                db.collection("gameRooms").document(roomId).get().addOnSuccessListener(snapshot -> {
+                    String playerLeft = snapshot.getString("playerLeft");
+                    boolean opponentLeft = playerLeft != null && !playerLeft.isEmpty() && !playerLeft.equals(isPlayer1 ? "p1" : "p2");
+                    if (opponentLeft) {
+                        autoAnswerForOpponent();
+                    }
+                });
             }
         }.start();
     }
@@ -310,7 +327,9 @@ public class KoZnaZnaActivity extends AppCompatActivity {
             }
 
             if (currentQuestionIndex >= 4) {
-                showNextGameButton();
+                if (isPlayer1) {
+                    new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(this::triggerNextGame, 3000);
+                }
             }
         }, 1000);
     }
@@ -342,48 +361,20 @@ public class KoZnaZnaActivity extends AppCompatActivity {
         }
     }
 
-    private void showNextGameButton() {
-        MaterialButton btnNext = findViewById(R.id.btnNext);
-        btnNext.setVisibility(View.VISIBLE);
-        btnNext.setText("Sledeća igra");
-
-        boolean myReady = isPlayer1 ? p1Ready : p2Ready;
-        if (myReady) {
-            btnNext.setEnabled(false);
-            btnNext.setText("ČEKANJE...");
-        } else {
-            btnNext.setEnabled(true);
-        }
-
-        btnNext.setOnClickListener(v -> {
-            btnNext.setEnabled(false);
-            btnNext.setText("ČEKANJE...");
-            String field = isPlayer1 ? "kzz_p1Ready" : "kzz_p2Ready";
-            db.collection("gameRooms").document(roomId).update(field, true);
-        });
-
-        if (questionTimer != null) questionTimer.cancel();
-        
-        questionTimer = new CountDownTimer(5000, 1000) {
-            @Override
-            public void onTick(long millisUntilFinished) {
-                tvTimer.setText("⏱ " + (millisUntilFinished / 1000 + 1) + "s");
-            }
-
-            @Override
-            public void onFinish() {
-                tvTimer.setText("⏱ 0s");
-                // Uklonjen automatski prelaz
-            }
-        }.start();
-    }
+    private void showNextGameButton() {}
 
     private void triggerNextGame() {
         if (questionTimer != null) questionTimer.cancel();
-        db.collection("gameRooms").document(roomId).update(
-                "currentGame", "spojnice",
-                "status", "playing",
-                "roundStartTime", System.currentTimeMillis());
+        Map<String, Object> updates = new HashMap<>();
+        updates.put("currentGame", "spojnice");
+        updates.put("currentRound", 1);
+        updates.put("spojnice_turn", "p1");
+        updates.put("spojnice_currentLeftIndex", 0);
+        updates.put("spojnice_matchedRightIndices", java.util.Arrays.asList(-1, -1, -1, -1, -1));
+        updates.put("spojnice_whoMatched", java.util.Arrays.asList("", "", "", "", ""));
+        updates.put("roundStartTime", System.currentTimeMillis());
+        
+        db.collection("gameRooms").document(roomId).update(updates);
     }
 
     private ImageButton getButtonByIndex(int index) {
@@ -452,10 +443,21 @@ public class KoZnaZnaActivity extends AppCompatActivity {
         finish();
     }
 
+    private void autoAnswerForOpponent() {
+        Map<String, Object> myAnswer = new HashMap<>();
+        myAnswer.put("index", -1);
+        myAnswer.put("time", System.currentTimeMillis());
+        myAnswer.put("correct", false);
+        db.collection("gameRooms").document(roomId).update("answers_q" + currentQuestionIndex + "." + (isPlayer1 ? "p2" : "p1"), myAnswer);
+    }
+
     @Override
     protected void onDestroy() {
         super.onDestroy();
         if (gameListener != null) gameListener.remove();
         if (questionTimer != null) questionTimer.cancel();
+        if (!isFinishing()) {
+            db.collection("gameRooms").document(roomId).update("playerLeft", isPlayer1 ? "p1" : "p2");
+        }
     }
 }

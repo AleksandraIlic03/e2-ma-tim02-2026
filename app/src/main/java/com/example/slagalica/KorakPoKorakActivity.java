@@ -65,9 +65,32 @@ public class KorakPoKorakActivity extends AppCompatActivity {
         roomId = getIntent().getStringExtra("roomId");
         isPlayer1 = getIntent().getBooleanExtra("isPlayer1", true);
 
+        getOnBackPressedDispatcher().addCallback(this, new androidx.activity.OnBackPressedCallback(true) {
+            @Override
+            public void handleOnBackPressed() {
+                showExitConfirmation();
+            }
+        });
+
         initViews();
         loadGameData();
         attachGameListener();
+    }
+
+    private void showExitConfirmation() {
+        new androidx.appcompat.app.AlertDialog.Builder(this)
+                .setTitle("Napuštanje igre")
+                .setMessage("Ako napustite igru sada, izgubićete meč i 10 zvezdi. Da li ste sigurni?")
+                .setPositiveButton("Da", (d, w) -> {
+                    com.google.firebase.auth.FirebaseAuth mAuth = com.google.firebase.auth.FirebaseAuth.getInstance();
+                    if (mAuth.getUid() != null) {
+                        RankingManager.updateStars(mAuth.getUid(), -10);
+                    }
+                    db.collection("gameRooms").document(roomId).update("playerLeft", isPlayer1 ? "p1" : "p2");
+                    finish();
+                })
+                .setNegativeButton("Ne", null)
+                .show();
     }
 
     private void initViews() {
@@ -130,20 +153,6 @@ public class KorakPoKorakActivity extends AppCompatActivity {
             return;
         }
 
-        // PROVERA READY STANJA ZA SLEDECU IGRU
-        p1Ready = snapshot.getBoolean("kpk_p1Ready") != null && snapshot.getBoolean("kpk_p1Ready");
-        p2Ready = snapshot.getBoolean("kpk_p2Ready") != null && snapshot.getBoolean("kpk_p2Ready");
-
-        if (p1Ready && p2Ready) {
-            if (isPlayer1) {
-                Map<String, Object> resetReady = new HashMap<>();
-                resetReady.put("kpk_p1Ready", false);
-                resetReady.put("kpk_p2Ready", false);
-                resetReady.put("currentGame", "mojBroj");
-                db.collection("gameRooms").document(roomId).update(resetReady);
-            }
-        }
-
         // Header
         tvPlayer1Name.setText(snapshot.getString("player1Name"));
         tvPlayer2Name.setText(snapshot.getString("player2Name"));
@@ -155,8 +164,36 @@ public class KorakPoKorakActivity extends AppCompatActivity {
         setAvatar(ivPlayer1Avatar, snapshot.getString("player1Avatar"));
         setAvatar(ivPlayer2Avatar, snapshot.getString("player2Avatar"));
 
+        // Spec 3f: protivnik napustio - preskoči čekanje
+        String playerLeft = snapshot.getString("playerLeft");
+        boolean opponentLeft = playerLeft != null && !playerLeft.isEmpty() && !playerLeft.equals(isPlayer1 ? "p1" : "p2");
+
+        if (playerLeft != null && !playerLeft.isEmpty()) {
+            String opponent = isPlayer1 ? "p2" : "p1";
+            if (playerLeft.equals(opponent)) {
+                handleOpponentLeft();
+            }
+        }
+
         String newPhase = snapshot.getString("korak_phase");
         if (newPhase == null) newPhase = "p1_playing";
+
+        if (newPhase.equals("done")) {
+             if (phase.equals("done")) return; // Već obrađeno
+             phase = "done";
+             if (isPlayer1 || opponentLeft) {
+                 new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
+                     Map<String, Object> updates = new HashMap<>();
+                     updates.put("currentGame", "mojBroj");
+                     updates.put("mojbroj_phase", "p1_playing");
+                     updates.put("roundStartTime", System.currentTimeMillis());
+                     db.collection("gameRooms").document(roomId).update(updates);
+                 }, 3000);
+             }
+             tvCurrentPoints.setText("Igra završena!");
+             if (stepTimer != null) stepTimer.cancel();
+             return;
+        }
 
         if (!newPhase.equals(phase)) {
             phase = newPhase;
@@ -275,10 +312,6 @@ public class KorakPoKorakActivity extends AppCompatActivity {
                     enableInput(false);
                     tvCurrentPoints.setText("Protivnik ima bonus sansu...");
                 }
-                break;
-
-            case "done":
-                finishGame();
                 break;
         }
     }
@@ -452,43 +485,7 @@ public class KorakPoKorakActivity extends AppCompatActivity {
         layoutWaiting.setVisibility(View.GONE);
     }
 
-    private void finishGame() {
-        if (stepTimer != null) stepTimer.cancel();
-
-        MaterialButton btnNext = findViewById(R.id.btnNext);
-        btnNext.setVisibility(View.VISIBLE);
-        btnNext.setText("Sledeća igra");
-
-        boolean myReady = isPlayer1 ? p1Ready : p2Ready;
-        if (myReady) {
-            btnNext.setEnabled(false);
-            btnNext.setText("ČEKANJE...");
-        } else {
-            btnNext.setEnabled(true);
-        }
-
-        btnNext.setOnClickListener(v -> {
-            btnNext.setEnabled(false);
-            btnNext.setText("ČEKANJE...");
-            String field = isPlayer1 ? "kpk_p1Ready" : "kpk_p2Ready";
-            db.collection("gameRooms").document(roomId).update(field, true);
-        });
-
-        tvCurrentPoints.setText("Igra završena!");
-
-        stepTimer = new CountDownTimer(5000, 1000) {
-            @Override
-            public void onTick(long ms) {
-                tvStepTimer.setText("⏱️ " + (ms / 1000 + 1) + "s");
-            }
-
-            @Override
-            public void onFinish() {
-                tvStepTimer.setText("⏱️ 0s");
-                // Uklonjen automatski prelaz
-            }
-        }.start();
-    }
+    private void finishGame() {}
 
     private void triggerNextGame() {
         if (stepTimer != null) stepTimer.cancel();
@@ -496,10 +493,33 @@ public class KorakPoKorakActivity extends AppCompatActivity {
         updates.put("currentGame", "mojBroj");
         db.collection("gameRooms").document(roomId).update(updates);
     }
+    private void handleOpponentLeft() {
+        if (transitioning || phase.equals("done")) return;
+        // Ako je red na protivnika ili je on u bonus šansi, odmah preskoči
+        boolean opponentTurn = (phase.equals("p1_playing") && !isPlayer1) || 
+                              (phase.equals("p2_playing") && isPlayer1) ||
+                              (phase.equals("p1_bonus") && !isPlayer1) ||
+                              (phase.equals("p2_bonus") && isPlayer1);
+        
+        if (opponentTurn) {
+            transitioning = true; // Privremeno blokiraj da ne bi slao više puta
+            new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
+                if (phase.equals("p1_playing")) setPhase("p2_bonus");
+                else if (phase.equals("p2_playing")) setPhase("p1_bonus");
+                else if (phase.equals("p1_bonus")) setPhase("done");
+                else if (phase.equals("p2_bonus")) setPhase("p2_playing");
+                transitioning = false;
+            }, 2000);
+        }
+    }
+
     @Override
     protected void onDestroy() {
         super.onDestroy();
         if (stepTimer != null) stepTimer.cancel();
         if (gameListener != null) gameListener.remove();
+        if (!isFinishing()) {
+            db.collection("gameRooms").document(roomId).update("playerLeft", isPlayer1 ? "p1" : "p2");
+        }
     }
 }

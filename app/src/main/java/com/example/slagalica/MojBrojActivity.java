@@ -60,6 +60,16 @@ public class MojBrojActivity extends AppCompatActivity {
         roomId = getIntent().getStringExtra("roomId");
         isPlayer1 = getIntent().getBooleanExtra("isPlayer1", true);
 
+        getOnBackPressedDispatcher().addCallback(this, new androidx.activity.OnBackPressedCallback(true) {
+            @Override
+            public void handleOnBackPressed() {
+                String uid = FirebaseAuth.getInstance().getUid();
+                if (uid != null) RankingManager.updateStars(uid, -10);
+                writePlayerLeft();
+                finish();
+            }
+        });
+
         initViews();
         attachGameListener();
     }
@@ -113,8 +123,41 @@ public class MojBrojActivity extends AppCompatActivity {
         setAvatar(ivPlayer1Avatar, snapshot.getString("player1Avatar"));
         setAvatar(ivPlayer2Avatar, snapshot.getString("player2Avatar"));
 
+        // Spec 3f: protivnik napustio - preskoči čekanje i završi igru
+        String playerLeft = snapshot.getString("playerLeft");
+        if (playerLeft != null && !playerLeft.isEmpty()) {
+            String opponent = isPlayer1 ? "p2" : "p1";
+            if (playerLeft.equals(opponent)) {
+                // Preostali igrač završava rundu/igru
+                if (phase.equals("p1_playing") || phase.equals("p2_playing")) {
+                    // Ako protivnik nije završio, postavi mu -1
+                    String oppResultField = isPlayer1 ? "mojbroj_p2Result" : "mojbroj_p1Result";
+                    String oppFinishedField = isPlayer1 ? "mojbroj_p2Finished" : "mojbroj_p1Finished";
+                    if (snapshot.get(oppResultField) == null || (Long)snapshot.get(oppResultField) == -1) {
+                         db.collection("gameRooms").document(roomId).update(oppResultField, -1, oppFinishedField, true);
+                    }
+                } else if (phase.equals("done")) {
+                    finishGame();
+                }
+            }
+        }
+
         String snapPhase = snapshot.getString("mojbroj_phase");
         if (snapPhase == null) snapPhase = "p1_playing";
+
+        if (phase.equals("done")) {
+            transitioning = true;
+            if (gameListener != null) gameListener.remove();
+            if (roundTimer != null) roundTimer.cancel();
+            Intent intent = new Intent(this, KoZnaZnaActivity.class);
+            intent.putExtra("roomId", roomId);
+            intent.putExtra("isPlayer1", isPlayer1);
+            startActivity(intent);
+            finish();
+            return;
+        }
+
+        boolean opponentLeft = playerLeft != null && !playerLeft.isEmpty() && !playerLeft.equals(isPlayer1 ? "p1" : "p2");
 
         if (!snapPhase.equals(phase)) {
             phase = snapPhase;
@@ -123,8 +166,8 @@ public class MojBrojActivity extends AppCompatActivity {
                 finishGame();
                 return;
             }
-            // Prva runda — P1 generiše brojeve
-            if (phase.equals("p1_playing") && isPlayer1 && !generateCalled) {
+            // Generisanje brojeva: Radi Player 1, ili preostali igrač ako je protivnik otišao
+            if (!generateCalled && (isPlayer1 || opponentLeft)) {
                 generateCalled = true;
                 generateAndSave();
             }
@@ -145,67 +188,28 @@ public class MojBrojActivity extends AppCompatActivity {
         }
 
         if (Boolean.TRUE.equals(snapshot.getBoolean("mojbroj_p1Finished"))
-                && Boolean.TRUE.equals(snapshot.getBoolean("mojbroj_p2Finished"))) {
-            showComparison(snapshot);
-            updateLocalStats(snapshot);
+                || (opponentLeft && (isPlayer1 ? Boolean.TRUE.equals(snapshot.getBoolean("mojbroj_p1Finished")) : Boolean.TRUE.equals(snapshot.getBoolean("mojbroj_p2Finished"))))) {
+            
+            // Ako je protivnik otišao, simuliraj da je i on završio (ako već nije)
+            String oppFinishedField = isPlayer1 ? "mojbroj_p2Finished" : "mojbroj_p1Finished";
+            if (opponentLeft && !Boolean.TRUE.equals(snapshot.getBoolean(oppFinishedField))) {
+                 db.collection("gameRooms").document(roomId).update(oppFinishedField, true, (isPlayer1 ? "mojbroj_p2Result" : "mojbroj_p1Result"), -1);
+                 return;
+            }
 
-            // PROVERA READY STANJA ZA SLEDECU RUNDU/IGRU
-            p1Ready = snapshot.getBoolean("mojbroj_p1Ready") != null && snapshot.getBoolean("mojbroj_p1Ready");
-            p2Ready = snapshot.getBoolean("mojbroj_p2Ready") != null && snapshot.getBoolean("mojbroj_p2Ready");
+            if (Boolean.TRUE.equals(snapshot.getBoolean("mojbroj_p1Finished")) && Boolean.TRUE.equals(snapshot.getBoolean("mojbroj_p2Finished"))) {
+                showComparison(snapshot);
+                updateLocalStats(snapshot);
 
-            if (p1Ready && p2Ready) {
-                if (isPlayer1) {
-                    Map<String, Object> resetReady = new HashMap<>();
-                    resetReady.put("mojbroj_p1Ready", false);
-                    resetReady.put("mojbroj_p2Ready", false);
-                    db.collection("gameRooms").document(roomId).update(resetReady);
-
-                    calculateAndMove();
+                if (isPlayer1 || opponentLeft) {
+                    new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(this::calculateAndMove, 3000);
                 }
             }
-            
-            showNextGameButton();
         }
     }
 
     private boolean finishTimerStarted = false;
-    private void showNextGameButton() {
-        if (finishTimerStarted) return;
-        finishTimerStarted = true;
-
-        MaterialButton btnNext = findViewById(R.id.btnNext);
-        btnNext.setVisibility(View.VISIBLE);
-        btnNext.setText(phase.equals("p1_playing") ? "SLEDEĆA RUNDA" : "KRAJ IGRE");
-
-        boolean myReady = isPlayer1 ? p1Ready : p2Ready;
-        if (myReady) {
-            btnNext.setEnabled(false);
-            btnNext.setText("ČEKANJE...");
-        } else {
-            btnNext.setEnabled(true);
-        }
-
-        btnNext.setOnClickListener(v -> {
-            btnNext.setEnabled(false);
-            btnNext.setText("ČEKANJE...");
-            String field = isPlayer1 ? "mojbroj_p1Ready" : "mojbroj_p2Ready";
-            db.collection("gameRooms").document(roomId).update(field, true);
-        });
-
-        if (roundTimer != null) roundTimer.cancel();
-        roundTimer = new CountDownTimer(5000, 1000) {
-            @Override
-            public void onTick(long ms) {
-                tvTimer.setText("⏱ " + (ms / 1000 + 1) + "s");
-            }
-
-            @Override
-            public void onFinish() {
-                tvTimer.setText("⏱ 0s");
-                // Uklonjen automatski prelaz
-            }
-        }.start();
-    }
+    private void showNextGameButton() {}
 
     private void resetRoundUI() {
         if (roundTimer != null) roundTimer.cancel();
@@ -216,7 +220,6 @@ public class MojBrojActivity extends AppCompatActivity {
         numbersLoaded = false;
         generateCalled = false;
         finishTimerStarted = false;
-        findViewById(R.id.btnNext).setVisibility(View.GONE);
         numbers.clear();
         expression = new StringBuilder();
         usedIndices.clear();
@@ -323,6 +326,16 @@ public class MojBrojActivity extends AppCompatActivity {
         int d2 = v2 >= 0 ? Math.abs(v2 - targetNumber) : 999;
         tvResult.setText("P1: " + (v1 < 0 ? "/" : v1) + " (" + d1 + ") | P2: "
                 + (v2 < 0 ? "/" : v2) + " (" + d2 + ")");
+        
+        // Spec 3f/g: Automatski prelaz na Home nakon završetka druge runde (faza done)
+        if (phase.equals("done")) {
+            new android.os.Handler(getMainLooper()).postDelayed(() -> {
+                if (!isFinishing()) {
+                    startActivity(new Intent(this, HomeActivity.class));
+                    finish();
+                }
+            }, 5000);
+        }
     }
 
     private void updateLocalStats(com.google.firebase.firestore.DocumentSnapshot snap) {
@@ -387,7 +400,7 @@ public class MojBrojActivity extends AppCompatActivity {
                     Map<String, Object> u = new HashMap<>();
                     u.put("player1Score", currentP1 + p1Add);
                     u.put("player2Score", currentP2 + p2Add);
-                    
+
                     // Reset flags
                     u.put("mojbroj_p1Finished", false);
                     u.put("mojbroj_p2Finished", false);
@@ -402,14 +415,17 @@ public class MojBrojActivity extends AppCompatActivity {
                         for (int i = 0; i < 4; i++) ns.add(r.nextInt(9) + 1);
                         ns.add(new int[]{10, 15, 20}[r.nextInt(3)]);
                         ns.add(new int[]{25, 50, 75, 100}[r.nextInt(4)]);
-                        
+
                         u.put("r2Target", t);
                         u.put("r2Numbers", ns);
                         u.put("mojbroj_phase", "p2_playing");
+                        u.put("roundStartTime", System.currentTimeMillis());
                     } else {
                         u.put("mojbroj_phase", "done");
+                        u.put("currentGame", "koZnaZna");
+                        u.put("questionStartTime", System.currentTimeMillis());
                     }
-                    
+
                     db.collection("gameRooms").document(roomId).update(u);
                 });
     }
@@ -524,33 +540,60 @@ public class MojBrojActivity extends AppCompatActivity {
                     String p2Id = snap.getString("player2Id");
                     String currentUserId = FirebaseAuth.getInstance().getCurrentUser().getUid();
 
-                    String result;
+                    Boolean isFriendlyVal = snap.getBoolean("isFriendly");
+                    boolean isFriendly = isFriendlyVal != null && isFriendlyVal;
+
                     long myScore = isPlayer1 ? p1Score : p2Score;
-                    int starChange;
+                    int starChange=0;
+                    if (!isFriendly) {
+                        // Spec 3d: računamo promenu zvezda
+                        String result;
 
-                    if (p1Score == p2Score) {
-                        result = "draw";
-                        starChange = (int) (myScore / 40);
-                    } else if ((isPlayer1 && p1Score > p2Score) || (!isPlayer1 && p2Score > p1Score)) {
-                        result = "win";
-                        starChange = 10 + (int) (myScore / 40);
+
+                        if (p1Score == p2Score) {
+                            result = "draw";
+                            starChange = (int) (myScore / 40); // bez ±10 za nerešeno
+                        } else if ((isPlayer1 && p1Score > p2Score) || (!isPlayer1 && p2Score > p1Score)) {
+                            result = "win";
+                            starChange = 10 + (int) (myScore / 40);
+                        } else {
+                            result = "loss";
+                            starChange = -10 + (int) (myScore / 40);
+                        }
+
+                        StatisticsManager.updateMatchResult(result);
+
+                        // Napravi finalnu kopiju da bi mogla da se koristi unutar lambde (addOnSuccessListener)
+                        final int finalStarChange = starChange;
+
+                        // Spec 3d-iii: 50 zvezda → 1 token; čitamo trenutne zvezde pre upisa
+                        db.collection("users").document(currentUserId).get()
+                                .addOnSuccessListener(userDoc -> {
+                                    long current = userDoc.getLong("stars") != null ? userDoc.getLong("stars") : 0;
+                                    long updated = Math.max(0, current + finalStarChange);
+                                    long tokensEarned = (updated / 50) - (current / 50);
+
+                                    Map<String, Object> userUpd = new HashMap<>();
+                                    userUpd.put("stars", updated);
+                                    if (tokensEarned > 0)
+                                        userUpd.put("tokens", com.google.firebase.firestore.FieldValue.increment(tokensEarned));
+                                    db.collection("users").document(currentUserId).update(userUpd);
+                                });
+
+                        RankingManager.updateStars(currentUserId, starChange);
+
+                        if ("win".equals(result)) {
+                            RankingManager.completeMission(currentUserId, "win_game");
+                        }
+
+                        if (!gameStatsRecordedThisMatch) {
+                            gameStatsRecordedThisMatch = true;
+                            db.collection("users").document(currentUserId)
+                                    .update("gamesPlayed", com.google.firebase.firestore.FieldValue.increment(1));
+                        }
                     } else {
-                        result = "loss";
-                        starChange = -10 + (int) (myScore / 40);
-                    }
-
-                    StatisticsManager.updateMatchResult(result);
-                    RankingManager.updateStars(currentUserId, starChange);
-
-                    if ("win".equals(result)) {
-                        RankingManager.completeMission(currentUserId, "win_game");
-                    }
-
-                    // Spec 4a: beležimo odigranu partiju
-                    if (!gameStatsRecordedThisMatch) {
-                        gameStatsRecordedThisMatch = true;
-                        db.collection("users").document(currentUserId)
-                            .update("gamesPlayed", com.google.firebase.firestore.FieldValue.increment(1));
+                        // Spec 3e: prijateljska partija — samo misija, bez zvezda/statistike
+                        RankingManager.completeMission(currentUserId, "play_friendly");
                     }
 
                     // Turnir: ako je ovo turnirska partija, primeni posebna pravila nagrađivanja
@@ -570,14 +613,14 @@ public class MojBrojActivity extends AppCompatActivity {
                         }
 
                         db.collection("tournaments").document(tId)
-                            .update(tWinnerKey, winnerId)
-                            .addOnCompleteListener(task -> {
-                                Intent intent = new Intent(this, TournamentActivity.class);
-                                intent.putExtra("tournamentId", tId);
-                                intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
-                                startActivity(intent);
-                                finish();
-                            });
+                                .update(tWinnerKey, winnerId)
+                                .addOnCompleteListener(task -> {
+                                    Intent intent = new Intent(this, TournamentActivity.class);
+                                    intent.putExtra("tournamentId", tId);
+                                    intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+                                    startActivity(intent);
+                                    finish();
+                                });
                         return;
                     }
 
@@ -598,5 +641,20 @@ public class MojBrojActivity extends AppCompatActivity {
         super.onDestroy();
         if (roundTimer != null) roundTimer.cancel();
         if (gameListener != null) gameListener.remove();
+        if (!isFinishing()) {
+            writePlayerLeft();
+            // Spec 3f: Napuštanjem igre igrač gubi partiju i ne dobija zvezde (-10 zvezdi)
+            String uid = FirebaseAuth.getInstance().getUid();
+            if (uid != null) {
+                // Proveri da li je friendly (treba nam snap, ali ovde smo u onDestroy)
+                // Za sad samo penalizuj, asinhrono je ionako.
+                RankingManager.updateStars(uid, -10);
+            }
+        }
+    }
+
+    private void writePlayerLeft() {
+        if (roomId == null) return;
+        db.collection("gameRooms").document(roomId).update("playerLeft", isPlayer1 ? "p1" : "p2");
     }
 }
