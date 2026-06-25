@@ -131,6 +131,8 @@ public class RegisterActivity extends AppCompatActivity {
                     user.put("region", region);
                     user.put("tokens", 5);
                     user.put("stars", 0);
+                    user.put("starsWeekly", 0);
+                    user.put("starsMonthly", 0);
                     user.put("league", 0);
                     user.put("avatarUrl", "");
 

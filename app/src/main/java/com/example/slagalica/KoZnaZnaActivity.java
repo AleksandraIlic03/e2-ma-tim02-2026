@@ -41,6 +41,7 @@ public class KoZnaZnaActivity extends AppCompatActivity {
     private boolean answered = false;
     private boolean nextGameButtonShown = false;
     private ListenerRegistration gameListener;
+    private boolean p1Ready = false, p2Ready = false;
 
     private final String COLOR_P1 = "#823FAB";
     private final String COLOR_P2 = "#2196F3";
@@ -141,6 +142,20 @@ public class KoZnaZnaActivity extends AppCompatActivity {
                         if (answers != null && answers.size() == 2) {
                             nextGameButtonShown = true;
                             tvTimer.postDelayed(this::showNextGameButton, 2000);
+                        }
+                    }
+
+                    // PROVERA READY STANJA ZA SLEDECU IGRU
+                    p1Ready = snapshot.getBoolean("kzz_p1Ready") != null && snapshot.getBoolean("kzz_p1Ready");
+                    p2Ready = snapshot.getBoolean("kzz_p2Ready") != null && snapshot.getBoolean("kzz_p2Ready");
+
+                    if (p1Ready && p2Ready) {
+                        if (isPlayer1) {
+                            Map<String, Object> resetReady = new HashMap<>();
+                            resetReady.put("kzz_p1Ready", false);
+                            resetReady.put("kzz_p2Ready", false);
+                            resetReady.put("currentGame", "spojnice");
+                            db.collection("gameRooms").document(roomId).update(resetReady);
                         }
                     }
                 });
@@ -331,7 +346,21 @@ public class KoZnaZnaActivity extends AppCompatActivity {
         MaterialButton btnNext = findViewById(R.id.btnNext);
         btnNext.setVisibility(View.VISIBLE);
         btnNext.setText("Sledeća igra");
-        btnNext.setOnClickListener(v -> triggerNextGame());
+
+        boolean myReady = isPlayer1 ? p1Ready : p2Ready;
+        if (myReady) {
+            btnNext.setEnabled(false);
+            btnNext.setText("ČEKANJE...");
+        } else {
+            btnNext.setEnabled(true);
+        }
+
+        btnNext.setOnClickListener(v -> {
+            btnNext.setEnabled(false);
+            btnNext.setText("ČEKANJE...");
+            String field = isPlayer1 ? "kzz_p1Ready" : "kzz_p2Ready";
+            db.collection("gameRooms").document(roomId).update(field, true);
+        });
 
         if (questionTimer != null) questionTimer.cancel();
         
@@ -344,7 +373,7 @@ public class KoZnaZnaActivity extends AppCompatActivity {
             @Override
             public void onFinish() {
                 tvTimer.setText("⏱ 0s");
-                triggerNextGame();
+                // Uklonjen automatski prelaz
             }
         }.start();
     }

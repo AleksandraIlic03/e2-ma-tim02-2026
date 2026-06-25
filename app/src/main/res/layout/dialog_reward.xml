@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/rewardContainer"
+    android:layout_width="300dp"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:gravity="center"
+    android:padding="24dp"
+    android:background="@drawable/input_bg_rounded"
+    android:backgroundTint="#FFFFFF">
+
+    <TextView
+        android:id="@+id/tvRewardEmoji"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="🎉"
+        android:textSize="60sp" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="ČESTITAMO!"
+        android:textColor="#823FAB"
+        android:textSize="22sp"
+        android:fontFamily="@font/fredoka_bold"
+        android:layout_marginTop="12dp" />
+
+    <TextView
+        android:id="@+id/tvRewardMessage"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Osvojili ste 10 tokena za 1. mesto na mesečnoj rang listi!"
+        android:textAlignment="center"
+        android:textColor="#321C1C"
+        android:textSize="16sp"
+        android:fontFamily="@font/fredoka_regular"
+        android:layout_marginTop="8dp" />
+
+    <TextView
+        android:id="@+id/tvRewardValue"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="+10 🎟️"
+        android:textColor="#FF912B"
+        android:textSize="28sp"
+        android:fontFamily="@font/fredoka_bold"
+        android:layout_marginTop="16dp" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnCollectReward"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="PREUZMI NAGRADU"
+        android:backgroundTint="#823FAB"
+        android:textColor="#FFFFFF"
+        android:fontFamily="@font/fredoka_bold"
+        android:layout_marginTop="24dp"
+        app:cornerRadius="100dp" />
+
+</LinearLayout>

@@ -116,16 +116,22 @@
                 android:paddingHorizontal="4dp"
                 android:paddingVertical="2dp">
 
-                <TextView
-                    android:id="@+id/tvStealLabel"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:textColor="#E65100"
-                    android:fontFamily="@font/fredoka_bold"
-                    android:textSize="10sp"
-                    android:paddingEnd="4dp" />
+                <FrameLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent">
 
-                <include android:id="@+id/row7" layout="@layout/item_skocko_row" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" />
+                    <TextView
+                        android:id="@+id/tvStealLabel"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="start|center_vertical"
+                        android:layout_marginStart="8dp"
+                        android:textColor="#E65100"
+                        android:fontFamily="@font/fredoka_bold"
+                        android:textSize="10sp" />
+
+                    <include android:id="@+id/row7" layout="@layout/item_skocko_row" android:layout_width="match_parent" android:layout_height="match_parent" />
+                </FrameLayout>
             </LinearLayout>
 
         </LinearLayout>

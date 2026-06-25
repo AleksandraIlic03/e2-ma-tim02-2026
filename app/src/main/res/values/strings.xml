@@ -42,4 +42,17 @@
         libero vel nunc consequat, quis tincidunt nisl eleifend. Cras bibendum enim a justo luctus
         vestibulum. Fusce dictum libero quis erat maximus, vitae volutpat diam dignissim.
     </string>
+
+    <string name="nedeljna">Nedeljna</string>
+    <string name="mesecna">Mesečna</string>
+    <string name="rang_lista">Rang Lista</string>
+    <string name="turnir">Turnir</string>
+    <string name="dnevne_misije">Dnevne Misije</string>
+    <string name="waiting_players">Status: Čekanje na igrače</string>
+    <string name="player_count">%1$d/4 igrača</string>
+    <string name="join_tournament">Započni turnir (3 tokena)</string>
+    <string name="win_game">Pobedi partiju</string>
+    <string name="reward_stars">Nagrada: %1$d zvezde</string>
+    <string name="bonus_all_completed">Bonus: Sve misije završene!</string>
+    <string name="bonus_reward">+2 Tokena, +3 Zvezde</string>
 </resources>

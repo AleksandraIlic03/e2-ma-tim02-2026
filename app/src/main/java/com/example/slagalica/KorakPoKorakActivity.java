@@ -43,6 +43,7 @@ public class KorakPoKorakActivity extends AppCompatActivity {
     private boolean transitioning = false;
     private boolean kpkStatsUpdatedThisRound = false;
     private boolean gameStatsRecordedThisMatch = false;
+    private boolean p1Ready = false, p2Ready = false;
 
     private CountDownTimer stepTimer;
 
@@ -127,6 +128,20 @@ public class KorakPoKorakActivity extends AppCompatActivity {
             startActivity(intent);
             finish();
             return;
+        }
+
+        // PROVERA READY STANJA ZA SLEDECU IGRU
+        p1Ready = snapshot.getBoolean("kpk_p1Ready") != null && snapshot.getBoolean("kpk_p1Ready");
+        p2Ready = snapshot.getBoolean("kpk_p2Ready") != null && snapshot.getBoolean("kpk_p2Ready");
+
+        if (p1Ready && p2Ready) {
+            if (isPlayer1) {
+                Map<String, Object> resetReady = new HashMap<>();
+                resetReady.put("kpk_p1Ready", false);
+                resetReady.put("kpk_p2Ready", false);
+                resetReady.put("currentGame", "mojBroj");
+                db.collection("gameRooms").document(roomId).update(resetReady);
+            }
         }
 
         // Header
@@ -440,8 +455,24 @@ public class KorakPoKorakActivity extends AppCompatActivity {
     private void finishGame() {
         if (stepTimer != null) stepTimer.cancel();
 
-        findViewById(R.id.btnNext).setVisibility(View.VISIBLE);
-        findViewById(R.id.btnNext).setOnClickListener(v -> triggerNextGame());
+        MaterialButton btnNext = findViewById(R.id.btnNext);
+        btnNext.setVisibility(View.VISIBLE);
+        btnNext.setText("Sledeća igra");
+
+        boolean myReady = isPlayer1 ? p1Ready : p2Ready;
+        if (myReady) {
+            btnNext.setEnabled(false);
+            btnNext.setText("ČEKANJE...");
+        } else {
+            btnNext.setEnabled(true);
+        }
+
+        btnNext.setOnClickListener(v -> {
+            btnNext.setEnabled(false);
+            btnNext.setText("ČEKANJE...");
+            String field = isPlayer1 ? "kpk_p1Ready" : "kpk_p2Ready";
+            db.collection("gameRooms").document(roomId).update(field, true);
+        });
 
         tvCurrentPoints.setText("Igra završena!");
 
@@ -454,7 +485,7 @@ public class KorakPoKorakActivity extends AppCompatActivity {
             @Override
             public void onFinish() {
                 tvStepTimer.setText("⏱️ 0s");
-                triggerNextGame();
+                // Uklonjen automatski prelaz
             }
         }.start();
     }

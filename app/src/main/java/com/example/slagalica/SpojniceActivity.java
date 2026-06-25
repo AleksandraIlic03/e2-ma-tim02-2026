@@ -50,6 +50,7 @@ public class SpojniceActivity extends AppCompatActivity {
     private boolean statsUpdatedThisRound = false;
     private boolean gameStatsRecordedThisMatch = false;
     private int lastRecordedRound = 0;
+    private boolean p1Ready = false, p2Ready = false;
 
     private final String COLOR_P1 = "#823FAB"; // Purple
     private final String COLOR_P2 = "#2196F3"; // Blue
@@ -152,6 +153,22 @@ public class SpojniceActivity extends AppCompatActivity {
                         tvInstruction.setText(currentSpojnica.getTitle());
                         
                         isMyTurn = currentTurn.equals(isPlayer1 ? "p1" : "p2");
+
+                        // PROVERA READY STANJA ZA SLEDECU RUNDU/IGRU
+                        p1Ready = snapshot.getBoolean("spojnice_p1Ready") != null && snapshot.getBoolean("spojnice_p1Ready");
+                        p2Ready = snapshot.getBoolean("spojnice_p2Ready") != null && snapshot.getBoolean("spojnice_p2Ready");
+
+                        if (p1Ready && p2Ready) {
+                            if (isPlayer1) {
+                                Map<String, Object> resetReady = new HashMap<>();
+                                resetReady.put("spojnice_p1Ready", false);
+                                resetReady.put("spojnice_p2Ready", false);
+                                db.collection("gameRooms").document(roomId).update(resetReady);
+
+                                handleNextRound();
+                            }
+                        }
+
                         updateUIState();
                     }
 
@@ -297,7 +314,21 @@ public class SpojniceActivity extends AppCompatActivity {
         
         btnNext.setVisibility(View.VISIBLE);
         btnNext.setText(currentRound == 1 ? "SLEDEĆA RUNDA" : "SLEDEĆA IGRA");
-        btnNext.setOnClickListener(v -> handleNextRound());
+
+        boolean myReady = isPlayer1 ? p1Ready : p2Ready;
+        if (myReady) {
+            btnNext.setEnabled(false);
+            btnNext.setText("ČEKANJE...");
+        } else {
+            btnNext.setEnabled(true);
+        }
+
+        btnNext.setOnClickListener(v -> {
+            btnNext.setEnabled(false);
+            btnNext.setText("ČEKANJE...");
+            String field = isPlayer1 ? "spojnice_p1Ready" : "spojnice_p2Ready";
+            db.collection("gameRooms").document(roomId).update(field, true);
+        });
 
         timer = new CountDownTimer(5000, 1000) {
             @Override
@@ -308,7 +339,7 @@ public class SpojniceActivity extends AppCompatActivity {
             @Override
             public void onFinish() {
                 tvTimer.setText("⏱ 0s");
-                handleNextRound();
+                // Uklonjen automatski prelaz
             }
         }.start();
     }
