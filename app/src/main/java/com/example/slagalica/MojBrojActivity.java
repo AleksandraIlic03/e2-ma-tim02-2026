@@ -49,6 +49,7 @@ public class MojBrojActivity extends AppCompatActivity {
     private String phase = "";
     private CountDownTimer roundTimer;
     private boolean statsUpdatedThisRound = false;
+    private boolean p1Ready = false, p2Ready = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -147,6 +148,22 @@ public class MojBrojActivity extends AppCompatActivity {
                 && Boolean.TRUE.equals(snapshot.getBoolean("mojbroj_p2Finished"))) {
             showComparison(snapshot);
             updateLocalStats(snapshot);
+
+            // PROVERA READY STANJA ZA SLEDECU RUNDU/IGRU
+            p1Ready = snapshot.getBoolean("mojbroj_p1Ready") != null && snapshot.getBoolean("mojbroj_p1Ready");
+            p2Ready = snapshot.getBoolean("mojbroj_p2Ready") != null && snapshot.getBoolean("mojbroj_p2Ready");
+
+            if (p1Ready && p2Ready) {
+                if (isPlayer1) {
+                    Map<String, Object> resetReady = new HashMap<>();
+                    resetReady.put("mojbroj_p1Ready", false);
+                    resetReady.put("mojbroj_p2Ready", false);
+                    db.collection("gameRooms").document(roomId).update(resetReady);
+
+                    calculateAndMove();
+                }
+            }
+            
             showNextGameButton();
         }
     }
@@ -159,13 +176,20 @@ public class MojBrojActivity extends AppCompatActivity {
         MaterialButton btnNext = findViewById(R.id.btnNext);
         btnNext.setVisibility(View.VISIBLE);
         btnNext.setText(phase.equals("p1_playing") ? "SLEDEĆA RUNDA" : "KRAJ IGRE");
+
+        boolean myReady = isPlayer1 ? p1Ready : p2Ready;
+        if (myReady) {
+            btnNext.setEnabled(false);
+            btnNext.setText("ČEKANJE...");
+        } else {
+            btnNext.setEnabled(true);
+        }
+
         btnNext.setOnClickListener(v -> {
-            if (phase.equals("p2_playing")) {
-                // Ako je druga runda gotova, prelazimo u done fazu
-                calculateAndMove();
-            } else {
-                calculateAndMove();
-            }
+            btnNext.setEnabled(false);
+            btnNext.setText("ČEKANJE...");
+            String field = isPlayer1 ? "mojbroj_p1Ready" : "mojbroj_p2Ready";
+            db.collection("gameRooms").document(roomId).update(field, true);
         });
 
         if (roundTimer != null) roundTimer.cancel();
@@ -178,7 +202,7 @@ public class MojBrojActivity extends AppCompatActivity {
             @Override
             public void onFinish() {
                 tvTimer.setText("⏱ 0s");
-                calculateAndMove();
+                // Uklonjen automatski prelaz
             }
         }.start();
     }

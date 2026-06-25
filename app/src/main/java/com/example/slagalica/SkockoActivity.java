@@ -48,6 +48,7 @@ public class SkockoActivity extends AppCompatActivity {
     private boolean wasOpponentChance = false;
     private boolean gameStatsRecordedThisMatch = false;
     private int[] previousRoundTarget = null;
+    private boolean p1Ready = false, p2Ready = false;
 
     private final int[] symbolDrawables = {
             R.drawable.img,
@@ -174,6 +175,22 @@ public class SkockoActivity extends AppCompatActivity {
 
                         currentTurn = snapshot.getString("skocko_turn") != null
                             ? snapshot.getString("skocko_turn") : "p1";
+
+                        // PROVERA READY STANJA ZA SLEDECU RUNDU/IGRU
+                        p1Ready = snapshot.getBoolean("skocko_p1Ready") != null && snapshot.getBoolean("skocko_p1Ready");
+                        p2Ready = snapshot.getBoolean("skocko_p2Ready") != null && snapshot.getBoolean("skocko_p2Ready");
+
+                        if (p1Ready && p2Ready) {
+                            if (isPlayer1) { // Samo p1 kao host vrši tranziciju
+                                Map<String, Object> resetReady = new HashMap<>();
+                                resetReady.put("skocko_p1Ready", false);
+                                resetReady.put("skocko_p2Ready", false);
+                                db.collection("gameRooms").document(roomId).update(resetReady);
+
+                                if (currentRound == 1) startNextRound();
+                                else transitionToNextGame();
+                            }
+                        }
 
                         Boolean steal = snapshot.getBoolean("skocko_isSteal");
                         isOpponentChance = steal != null && steal;
@@ -586,9 +603,20 @@ public class SkockoActivity extends AppCompatActivity {
         MaterialButton btnNext = findViewById(R.id.btnNext);
         btnNext.setVisibility(View.VISIBLE);
         btnNext.setText(currentRound == 1 ? "SLEDEĆA RUNDA" : "SLEDEĆA IGRA");
+        
+        boolean myReady = isPlayer1 ? p1Ready : p2Ready;
+        if (myReady) {
+            btnNext.setEnabled(false);
+            btnNext.setText("ČEKANJE...");
+        } else {
+            btnNext.setEnabled(true);
+        }
+
         btnNext.setOnClickListener(v -> {
-            if (currentRound == 1) startNextRound();
-            else transitionToNextGame();
+            btnNext.setEnabled(false);
+            btnNext.setText("ČEKANJE...");
+            String field = isPlayer1 ? "skocko_p1Ready" : "skocko_p2Ready";
+            db.collection("gameRooms").document(roomId).update(field, true);
         });
 
         if (countDownTimer != null) countDownTimer.cancel();
@@ -601,8 +629,7 @@ public class SkockoActivity extends AppCompatActivity {
             @Override
             public void onFinish() {
                 tvTimer.setText("⏱ 0s");
-                if (currentRound == 1) startNextRound();
-                else transitionToNextGame();
+                // Uklonjen automatski prelaz - čeka se klik oba igrača
             }
         }.start();
     }

@@ -63,6 +63,7 @@ public class AsocijacijeActivity extends AppCompatActivity {
     private boolean gameStatsRecordedThisMatch = false;
     private int lastRecordedRound = 0;
     private int pointsAtRoundStart = 0;
+    private boolean p1Ready = false, p2Ready = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -155,6 +156,22 @@ public class AsocijacijeActivity extends AppCompatActivity {
                         }
                         currentRound = newRound;
                         currentTurn = snapshot.getString("asoc_turn") != null ? snapshot.getString("asoc_turn") : "p1";
+
+                        // PROVERA READY STANJA ZA SLEDECU RUNDU/IGRU
+                        p1Ready = snapshot.getBoolean("asoc_p1Ready") != null && snapshot.getBoolean("asoc_p1Ready");
+                        p2Ready = snapshot.getBoolean("asoc_p2Ready") != null && snapshot.getBoolean("asoc_p2Ready");
+
+                        if (p1Ready && p2Ready) {
+                            if (isPlayer1) { // Samo p1 kao host vrši tranziciju
+                                Map<String, Object> resetReady = new HashMap<>();
+                                resetReady.put("asoc_p1Ready", false);
+                                resetReady.put("asoc_p2Ready", false);
+                                db.collection("gameRooms").document(roomId).update(resetReady);
+                                
+                                if (currentRound == 1) startNextRound();
+                                else transitionToSkocko();
+                            }
+                        }
 
                         Map<String, Object> asocData = (Map<String, Object>) snapshot.get("asocijacija" + currentRound);
                         if (asocData != null) {
@@ -282,6 +299,14 @@ public class AsocijacijeActivity extends AppCompatActivity {
             if (btnNextAction != null) {
                 btnNextAction.setVisibility(View.VISIBLE);
                 btnNextAction.setText(currentRound == 1 ? "SLEDEĆA RUNDA" : "SLEDEĆA IGRA");
+                
+                boolean myReady = isPlayer1 ? p1Ready : p2Ready;
+                if (myReady) {
+                    btnNextAction.setEnabled(false);
+                    btnNextAction.setText("ČEKANJE...");
+                } else {
+                    btnNextAction.setEnabled(true);
+                }
                 startFinishTimer();
             }
         } else {
@@ -320,17 +345,20 @@ public class AsocijacijeActivity extends AppCompatActivity {
 
         btnNextAction.setOnClickListener(v -> {
             if (isFinalSolved) {
-                if (currentRound == 1) {
-                    startNextRound();
-                } else {
-                    transitionToSkocko();
-                }
+                setReadyForNext();
             } else {
                 // Pass turn
                 db.collection("gameRooms").document(roomId).update("asoc_turn", isPlayer1 ? "p2" : "p1");
                 hasOpenedThisTurn = false;
             }
         });
+    }
+
+    private void setReadyForNext() {
+        btnNextAction.setEnabled(false);
+        btnNextAction.setText("ČEKANJE...");
+        String field = isPlayer1 ? "asoc_p1Ready" : "asoc_p2Ready";
+        db.collection("gameRooms").document(roomId).update(field, true);
     }
 
     private boolean finishTimerStarted = false;
@@ -350,8 +378,7 @@ public class AsocijacijeActivity extends AppCompatActivity {
             @Override
             public void onFinish() {
                 tvTimer.setText("⏱ 0s");
-                if (currentRound == 1) startNextRound();
-                else transitionToSkocko();
+                // Uklonjen automatski prelaz - čeka se klik oba igrača
             }
         }.start();
     }
