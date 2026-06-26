@@ -1,6 +1,11 @@
 package com.example.slagalica;
 
+import android.content.Context;
 import android.content.Intent;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
 import android.os.Bundle;
 import android.os.CountDownTimer;
 import android.view.View;
@@ -23,17 +28,24 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
-public class MojBrojActivity extends AppCompatActivity {
+public class MojBrojActivity extends AppCompatActivity implements SensorEventListener {
 
     private TextView tvPlayer1Name, tvPlayer1Points, tvPlayer2Name, tvPlayer2Points;
     private ImageView ivPlayer1Avatar, ivPlayer2Avatar;
     private TextView tvRound, tvTimer, tvTargetNumber, tvExpression, tvResult;
     private LinearLayout llNumberButtons;
+    private MaterialButton btnStop;
 
     private FirebaseFirestore db;
     private String roomId;
     private boolean isPlayer1;
     private ListenerRegistration gameListener;
+
+    private SensorManager sensorManager;
+    private float acceleration;
+    private float currentAcceleration;
+    private float lastAcceleration;
+    private static final int SHAKE_THRESHOLD = 12;
 
     private int targetNumber = -1;
     private boolean numbersLoaded = false;
@@ -48,6 +60,7 @@ public class MojBrojActivity extends AppCompatActivity {
 
     private String phase = "";
     private CountDownTimer roundTimer;
+    private CountDownTimer revealTimer;
     private boolean statsUpdatedThisRound = false;
     private boolean p1Ready = false, p2Ready = false;
 
@@ -60,18 +73,35 @@ public class MojBrojActivity extends AppCompatActivity {
         roomId = getIntent().getStringExtra("roomId");
         isPlayer1 = getIntent().getBooleanExtra("isPlayer1", true);
 
+        sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
+        acceleration = 0f;
+        currentAcceleration = SensorManager.GRAVITY_EARTH;
+        lastAcceleration = SensorManager.GRAVITY_EARTH;
+
         getOnBackPressedDispatcher().addCallback(this, new androidx.activity.OnBackPressedCallback(true) {
             @Override
             public void handleOnBackPressed() {
-                String uid = FirebaseAuth.getInstance().getUid();
-                if (uid != null) RankingManager.updateStars(uid, -10);
-                writePlayerLeft();
-                finish();
+                showExitConfirmation();
             }
         });
 
         initViews();
         attachGameListener();
+    }
+
+    private void showExitConfirmation() {
+        new AlertDialog.Builder(this)
+                .setTitle("Napuštanje igre")
+                .setMessage("Ako napustite igru sada, izgubićete 10 zvezdi. Da li ste sigurni?")
+                .setPositiveButton("Da", (dialog, which) -> {
+                    String uid = FirebaseAuth.getInstance().getUid();
+                    if (uid != null) RankingManager.updateStars(uid, -10);
+                    db.collection("gameRooms").document(roomId).update("playerLeft", isPlayer1 ? "p1" : "p2");
+                    startActivity(new Intent(this, HomeActivity.class));
+                    finish();
+                })
+                .setNegativeButton("Ne", null)
+                .show();
     }
 
     private void initViews() {
@@ -98,10 +128,85 @@ public class MojBrojActivity extends AppCompatActivity {
         findViewById(R.id.btnClear).setOnClickListener(v -> clearExpression());
         findViewById(R.id.btnConfirm).setOnClickListener(v -> confirmAnswer());
 
-        View btnStop = findViewById(R.id.btnStop);
-        if (btnStop != null) btnStop.setVisibility(View.GONE);
+        btnStop = findViewById(R.id.btnStop);
+        if (btnStop != null) {
+            btnStop.setVisibility(View.GONE);
+            btnStop.setOnClickListener(v -> stopRolling());
+        }
 
         enableInput(false);
+    }
+
+    private void stopRolling() {
+        if (revealTimer != null) revealTimer.cancel();
+        if (btnStop != null) btnStop.setVisibility(View.GONE);
+        
+        Random r = new Random();
+        int t = r.nextInt(900) + 100;
+        List<Integer> ns = new ArrayList<>();
+        for (int i = 0; i < 4; i++) ns.add(r.nextInt(9) + 1);
+        ns.add(new int[]{10, 15, 20}[r.nextInt(3)]);
+        ns.add(new int[]{25, 50, 75, 100}[r.nextInt(4)]);
+
+        String pref = phase.equals("p1_playing") ? "r1" : "r2";
+        Map<String, Object> u = new HashMap<>();
+        u.put(pref + "Target", t);
+        u.put(pref + "Numbers", ns);
+        u.put("mojbroj_p1Finished", false);
+        u.put("mojbroj_p2Finished", false);
+        u.put("mojbroj_p1Result", -1);
+        u.put("mojbroj_p2Result", -1);
+        db.collection("gameRooms").document(roomId).update(u);
+    }
+
+    private void startRollingAnimation() {
+        if (btnStop != null) btnStop.setVisibility(View.VISIBLE);
+        Random r = new Random();
+        revealTimer = new CountDownTimer(30000, 100) {
+            @Override
+            public void onTick(long millisUntilFinished) {
+                tvTargetNumber.setText(String.valueOf(r.nextInt(900) + 100));
+                for (int i = 0; i < llNumberButtons.getChildCount(); i++) {
+                    View v = llNumberButtons.getChildAt(i);
+                    if (v instanceof MaterialButton) {
+                        ((MaterialButton) v).setText(String.valueOf(r.nextInt(9) + 1));
+                    }
+                }
+            }
+            @Override
+            public void onFinish() {
+                stopRolling();
+            }
+        }.start();
+    }
+
+    @Override
+    public void onSensorChanged(SensorEvent event) {
+        float x = event.values[0];
+        float y = event.values[1];
+        float z = event.values[2];
+        lastAcceleration = currentAcceleration;
+        currentAcceleration = (float) Math.sqrt(x * x + y * y + z * z);
+        float delta = currentAcceleration - lastAcceleration;
+        acceleration = acceleration * 0.9f + delta;
+        if (acceleration > SHAKE_THRESHOLD && btnStop != null && btnStop.getVisibility() == View.VISIBLE) {
+            stopRolling();
+        }
+    }
+
+    @Override
+    public void onAccuracyChanged(Sensor sensor, int accuracy) {}
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        sensorManager.registerListener(this, sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER), SensorManager.SENSOR_DELAY_NORMAL);
+    }
+
+    @Override
+    protected void onPause() {
+        sensorManager.unregisterListener(this);
+        super.onPause();
     }
 
     private void attachGameListener() {
@@ -169,7 +274,7 @@ public class MojBrojActivity extends AppCompatActivity {
             // Generisanje brojeva: Radi Player 1, ili preostali igrač ako je protivnik otišao
             if (!generateCalled && (isPlayer1 || opponentLeft)) {
                 generateCalled = true;
-                generateAndSave();
+                startRollingAnimation();
             }
         }
 
@@ -248,22 +353,7 @@ public class MojBrojActivity extends AppCompatActivity {
     }
 
     private void generateAndSave() {
-        Random r = new Random();
-        int t = r.nextInt(900) + 100;
-        List<Integer> ns = new ArrayList<>();
-        for (int i = 0; i < 4; i++) ns.add(r.nextInt(9) + 1);
-        ns.add(new int[]{10, 15, 20}[r.nextInt(3)]);
-        ns.add(new int[]{25, 50, 75, 100}[r.nextInt(4)]);
-
-        String pref = phase.equals("p1_playing") ? "r1" : "r2";
-        Map<String, Object> u = new HashMap<>();
-        u.put(pref + "Target", t);
-        u.put(pref + "Numbers", ns);
-        u.put("mojbroj_p1Finished", false);
-        u.put("mojbroj_p2Finished", false);
-        u.put("mojbroj_p1Result", -1);
-        u.put("mojbroj_p2Result", -1);
-        db.collection("gameRooms").document(roomId).update(u);
+        // Obsolete, moved to stopRolling()
     }
 
     private void startRoundLocally() {

@@ -58,6 +58,21 @@ public class SpojniceActivity extends AppCompatActivity {
     private final String COLOR_TEXT_DEFAULT = "#2D1B4E";
     private final String COLOR_WRONG = "#C62828";
 
+    private void showExitConfirmation() {
+        new AlertDialog.Builder(this)
+                .setTitle("Napuštanje igre")
+                .setMessage("Ako napustite igru sada, izgubićete 10 zvezdi. Da li ste sigurni?")
+                .setPositiveButton("Da", (dialog, which) -> {
+                    String uid = com.google.firebase.auth.FirebaseAuth.getInstance().getUid();
+                    if (uid != null) RankingManager.updateStars(uid, -10);
+                    db.collection("gameRooms").document(roomId).update("playerLeft", isPlayer1 ? "p1" : "p2");
+                    startActivity(new Intent(this, HomeActivity.class));
+                    finish();
+                })
+                .setNegativeButton("Ne", null)
+                .show();
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -70,10 +85,7 @@ public class SpojniceActivity extends AppCompatActivity {
         getOnBackPressedDispatcher().addCallback(this, new androidx.activity.OnBackPressedCallback(true) {
             @Override
             public void handleOnBackPressed() {
-                String uid = com.google.firebase.auth.FirebaseAuth.getInstance().getUid();
-                if (uid != null) RankingManager.updateStars(uid, -10);
-                db.collection("gameRooms").document(roomId).update("playerLeft", isPlayer1 ? "p1" : "p2");
-                finish();
+                showExitConfirmation();
             }
         });
 

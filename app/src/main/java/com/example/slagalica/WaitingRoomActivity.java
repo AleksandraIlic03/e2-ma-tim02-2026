@@ -113,30 +113,65 @@ public class WaitingRoomActivity extends AppCompatActivity {
     private void startMatchmaking() {
         progressBar.setVisibility(View.VISIBLE);
         tvStatus.setText("Traženje protivnika...");
-        
+
+        // Atomično preuzmemo prvu slobodnu sobu ili kreiramo novu.
+        // Koristimo Firestore transaction da izbegnemo race condition gde dva
+        // igrača uzmu istu sobu u isto vreme.
         db.collection("gameRooms")
                 .whereEqualTo("status", "waiting")
                 .whereEqualTo("isPublic", true)
+                .limit(5)
                 .get()
                 .addOnSuccessListener(querySnapshot -> {
-                    boolean found = false;
-                    if (!querySnapshot.isEmpty()) {
-                        for (DocumentSnapshot doc : querySnapshot.getDocuments()) {
-                            String p1Id = doc.getString("player1Id");
-                            if (p1Id != null && !p1Id.equals(currentUserId)) {
-                                // Pronađena slobodna soba koja nije naša - upadaj
-                                etRoomId.setText(doc.getId());
-                                joinRoom();
-                                found = true;
-                                break;
-                            }
+                    // Pronađi sobu čiji player1 nije mi
+                    DocumentSnapshot target = null;
+                    for (DocumentSnapshot doc : querySnapshot.getDocuments()) {
+                        String p1Id = doc.getString("player1Id");
+                        if (p1Id != null && !p1Id.equals(currentUserId)) {
+                            target = doc;
+                            break;
                         }
                     }
-                    
-                    if (!found) {
-                        // Nema tuđih slobodnih soba - kreiraj novu (javnu)
+
+                    if (target == null) {
+                        // Nema slobodnih soba — kreiraj novu javnu
                         createRoom(false, true);
+                        return;
                     }
+
+                    final String targetRoomId = target.getId();
+
+                    // Transaction: provjeri da je soba još uvijek "waiting" i zauzmi je
+                    db.runTransaction(transaction -> {
+                        DocumentSnapshot fresh = transaction.get(
+                                db.collection("gameRooms").document(targetRoomId));
+                        String status = fresh.getString("status");
+                        String p1Id   = fresh.getString("player1Id");
+                        if (!"waiting".equals(status) || currentUserId.equals(p1Id)) {
+                            // Soba je već zauzeta — vrati null da probamo drugu
+                            return null;
+                        }
+                        // Zauzmi sobu
+                        transaction.update(
+                                db.collection("gameRooms").document(targetRoomId),
+                                "player2Id",     currentUserId,
+                                "player2Name",   currentUserName,
+                                "player2Avatar", currentUserAvatar,
+                                "status",        "playing"
+                        );
+                        return targetRoomId;
+                    }).addOnSuccessListener(result -> {
+                        if (result == null) {
+                            // Soba je bila zauzeta — pokušaj ponovo
+                            createRoom(false, true);
+                            return;
+                        }
+                        // Oduzmi token p2-u
+                        db.collection("users").document(currentUserId)
+                                .update("tokens", FieldValue.increment(-1));
+                        roomId = targetRoomId;
+                        listenForOpponent(false);
+                    }).addOnFailureListener(e -> createRoom(false, true));
                 })
                 .addOnFailureListener(e -> createRoom(false, true));
     }
@@ -326,7 +361,7 @@ public class WaitingRoomActivity extends AppCompatActivity {
 
                 roomId = inputId;
                 boolean isFriendly = Boolean.TRUE.equals(snapshot.getBoolean("isFriendly"));
-                
+
                 db.collection("users").document(currentUserId).get().addOnSuccessListener(userDoc -> {
                     long tokens = userDoc.getLong("tokens") != null ? userDoc.getLong("tokens") : 0;
                     if (!isFriendly && tokens < 1) {
@@ -356,10 +391,10 @@ public class WaitingRoomActivity extends AppCompatActivity {
                 .addSnapshotListener((snapshot, e) -> {
                     if (snapshot != null && snapshot.exists() && "playing".equals(snapshot.getString("status"))) {
                         if (roomListener != null) roomListener.remove();
-                        
+
                         String firstGame = snapshot.getString("currentGame");
                         if (firstGame == null) firstGame = "koZnaZna";
-                        
+
                         Intent intent = new Intent();
                         if (firstGame.equals("koZnaZna")) {
                             intent.setClass(this, KoZnaZnaActivity.class);
@@ -373,6 +408,15 @@ public class WaitingRoomActivity extends AppCompatActivity {
                         finish();
                     }
                 });
+    }
+
+    @Override
+    public void onBackPressed() {
+        // Ako čekamo protivnika, obriši sobu i vrati se
+        if (roomId != null) {
+            db.collection("gameRooms").document(roomId).delete();
+        }
+        super.onBackPressed();
     }
 
     @Override

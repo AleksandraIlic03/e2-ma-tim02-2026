@@ -56,6 +56,21 @@ public class KorakPoKorakActivity extends AppCompatActivity {
     private static final int BONUS_POINTS = 5;
     private static final int STEP_DURATION_MS = 10000;
 
+    private void showExitConfirmation() {
+        new androidx.appcompat.app.AlertDialog.Builder(this)
+                .setTitle("Napuštanje igre")
+                .setMessage("Ako napustite igru sada, izgubićete 10 zvezdi. Da li ste sigurni?")
+                .setPositiveButton("Da", (dialog, which) -> {
+                    String uid = com.google.firebase.auth.FirebaseAuth.getInstance().getUid();
+                    if (uid != null) RankingManager.updateStars(uid, -10);
+                    db.collection("gameRooms").document(roomId).update("playerLeft", isPlayer1 ? "p1" : "p2");
+                    startActivity(new Intent(this, HomeActivity.class));
+                    finish();
+                })
+                .setNegativeButton("Ne", null)
+                .show();
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -72,25 +87,16 @@ public class KorakPoKorakActivity extends AppCompatActivity {
             }
         });
 
+        getOnBackPressedDispatcher().addCallback(this, new androidx.activity.OnBackPressedCallback(true) {
+            @Override
+            public void handleOnBackPressed() {
+                showExitConfirmation();
+            }
+        });
+
         initViews();
         loadGameData();
         attachGameListener();
-    }
-
-    private void showExitConfirmation() {
-        new androidx.appcompat.app.AlertDialog.Builder(this)
-                .setTitle("Napuštanje igre")
-                .setMessage("Ako napustite igru sada, izgubićete meč i 10 zvezdi. Da li ste sigurni?")
-                .setPositiveButton("Da", (d, w) -> {
-                    com.google.firebase.auth.FirebaseAuth mAuth = com.google.firebase.auth.FirebaseAuth.getInstance();
-                    if (mAuth.getUid() != null) {
-                        RankingManager.updateStars(mAuth.getUid(), -10);
-                    }
-                    db.collection("gameRooms").document(roomId).update("playerLeft", isPlayer1 ? "p1" : "p2");
-                    finish();
-                })
-                .setNegativeButton("Ne", null)
-                .show();
     }
 
     private void initViews() {
