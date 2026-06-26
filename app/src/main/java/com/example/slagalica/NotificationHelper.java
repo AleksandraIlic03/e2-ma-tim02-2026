@@ -18,34 +18,33 @@ import java.util.Date;
 import java.util.Locale;
 
 public class NotificationHelper {
-    public static final String CHANNEL_CHAT = "chat_messages";
+    public static final String CHANNEL_CHAT    = "chat_channel";
     public static final String CHANNEL_RANKING = "ranking_updates";
     public static final String CHANNEL_REWARDS = "rewards_channel";
-    public static final String CHANNEL_OTHER = "other_notifications_v2";
+    public static final String CHANNEL_OTHER   = "other_notifications_v2";
 
     public static void createNotificationChannels(Context context) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             NotificationManager manager = context.getSystemService(NotificationManager.class);
             if (manager == null) return;
 
-            NotificationChannel chat = new NotificationChannel(CHANNEL_CHAT, "Čet poruke", NotificationManager.IMPORTANCE_DEFAULT);
-            
-            NotificationChannel ranking = new NotificationChannel(CHANNEL_RANKING, "Rangiranje", NotificationManager.IMPORTANCE_LOW);
-            
-            NotificationChannel rewards = new NotificationChannel(CHANNEL_REWARDS, "Nagrade", NotificationManager.IMPORTANCE_HIGH);
-            
-            NotificationChannel other = new NotificationChannel(CHANNEL_OTHER, "Ostalo", NotificationManager.IMPORTANCE_HIGH);
+            manager.createNotificationChannel(new NotificationChannel(
+                    CHANNEL_CHAT, "Čet poruke", NotificationManager.IMPORTANCE_HIGH));
 
-            manager.createNotificationChannel(chat);
-            manager.createNotificationChannel(ranking);
-            manager.createNotificationChannel(rewards);
-            manager.createNotificationChannel(other);
+            manager.createNotificationChannel(new NotificationChannel(
+                    CHANNEL_RANKING, "Rangiranje", NotificationManager.IMPORTANCE_LOW));
+
+            manager.createNotificationChannel(new NotificationChannel(
+                    CHANNEL_REWARDS, "Nagrade", NotificationManager.IMPORTANCE_HIGH));
+
+            manager.createNotificationChannel(new NotificationChannel(
+                    CHANNEL_OTHER, "Ostalo", NotificationManager.IMPORTANCE_HIGH));
         }
     }
 
     public static void sendRealNotification(Context context, String title, String message, String channelId) {
         String type = "other";
-        if (CHANNEL_CHAT.equals(channelId)) type = "chat";
+        if (CHANNEL_CHAT.equals(channelId))    type = "chat";
         else if (CHANNEL_RANKING.equals(channelId)) type = "ranking";
         else if (CHANNEL_REWARDS.equals(channelId)) type = "rewards";
 
@@ -56,9 +55,10 @@ public class NotificationHelper {
         Intent intent = new Intent(context, NotificationsActivity.class);
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
         PendingIntent pendingIntent = PendingIntent.getActivity(
-                context, 0, intent, PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
+                context, 0, intent,
+                PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
 
-        int priority = NotificationHelper.CHANNEL_OTHER.equals(channelId) || NotificationHelper.CHANNEL_REWARDS.equals(channelId)
+        int priority = (CHANNEL_OTHER.equals(channelId) || CHANNEL_REWARDS.equals(channelId))
                 ? NotificationCompat.PRIORITY_HIGH : NotificationCompat.PRIORITY_DEFAULT;
 
         NotificationCompat.Builder builder = new NotificationCompat.Builder(context, channelId)
@@ -69,10 +69,9 @@ public class NotificationHelper {
                 .setContentIntent(pendingIntent)
                 .setAutoCancel(true);
 
-        NotificationManagerCompat notificationManager = NotificationManagerCompat.from(context);
         try {
-            notificationManager.notify((int) System.currentTimeMillis(), builder.build());
-        } catch (SecurityException e) {
-        }
+            NotificationManagerCompat.from(context)
+                    .notify((int) System.currentTimeMillis(), builder.build());
+        } catch (SecurityException ignored) {}
     }
 }

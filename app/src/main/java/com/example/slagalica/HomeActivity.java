@@ -43,16 +43,6 @@ public class HomeActivity extends AppCompatActivity {
             startActivity(intent);
         });
 
-        findViewById(R.id.btnAsocijacije).setOnClickListener(v -> {
-            Intent intent = new Intent(HomeActivity.this, WaitingRoomActivity.class);
-            startActivity(intent);
-        });
-
-        findViewById(R.id.btnSkocko).setOnClickListener(v -> {
-            Intent intent = new Intent(HomeActivity.this, WaitingRoomActivity.class);
-            startActivity(intent);
-        });
-
         findViewById(R.id.btnNotifications).setOnClickListener(v -> {
             Intent intent = new Intent(HomeActivity.this, NotificationsActivity.class);
             startActivity(intent);
@@ -78,19 +68,15 @@ public class HomeActivity extends AppCompatActivity {
             startActivity(intent);
         });
 
-        findViewById(R.id.btnMojBroj).setOnClickListener(v -> {
-            Intent intent = new Intent(HomeActivity.this, WaitingRoomActivity.class);
-            startActivity(intent);
+        findViewById(R.id.btnChat).setOnClickListener(v -> {
+            startActivity(new Intent(HomeActivity.this, ChatActivity.class));
         });
-
-        findViewById(R.id.btnKoZnaZna).setOnClickListener(v -> {
-            Intent intent = new Intent(HomeActivity.this, WaitingRoomActivity.class);
-            startActivity(intent);
-        });
-
-        findViewById(R.id.btnSpojnice).setOnClickListener(v -> {
-            Intent intent = new Intent(HomeActivity.this, WaitingRoomActivity.class);
-            startActivity(intent);
+        
+        findViewById(R.id.btnFriendMatch).setOnClickListener(v -> {
+             // Logic for inviting friends could go here or directly in WaitingRoom
+             Intent intent = new Intent(HomeActivity.this, WaitingRoomActivity.class);
+             intent.putExtra("isFriendly", true);
+             startActivity(intent);
         });
     }
 

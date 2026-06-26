@@ -117,14 +117,24 @@ public class WaitingRoomActivity extends AppCompatActivity {
         db.collection("gameRooms")
                 .whereEqualTo("status", "waiting")
                 .whereEqualTo("isPublic", true)
-                .limit(1)
                 .get()
                 .addOnSuccessListener(querySnapshot -> {
+                    boolean found = false;
                     if (!querySnapshot.isEmpty()) {
-                        DocumentSnapshot doc = querySnapshot.getDocuments().get(0);
-                        etRoomId.setText(doc.getId());
-                        joinRoom();
-                    } else {
+                        for (DocumentSnapshot doc : querySnapshot.getDocuments()) {
+                            String p1Id = doc.getString("player1Id");
+                            if (p1Id != null && !p1Id.equals(currentUserId)) {
+                                // Pronađena slobodna soba koja nije naša - upadaj
+                                etRoomId.setText(doc.getId());
+                                joinRoom();
+                                found = true;
+                                break;
+                            }
+                        }
+                    }
+                    
+                    if (!found) {
+                        // Nema tuđih slobodnih soba - kreiraj novu (javnu)
                         createRoom(false, true);
                     }
                 })
@@ -307,6 +317,13 @@ public class WaitingRoomActivity extends AppCompatActivity {
         DocumentReference roomRef = db.collection("gameRooms").document(inputId);
         roomRef.get().addOnSuccessListener(snapshot -> {
             if (snapshot.exists() && "waiting".equals(snapshot.getString("status"))) {
+                String p1Id = snapshot.getString("player1Id");
+                if (p1Id != null && p1Id.equals(currentUserId)) {
+                    Toast.makeText(this, "Ne možete igrati sami protiv sebe!", Toast.LENGTH_SHORT).show();
+                    resetUI();
+                    return;
+                }
+
                 roomId = inputId;
                 boolean isFriendly = Boolean.TRUE.equals(snapshot.getBoolean("isFriendly"));
                 
