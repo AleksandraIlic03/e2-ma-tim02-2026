@@ -80,10 +80,12 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
                                 .title(username);
 
                         if (uid.equals(currentUid)) {
-                            // 60.0f je standardna žuta, ali možemo probati 55.0f za nešto mekšu nijansu
-                            options.icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_YELLOW));
+                            // Tvoja cioda postaje CRVENA (0.0f je hue za crvenu)
+                            options.icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED));
                             mMap.addMarker(options);
                         } else {
+                            // Ostale ciode postaju LJUBIČASTE (hue 277.0f odgovara boji #823FAB)
+                            options.icon(BitmapDescriptorFactory.defaultMarker(277.0f));
                             Marker marker = mMap.addMarker(options);
                             if (marker != null) {
                                 otherMarkers.add(marker);

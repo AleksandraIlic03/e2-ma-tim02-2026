@@ -32,30 +32,29 @@ public class RegionUtils {
     private static final Map<String, Integer> REGION_ICONS = new HashMap<>();
 
     static {
-        // Koristimo neke od ugrađenih Android ikona kao primer
-        REGION_ICONS.put("Beogradski region", android.R.drawable.ic_menu_myplaces);
-        REGION_ICONS.put("Vojvodina", android.R.drawable.ic_menu_gallery);
-        REGION_ICONS.put("Šumadijski okrug", android.R.drawable.ic_menu_directions);
-        REGION_ICONS.put("Podunavski okrug", android.R.drawable.ic_menu_compass);
-        REGION_ICONS.put("Braničevski okrug", android.R.drawable.ic_menu_camera);
-        REGION_ICONS.put("Pomoravski okrug", android.R.drawable.ic_menu_day);
-        REGION_ICONS.put("Borski okrug", android.R.drawable.ic_menu_manage);
-        REGION_ICONS.put("Zaječarski okrug", android.R.drawable.ic_menu_agenda);
-        REGION_ICONS.put("Nišavski okrug", android.R.drawable.ic_menu_send);
-        REGION_ICONS.put("Toplički okrug", android.R.drawable.ic_menu_view);
-        REGION_ICONS.put("Pirotski okrug", android.R.drawable.ic_menu_call);
-        REGION_ICONS.put("Jablanički okrug", android.R.drawable.ic_menu_search);
-        REGION_ICONS.put("Pčinjski okrug", android.R.drawable.ic_menu_add);
-        REGION_ICONS.put("Rasinski okrug", android.R.drawable.ic_menu_edit);
-        REGION_ICONS.put("Raški okrug", android.R.drawable.ic_menu_save);
-        REGION_ICONS.put("Moravički okrug", android.R.drawable.ic_menu_help);
-        REGION_ICONS.put("Zlatiborski okrug", android.R.drawable.ic_menu_info_details);
-        REGION_ICONS.put("Kolubarski okrug", android.R.drawable.ic_menu_share);
-        REGION_ICONS.put("Mačvanski okrug", android.R.drawable.ic_menu_slideshow);
+        REGION_ICONS.put("Beogradski region", R.drawable.ic_region_beograd);
+        REGION_ICONS.put("Vojvodina", R.drawable.ic_region_vojvodina);
+        REGION_ICONS.put("Šumadijski okrug", R.drawable.ic_region_sumadija);
+        REGION_ICONS.put("Podunavski okrug", R.drawable.ic_region_podunavski);
+        REGION_ICONS.put("Braničevski okrug", R.drawable.ic_region_branicevski);
+        REGION_ICONS.put("Pomoravski okrug", R.drawable.ic_region_pomoravski);
+        REGION_ICONS.put("Borski okrug", R.drawable.ic_region_borski);
+        REGION_ICONS.put("Zaječarski okrug", R.drawable.ic_region_zajecarski);
+        REGION_ICONS.put("Nišavski okrug", R.drawable.ic_region_nisavski);
+        REGION_ICONS.put("Toplički okrug", R.drawable.ic_region_toplicki);
+        REGION_ICONS.put("Pirotski okrug", R.drawable.ic_region_pirotski);
+        REGION_ICONS.put("Jablanički okrug", R.drawable.ic_region_jablanicki);
+        REGION_ICONS.put("Pčinjski okrug", R.drawable.ic_region_pcinjski);
+        REGION_ICONS.put("Rasinski okrug", R.drawable.ic_region_rasinski);
+        REGION_ICONS.put("Raški okrug", R.drawable.ic_region_raski);
+        REGION_ICONS.put("Moravički okrug", R.drawable.ic_region_moravicki);
+        REGION_ICONS.put("Zlatiborski okrug", R.drawable.ic_region_zlatiborski);
+        REGION_ICONS.put("Kolubarski okrug", R.drawable.ic_region_kolubarski);
+        REGION_ICONS.put("Mačvanski okrug", R.drawable.ic_region_macvanski);
     }
 
     public static int getIconRes(String regionName) {
         Integer res = REGION_ICONS.get(regionName);
-        return res != null ? res : android.R.drawable.ic_menu_mapmode;
+        return res != null ? res : R.drawable.ic_user;
     }
 }
