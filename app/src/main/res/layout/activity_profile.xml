@@ -199,9 +199,10 @@
                         android:padding="12dp">
 
                         <ImageView
+                            android:id="@+id/ivLeagueIcon"
                             android:layout_width="24dp"
                             android:layout_height="24dp"
-                            android:src="@android:drawable/btn_star_big_on"
+                            android:src="@drawable/ic_league_mouse"
                             android:contentDescription="Ikona lige" />
 
                         <TextView
@@ -211,7 +212,7 @@
                             android:layout_marginStart="16dp"
                             android:layout_weight="1"
                             android:fontFamily="@font/fredoka_regular"
-                            android:text="Naziv Lige"
+                            android:text="Miš"
                             android:textColor="#321C1C"
                             android:textSize="16sp" />
                     </LinearLayout>

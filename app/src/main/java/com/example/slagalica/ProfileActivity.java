@@ -21,8 +21,8 @@ import com.google.firebase.firestore.FirebaseFirestore;
 
 public class ProfileActivity extends AppCompatActivity {
 
-    private ImageView ivAvatar;
-    private TextView tvUsername, tvEmail, tvTokens, tvStars, tvRegion;
+    private ImageView ivAvatar, ivLeagueIcon;
+    private TextView tvUsername, tvEmail, tvTokens, tvStars, tvRegion, tvLeagueName;
     private CardView btnEditAvatar;
     private View avatarFrame;
 
@@ -72,6 +72,8 @@ public class ProfileActivity extends AppCompatActivity {
         tvTokens = findViewById(R.id.tvTokens);
         tvStars = findViewById(R.id.tvStars);
         tvRegion = findViewById(R.id.tvRegion);
+        tvLeagueName = findViewById(R.id.tvLeagueName);
+        ivLeagueIcon = findViewById(R.id.ivLeagueIcon);
         btnEditAvatar = findViewById(R.id.btnEditAvatar);
         avatarFrame = findViewById(R.id.avatarFrame);
     }
@@ -87,6 +89,9 @@ public class ProfileActivity extends AppCompatActivity {
                         if (tvTokens != null) tvTokens.setText(String.valueOf(documentSnapshot.getLong("tokens")));
                         if (tvStars != null) tvStars.setText(String.valueOf(documentSnapshot.getLong("stars")));
                         
+                        Long league = documentSnapshot.getLong("league");
+                        updateLeagueInfo(league != null ? league : 0);
+
                         String region = documentSnapshot.getString("region");
                         if (tvRegion != null) tvRegion.setText(region);
                         if (region != null) checkRegionAwards(region);
@@ -122,6 +127,43 @@ public class ProfileActivity extends AppCompatActivity {
                 }
             }
         });
+    }
+
+    private void updateLeagueInfo(long league) {
+        if (tvLeagueName == null || ivLeagueIcon == null) return;
+
+        String leagueName;
+        int leagueIcon;
+
+        switch ((int) league) {
+            case 1:
+                leagueName = "Vuk";
+                leagueIcon = R.drawable.ic_league_wolf;
+                break;
+            case 2:
+                leagueName = "Medved";
+                leagueIcon = R.drawable.ic_league_bear;
+                break;
+            case 3:
+                leagueName = "Lav";
+                leagueIcon = R.drawable.ic_league_lion;
+                break;
+            case 4:
+                leagueName = "Orao";
+                leagueIcon = R.drawable.ic_league_eagle;
+                break;
+            case 5:
+                leagueName = "Zmaj";
+                leagueIcon = R.drawable.ic_league_dragon;
+                break;
+            default:
+                leagueName = "Miš";
+                leagueIcon = R.drawable.ic_league_mouse;
+                break;
+        }
+
+        tvLeagueName.setText(leagueName);
+        ivLeagueIcon.setImageResource(leagueIcon);
     }
 
     private void showAvatarSelectionDialog() {

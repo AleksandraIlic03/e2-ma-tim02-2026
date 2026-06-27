@@ -102,8 +102,19 @@ public class HomeActivity extends AppCompatActivity {
 
                     tvHomeStars.setText("⭐ " + stars);
                     tvHomeTokens.setText("🎟️ " + tokens);
-                    tvHomeLeague.setText("🏆 " + league);
+                    tvHomeLeague.setText(getLeagueEmoji(league) + " " + league);
                 });
+    }
+
+    private String getLeagueEmoji(long league) {
+        switch ((int) league) {
+            case 1: return "🐺";
+            case 2: return "🐻";
+            case 3: return "🦁";
+            case 4: return "🦅";
+            case 5: return "🐉";
+            default: return "🐭";
+        }
     }
 
     private void grantTestTokens() {

@@ -383,7 +383,7 @@ public class TournamentActivity extends AppCompatActivity {
     }
 
     private static final String[] LEAGUE_NAMES = {
-        "Bronzana", "Srebrna", "Zlatna", "Platinasta", "Dijamantska", "Velika"
+        "Miš", "Vuk", "Medved", "Lav", "Orao", "Zmaj"
     };
 
     // Spec 10f: prikazati avatar, ligu i korisničko ime svakog igrača
