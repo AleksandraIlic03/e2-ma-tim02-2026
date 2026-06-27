@@ -56,27 +56,7 @@ public class RegisterActivity extends AppCompatActivity {
         REGION_BOUNDS.put("Mačvanski okrug", new BoundingBox(44.2, 44.9, 19.1, 19.8));
     }
 
-    private static final List<String> REGIONS = Arrays.asList(
-            "Beogradski region",
-            "Vojvodina",
-            "Šumadijski okrug",
-            "Podunavski okrug",
-            "Braničevski okrug",
-            "Pomoravski okrug",
-            "Borski okrug",
-            "Zaječarski okrug",
-            "Nišavski okrug",
-            "Toplički okrug",
-            "Pirotski okrug",
-            "Jablanički okrug",
-            "Pčinjski okrug",
-            "Rasinski okrug",
-            "Raški okrug",
-            "Moravički okrug",
-            "Zlatiborski okrug",
-            "Kolubarski okrug",
-            "Mačvanski okrug"
-    );
+    private static final List<String> REGIONS = RegionUtils.ALL_REGIONS;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -96,6 +76,9 @@ public class RegisterActivity extends AppCompatActivity {
                 android.R.layout.simple_dropdown_item_1line, REGIONS);
         dropdownRegion.setAdapter(adapter);
         dropdownRegion.setOnClickListener(v -> dropdownRegion.showDropDown());
+        dropdownRegion.setOnFocusChangeListener((v, hasFocus) -> {
+            if (hasFocus) dropdownRegion.showDropDown();
+        });
 
         findViewById(R.id.tvLogin).setOnClickListener(v ->
                 startActivity(new Intent(this, LoginActivity.class)));

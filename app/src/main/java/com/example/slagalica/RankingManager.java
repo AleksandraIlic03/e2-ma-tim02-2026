@@ -46,6 +46,18 @@ public class RankingManager {
                 "league", newLeague
             );
 
+            // Spec 4b: Ažuriraj zvezde REGIONA (mesečna lista)
+            String region = snapshot.getString("region");
+            if (region != null && !region.isEmpty() && starChange > 0) {
+                DocumentReference regionRef = db.collection("regions").document(region);
+                java.util.Map<String, Object> regUpdate = new java.util.HashMap<>();
+                regUpdate.put("starsMonthly", FieldValue.increment(starChange));
+                
+                // Osiguravamo da polja za mesta postoje (da ne budu null u statistici)
+                // transaction.set sa merge će dodati starsMonthly, a ostalo samo ako dokument ne postoji
+                transaction.set(regionRef, regUpdate, SetOptions.merge());
+            }
+
             return null;
         });
     }
@@ -117,16 +129,56 @@ public class RankingManager {
                     batch.update(doc.getReference(), starsField, 0L);
                 }
                 batch.commit().addOnSuccessListener(v -> {
-                    if (context != null) {
-                        NotificationHelper.sendRealNotification(
-                            context,
-                            periodName + " ciklus je završen!",
-                            "Rang lista je resetovana. Nagrade su podeljene top 10 igračima.",
-                            NotificationHelper.CHANNEL_RANKING
-                        );
+                    if (isWeekly) {
+                        if (context != null) {
+                            NotificationHelper.sendRealNotification(
+                                    context,
+                                    periodName + " ciklus je završen!",
+                                    "Rang lista je resetovana. Nagrade su podeljene top 10 igračima.",
+                                    NotificationHelper.CHANNEL_RANKING
+                            );
+                        }
+                    } else {
+                        // Mesečni ciklus - obradi regione
+                        handleRegionalReset(context);
                     }
                 });
             });
+    }
+
+    private static void handleRegionalReset(Context context) {
+        db.collection("regions")
+                .orderBy("starsMonthly", Query.Direction.DESCENDING)
+                .get()
+                .addOnSuccessListener(snap -> {
+                    WriteBatch batch = db.batch();
+                    java.util.List<String> topRegions = new java.util.ArrayList<>();
+                    int rank = 1;
+                    for (QueryDocumentSnapshot doc : snap) {
+                        if (rank <= 3) {
+                            topRegions.add(doc.getId());
+                            String field = (rank == 1) ? "firstPlaces" : (rank == 2) ? "secondPlaces" : "thirdPlaces";
+                            batch.update(doc.getReference(), field, FieldValue.increment(1));
+                        }
+                        batch.update(doc.getReference(), "starsMonthly", 0L);
+                        rank++;
+                    }
+
+                    // Sačuvaj pobedničke regione u system/cycleState za avatar okvire
+                    batch.update(db.collection("system").document("cycleState"),
+                            "topRegionsLastMonth", topRegions);
+
+                    batch.commit().addOnSuccessListener(v -> {
+                        if (context != null) {
+                            NotificationHelper.sendRealNotification(
+                                    context,
+                                    "Mesečni ciklus je završen!",
+                                    "Regionalna rang lista je resetovana. Proverite uspeh vašeg regiona!",
+                                    NotificationHelper.CHANNEL_RANKING
+                            );
+                        }
+                    });
+                });
     }
 
     public static void completeMission(String userId, String missionKey) {

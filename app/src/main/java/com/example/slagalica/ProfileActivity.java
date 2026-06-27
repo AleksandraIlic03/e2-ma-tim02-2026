@@ -24,6 +24,7 @@ public class ProfileActivity extends AppCompatActivity {
     private ImageView ivAvatar;
     private TextView tvUsername, tvEmail, tvTokens, tvStars, tvRegion;
     private CardView btnEditAvatar;
+    private View avatarFrame;
 
     private FirebaseAuth mAuth;
     private FirebaseFirestore db;
@@ -72,6 +73,7 @@ public class ProfileActivity extends AppCompatActivity {
         tvStars = findViewById(R.id.tvStars);
         tvRegion = findViewById(R.id.tvRegion);
         btnEditAvatar = findViewById(R.id.btnEditAvatar);
+        avatarFrame = findViewById(R.id.avatarFrame);
     }
 
     private void loadUserData() {
@@ -84,7 +86,10 @@ public class ProfileActivity extends AppCompatActivity {
                         if (tvEmail != null) tvEmail.setText(documentSnapshot.getString("email"));
                         if (tvTokens != null) tvTokens.setText(String.valueOf(documentSnapshot.getLong("tokens")));
                         if (tvStars != null) tvStars.setText(String.valueOf(documentSnapshot.getLong("stars")));
-                        if (tvRegion != null) tvRegion.setText(documentSnapshot.getString("region"));
+                        
+                        String region = documentSnapshot.getString("region");
+                        if (tvRegion != null) tvRegion.setText(region);
+                        if (region != null) checkRegionAwards(region);
 
                         // Učitavanje sačuvanog avatara
                         String avatarName = documentSnapshot.getString("avatarUrl");
@@ -99,6 +104,24 @@ public class ProfileActivity extends AppCompatActivity {
                     }
                 })
                 .addOnFailureListener(e -> Toast.makeText(this, "Greška pri učitavanju podataka", Toast.LENGTH_SHORT).show());
+    }
+
+    private void checkRegionAwards(String userRegion) {
+        db.collection("system").document("cycleState").get().addOnSuccessListener(doc -> {
+            if (doc.exists() && doc.contains("topRegionsLastMonth")) {
+                java.util.List<String> topRegions = (java.util.List<String>) doc.get("topRegionsLastMonth");
+                if (topRegions != null && avatarFrame != null) {
+                    int rank = topRegions.indexOf(userRegion);
+                    if (rank == 0) { // Zlato
+                        avatarFrame.setBackgroundTintList(android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#FFD700")));
+                    } else if (rank == 1) { // Srebro
+                        avatarFrame.setBackgroundTintList(android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#C0C0C0")));
+                    } else if (rank == 2) { // Bronza
+                        avatarFrame.setBackgroundTintList(android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#CD7F32")));
+                    }
+                }
+            }
+        });
     }
 
     private void showAvatarSelectionDialog() {

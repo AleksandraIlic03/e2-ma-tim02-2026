@@ -2,6 +2,7 @@ package com.example.slagalica;
 
 import android.os.Bundle;
 import android.os.Handler;
+import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -11,8 +12,11 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.slagalica.adapters.RankAdapter;
+import com.example.slagalica.adapters.RegionRankAdapter;
 import com.example.slagalica.models.RankingEntry;
+import com.example.slagalica.models.RegionRankingEntry;
 import com.google.android.material.tabs.TabLayout;
+import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
@@ -28,12 +32,15 @@ public class RankingActivity extends AppCompatActivity {
     private TabLayout tabLayout;
     private RecyclerView rvRankings;
     private TextView tvCycleDates;
-    private RankAdapter adapter;
+    private RankAdapter userAdapter;
+    private RegionRankAdapter regionAdapter;
     private List<RankingEntry> rankingList = new ArrayList<>();
+    private List<RegionRankingEntry> regionRankingList = new ArrayList<>();
     private FirebaseFirestore db;
     private Handler refreshHandler = new Handler();
     private Runnable refreshRunnable;
-    private boolean isWeekly = true;
+    private int selectedTab = 0; // 0: Weekly, 1: Monthly, 2: Regional
+    private String userRegion = "";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -41,6 +48,7 @@ public class RankingActivity extends AppCompatActivity {
         setContentView(R.layout.activity_rankings);
 
         db = FirebaseFirestore.getInstance();
+        loadUserRegion();
 
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
@@ -53,13 +61,15 @@ public class RankingActivity extends AppCompatActivity {
         tvCycleDates = findViewById(R.id.tvCycleDates);
 
         rvRankings.setLayoutManager(new LinearLayoutManager(this));
-        adapter = new RankAdapter(rankingList);
-        rvRankings.setAdapter(adapter);
+        userAdapter = new RankAdapter(rankingList);
+        regionAdapter = new RegionRankAdapter(regionRankingList, userRegion);
+        
+        rvRankings.setAdapter(userAdapter);
 
         tabLayout.addOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
             @Override
             public void onTabSelected(TabLayout.Tab tab) {
-                isWeekly = tab.getPosition() == 0;
+                selectedTab = tab.getPosition();
                 updateCycleDates();
                 loadRankings();
             }
@@ -75,37 +85,65 @@ public class RankingActivity extends AppCompatActivity {
         loadRankings();
         RankingManager.checkAndResetCycle(this);
 
-        // Refresh every 2 minutes
         refreshRunnable = new Runnable() {
             @Override
             public void run() {
                 loadRankings();
-                refreshHandler.postDelayed(this, 120000); // 2 minutes
+                refreshHandler.postDelayed(this, 120000);
             }
         };
         refreshHandler.postDelayed(refreshRunnable, 120000);
     }
 
+    private void loadUserRegion() {
+        String uid = FirebaseAuth.getInstance().getUid();
+        if (uid != null) {
+            db.collection("users").document(uid).get().addOnSuccessListener(doc -> {
+                userRegion = doc.getString("region");
+                if (userRegion == null) userRegion = "";
+                // Re-create adapter to pass the region
+                regionAdapter = new RegionRankAdapter(regionRankingList, userRegion);
+                if (selectedTab == 2) rvRankings.setAdapter(regionAdapter);
+            });
+        }
+    }
+
     private void updateCycleDates() {
         Calendar cal = Calendar.getInstance();
         SimpleDateFormat sdf = new SimpleDateFormat("dd.MM.yyyy", Locale.getDefault());
-        if (isWeekly) {
+        if (selectedTab == 0) {
             cal.set(Calendar.DAY_OF_WEEK, cal.getFirstDayOfWeek());
             String start = sdf.format(cal.getTime());
             cal.add(Calendar.DAY_OF_WEEK, 6);
             String end = sdf.format(cal.getTime());
             tvCycleDates.setText(start + " - " + end);
-        } else {
+            tvCycleDates.setVisibility(View.VISIBLE);
+        } else if (selectedTab == 1) {
             cal.set(Calendar.DAY_OF_MONTH, 1);
             String start = sdf.format(cal.getTime());
             cal.set(Calendar.DAY_OF_MONTH, cal.getActualMaximum(Calendar.DAY_OF_MONTH));
             String end = sdf.format(cal.getTime());
             tvCycleDates.setText(start + " - " + end);
+            tvCycleDates.setVisibility(View.VISIBLE);
+        } else {
+            // Regionalna je mesečna po specifikaciji
+            cal.set(Calendar.DAY_OF_MONTH, 1);
+            String start = sdf.format(cal.getTime());
+            cal.set(Calendar.DAY_OF_MONTH, cal.getActualMaximum(Calendar.DAY_OF_MONTH));
+            String end = sdf.format(cal.getTime());
+            tvCycleDates.setText("Regionalni učinak: " + start + " - " + end);
+            tvCycleDates.setVisibility(View.VISIBLE);
         }
     }
 
     private void loadRankings() {
-        String field = isWeekly ? "starsWeekly" : "starsMonthly";
+        if (selectedTab == 2) {
+            loadRegionalRankings();
+            return;
+        }
+
+        rvRankings.setAdapter(userAdapter);
+        String field = (selectedTab == 0) ? "starsWeekly" : "starsMonthly";
         db.collection("users")
                 .orderBy(field, Query.Direction.DESCENDING)
                 .limit(50)
@@ -113,10 +151,6 @@ public class RankingActivity extends AppCompatActivity {
                 .addOnSuccessListener(queryDocumentSnapshots -> {
                     rankingList.clear();
                     for (QueryDocumentSnapshot doc : queryDocumentSnapshots) {
-                        // Spec 4a: igrač mora da je odigrao min 1 partiju
-                        Long gamesPlayed = doc.getLong("gamesPlayed");
-                        if (gamesPlayed == null || gamesPlayed < 1) continue;
-
                         int league = doc.getLong("league") != null
                                 ? doc.getLong("league").intValue() : 0;
                         long stars = doc.getLong(field) != null ? doc.getLong(field) : 0;
@@ -130,10 +164,30 @@ public class RankingActivity extends AppCompatActivity {
                         );
                         rankingList.add(entry);
                     }
-                    adapter.notifyDataSetChanged();
+                    userAdapter.notifyDataSetChanged();
                 })
                 .addOnFailureListener(e -> Toast.makeText(RankingActivity.this,
                         "Greška pri učitavanju rang liste", Toast.LENGTH_SHORT).show());
+    }
+
+    private void loadRegionalRankings() {
+        rvRankings.setAdapter(regionAdapter);
+        db.collection("regions")
+                .orderBy("starsMonthly", Query.Direction.DESCENDING)
+                .get()
+                .addOnSuccessListener(snap -> {
+                    regionRankingList.clear();
+                    for (QueryDocumentSnapshot doc : snap) {
+                        long totalStars = doc.getLong("starsMonthly") != null ? doc.getLong("starsMonthly") : 0L;
+                        regionRankingList.add(new RegionRankingEntry(
+                                doc.getId(),
+                                totalStars,
+                                RegionUtils.getIconRes(doc.getId())
+                        ));
+                    }
+                    regionAdapter.notifyDataSetChanged();
+                })
+                .addOnFailureListener(e -> Toast.makeText(this, "Greška pri učitavanju ranga regiona", Toast.LENGTH_SHORT).show());
     }
 
     @Override

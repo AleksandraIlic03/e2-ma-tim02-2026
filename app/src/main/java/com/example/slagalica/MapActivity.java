@@ -39,6 +39,8 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
         });
 
         db = FirebaseFirestore.getInstance();
+        seedRegionsIfMissing();
+
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
         if (mapFragment != null) {
@@ -78,7 +80,8 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
                                 .title(username);
 
                         if (uid.equals(currentUid)) {
-                            options.icon(BitmapDescriptorFactory.defaultMarker(51.0f));
+                            // 60.0f je standardna žuta, ali možemo probati 55.0f za nešto mekšu nijansu
+                            options.icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_YELLOW));
                             mMap.addMarker(options);
                         } else {
                             Marker marker = mMap.addMarker(options);
@@ -90,5 +93,20 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
                 }
             }
         });
+    }
+
+    private void seedRegionsIfMissing() {
+        for (String regionName : RegionUtils.ALL_REGIONS) {
+            db.collection("regions").document(regionName).get().addOnSuccessListener(doc -> {
+                if (!doc.exists()) {
+                    java.util.Map<String, Object> data = new java.util.HashMap<>();
+                    data.put("firstPlaces", 0L);
+                    data.put("secondPlaces", 0L);
+                    data.put("thirdPlaces", 0L);
+                    data.put("starsMonthly", 0L);
+                    db.collection("regions").document(doc.getId()).set(data);
+                }
+            });
+        }
     }
 }

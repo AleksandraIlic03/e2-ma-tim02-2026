@@ -38,6 +38,7 @@
         <activity android:name=".NotificationsActivity"  android:exported="false" />
         <activity android:name=".DailyMissionsActivity"  android:exported="false" />
         <activity android:name=".TournamentActivity"     android:exported="false" />
+        <activity android:name=".RegionDetailActivity"   android:exported="false" />
 
         <!-- Chat — Spec 8 -->
         <activity android:name=".ChatActivity"           android:exported="false" />
