@@ -4,6 +4,7 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
@@ -13,6 +14,7 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.ListenerRegistration;
 
+import java.util.HashMap;
 import java.util.Map;
 
 public class HomeActivity extends AppCompatActivity {
@@ -33,7 +35,7 @@ public class HomeActivity extends AppCompatActivity {
 
         listenToUserData();
         checkForRewards();
-        grantTestTokens();
+        grantDailyTokens();
 
         NotificationHelper.createNotificationChannels(this);
 
@@ -100,10 +102,38 @@ public class HomeActivity extends AppCompatActivity {
                     if (stars < 0) stars = 0;
                     if (tokens < 0) tokens = 0;
 
+                    // Spec: Ako su zvezde promenjene spolja, uskladi ligu automatski
+                    int calculatedLeague = RankingManager.calculateLeague(stars);
+                    if (calculatedLeague != (int) league) {
+                        // Umesto direktnog dijaloga, upisujemo u bazu da bi checkForRewards primetio
+                        Map<String, Object> pending = new HashMap<>();
+                        pending.put("oldLeague", league);
+                        pending.put("newLeague", (long) calculatedLeague);
+                        
+                        db.collection("users").document(userId).update(
+                            "league", (long) calculatedLeague,
+                            "pendingLeagueChange", pending
+                        );
+                        
+                        // Pozivamo proveru odmah da ne bismo čekali sledeći ulazak
+                        checkForRewards();
+                    }
+
                     tvHomeStars.setText("⭐ " + stars);
                     tvHomeTokens.setText("🎟️ " + tokens);
                     tvHomeLeague.setText(getLeagueEmoji(league) + " " + league);
                 });
+    }
+
+    private void triggerLeagueNotification(int oldL, int newL) {
+        String leagueName = getLeagueName(newL);
+        String emoji = getLeagueEmoji(newL);
+        String title = newL > oldL ? "Napredovali ste!" : "Obaveštenje o ligi";
+        String body = "Sada ste u ligi: " + emoji + " " + leagueName;
+
+        NotificationHelper.sendRealNotification(this, title, body, NotificationHelper.CHANNEL_RANKING);
+
+        runOnUiThread(() -> showLeagueRewardDialog(oldL, newL));
     }
 
     private String getLeagueEmoji(long league) {
@@ -117,11 +147,79 @@ public class HomeActivity extends AppCompatActivity {
         }
     }
 
-    private void grantTestTokens() {
-        String uid = FirebaseAuth.getInstance().getUid();
-        if (uid != null) {
-            db.collection("users").document(uid).update("tokens", 100);
+    private void showLeagueRewardDialog(int oldL, int newL) {
+        View dialogView = getLayoutInflater().inflate(R.layout.dialog_reward, null);
+        AlertDialog dialog = new AlertDialog.Builder(this, android.R.style.Theme_Material_Light_Dialog_NoActionBar)
+                .setView(dialogView)
+                .setCancelable(true)
+                .create();
+
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
         }
+
+        TextView tvTitle = dialogView.findViewById(R.id.tvRewardTitle);
+        TextView tvMsg = dialogView.findViewById(R.id.tvRewardMessage);
+        TextView tvVal = dialogView.findViewById(R.id.tvRewardValue);
+        MaterialButton btn = dialogView.findViewById(R.id.btnCollectReward);
+        View container = dialogView.findViewById(R.id.rewardContainer);
+
+        String leagueName = getLeagueName(newL);
+        String emoji = getLeagueEmoji(newL);
+        
+        if (newL > oldL) {
+            tvTitle.setText("NOVA LIGA!");
+            tvMsg.setText("Napredovali ste u novu ligu!");
+            btn.setText("U REDU");
+        } else {
+            tvTitle.setText("OBAVEŠTENJE");
+            tvMsg.setText("Nažalost, ispali ste u nižu ligu.");
+            btn.setText("U REDU");
+        }
+        
+        tvVal.setText(emoji + " " + leagueName);
+
+        container.setScaleX(0.7f); container.setScaleY(0.7f); container.setAlpha(0f);
+        container.animate().scaleX(1f).scaleY(1f).alpha(1f).setDuration(500).start();
+
+        btn.setOnClickListener(v -> dialog.dismiss());
+        dialog.show();
+    }
+
+    private String getLeagueName(int league) {
+        String[] names = {"Miš", "Vuk", "Medved", "Lav", "Orao", "Zmaj"};
+        if (league >= 0 && league < names.length) return names[league];
+        return "Nepoznato";
+    }
+
+    private void grantDailyTokens() {
+        String uid = FirebaseAuth.getInstance().getUid();
+        if (uid == null) return;
+
+        String today = new java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault()).format(new java.util.Date());
+
+        db.collection("users").document(uid).get().addOnSuccessListener(doc -> {
+            if (doc.exists()) {
+                String lastGrant = doc.getString("lastTokenGrantDate");
+                
+                // Deli tokene samo ako danas već nisu podeljeni
+                if (!today.equals(lastGrant)) {
+                    Long league = doc.getLong("league");
+                    long leagueVal = league != null ? league : 0L;
+                    
+                    // Spec 8.b: Dodaje tačno onoliko tokena kolika je liga (npr. +3 za Ligu 3)
+                    if (leagueVal > 0) {
+                        db.collection("users").document(uid).update(
+                            "tokens", com.google.firebase.firestore.FieldValue.increment(leagueVal),
+                            "lastTokenGrantDate", today
+                        );
+                    } else {
+                        // Čak i ako je Liga 0, ažuriramo datum da ne bi pokušavao stalno
+                        db.collection("users").document(uid).update("lastTokenGrantDate", today);
+                    }
+                }
+            }
+        });
     }
 
     @Override
@@ -136,10 +234,24 @@ public class HomeActivity extends AppCompatActivity {
         if (userId == null) return;
 
         db.collection("users").document(userId).get().addOnSuccessListener(doc -> {
-            if (doc.exists() && doc.contains("pendingReward")) {
+            if (!doc.exists()) return;
+            
+            // 1. Provera nagrada (Tokeni)
+            if (doc.contains("pendingReward")) {
                 Map<String, Object> reward = (Map<String, Object>) doc.get("pendingReward");
-                if (reward != null) {
-                    showRewardDialog(reward);
+                if (reward != null) showRewardDialog(reward);
+            }
+            
+            // 2. Provera promene lige
+            if (doc.contains("pendingLeagueChange")) {
+                Map<String, Object> leagueData = (Map<String, Object>) doc.get("pendingLeagueChange");
+                if (leagueData != null) {
+                    long oldL = leagueData.get("oldLeague") != null ? (long) leagueData.get("oldLeague") : 0L;
+                    long newL = leagueData.get("newLeague") != null ? (long) leagueData.get("newLeague") : 0L;
+                    showLeagueRewardDialog((int) oldL, (int) newL);
+                    
+                    // Obriši obaveštenje iz baze nakon prikaza
+                    db.collection("users").document(userId).update("pendingLeagueChange", com.google.firebase.firestore.FieldValue.delete());
                 }
             }
         });

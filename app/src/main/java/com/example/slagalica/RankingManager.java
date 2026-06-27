@@ -14,6 +14,21 @@ public class RankingManager {
 
     private static final FirebaseFirestore db = FirebaseFirestore.getInstance();
 
+    public static int calculateLeague(long stars) {
+        if (stars >= 1600) return 5;
+        if (stars >= 800) return 4;
+        if (stars >= 400) return 3;
+        if (stars >= 200) return 2;
+        if (stars >= 100) return 1;
+        return 0;
+    }
+
+    private static String calculateLeagueName(int league) {
+        String[] names = {"Miš", "Vuk", "Medved", "Lav", "Orao", "Zmaj"};
+        if (league >= 0 && league < names.length) return names[league];
+        return "Nepoznato";
+    }
+
     public static void updateStars(String userId, int starChange) {
         if (userId == null) return;
 
@@ -25,36 +40,45 @@ public class RankingManager {
             long currentStars = snapshot.getLong("stars") != null ? snapshot.getLong("stars") : 0;
             long currentWeekly = snapshot.getLong("starsWeekly") != null ? snapshot.getLong("starsWeekly") : 0;
             long currentMonthly = snapshot.getLong("starsMonthly") != null ? snapshot.getLong("starsMonthly") : 0;
+            long currentLeague = snapshot.getLong("league") != null ? snapshot.getLong("league") : 0L;
 
             // 1. Osiguravamo da zvezde ne odu ispod nule (Spec 3.d.iv)
             long newStars = Math.max(0, currentStars + starChange);
             long newWeekly = Math.max(0, currentWeekly + starChange);
             long newMonthly = Math.max(0, currentMonthly + starChange);
 
-            // 2. Automatsko računanje LIGE na osnovu UKUPNIH zvezda (Spec 6.c)
-            int newLeague = 0;
-            if (newStars >= 1600) newLeague = 5;
-            else if (newStars >= 800) newLeague = 4;
-            else if (newStars >= 400) newLeague = 3;
-            else if (newStars >= 200) newLeague = 2;
-            else if (newStars >= 100) newLeague = 1;
+            // 2. Automatsko računanje LIGE na osnovu ukupnih zvezda
+            // Formula: L1=100, L2=200, L3=400, L4=800, L5=1600
+            int newLeague = calculateLeague(newStars);
 
             transaction.update(userRef, 
                 "stars", newStars,
                 "starsWeekly", newWeekly,
                 "starsMonthly", newMonthly,
-                "league", newLeague
+                "league", (long) newLeague
             );
 
-            // Spec 4b: Ažuriraj zvezde REGIONA (mesečna lista)
+            // Obaveštavanje o promeni lige
+            if (newLeague != (int) currentLeague) {
+                String title = newLeague > (int) currentLeague ? "Napredovali ste u novu ligu!" : "Obaveštenje: Ispali ste u nižu ligu.";
+                String[] leagueNames = {"Miš", "Vuk", "Medved", "Lav", "Orao", "Zmaj"};
+                String body = "Sada ste u ligi: " + leagueNames[newLeague];
+                
+                java.util.Map<String, Object> pending = new java.util.HashMap<>();
+                pending.put("oldLeague", currentLeague);
+                pending.put("newLeague", (long) newLeague);
+                pending.put("title", title);
+                pending.put("body", body);
+                
+                transaction.update(userRef, "pendingLeagueChange", pending);
+            }
+
+            // Ažuriraj zvezde regiona (mesečna lista)
             String region = snapshot.getString("region");
             if (region != null && !region.isEmpty() && starChange > 0) {
                 DocumentReference regionRef = db.collection("regions").document(region);
                 java.util.Map<String, Object> regUpdate = new java.util.HashMap<>();
                 regUpdate.put("starsMonthly", FieldValue.increment(starChange));
-                
-                // Osiguravamo da polja za mesta postoje (da ne budu null u statistici)
-                // transaction.set sa merge će dodati starsMonthly, a ostalo samo ako dokument ne postoji
                 transaction.set(regionRef, regUpdate, SetOptions.merge());
             }
 
@@ -106,28 +130,44 @@ public class RankingManager {
                 ? new int[]{5, 3, 2, 1, 1, 1, 1, 1, 1, 1}
                 : new int[]{10, 6, 4, 2, 2, 2, 2, 2, 2, 2};
 
+        // Pronađi top 50 da znamo ko dobija nagradu, a ko gubi zvezde (ako je mesečni reset)
         db.collection("users")
             .orderBy(starsField, Query.Direction.DESCENDING)
-            .limit(50)
             .get()
             .addOnSuccessListener(snap -> {
                 WriteBatch batch = db.batch();
                 int rank = 0;
+                
+                // Set to track who was in top 50 (or whatever threshold) to avoid 30% reduction
+                java.util.Set<String> rankedUserIds = new java.util.HashSet<>();
+
                 for (QueryDocumentSnapshot doc : snap) {
-                    long stars = doc.getLong(starsField) != null ? doc.getLong(starsField) : 0;
-                    if (stars > 0 && rank < tokenRewards.length) {
+                    long starsVal = doc.getLong(starsField) != null ? doc.getLong(starsField) : 0;
+                    
+                    // Spec 8.e: Samo Top 3 igrača zadržavaju sve zvezde, ostali gube 30% (ako je mesečni reset)
+                    if (rank < 3 && starsVal > 0) {
+                        rankedUserIds.add(doc.getId());
+                    }
+
+                    if (starsVal > 0 && rank < tokenRewards.length) {
                         int earned = tokenRewards[rank];
                         batch.update(doc.getReference(), "tokens", FieldValue.increment(earned));
-                        // Spec 4g: sačuvaj nagradu da HomeActivity može da je prikaže
+                        
                         java.util.Map<String, Object> pending = new java.util.HashMap<>();
                         pending.put("tokens", (long) earned);
                         pending.put("rank", (long) (rank + 1));
                         pending.put("period", periodName);
                         batch.update(doc.getReference(), "pendingReward", pending);
-                        rank++;
                     }
                     batch.update(doc.getReference(), starsField, 0L);
+                    rank++;
                 }
+                
+                // Spec 8.e: Ukoliko se igrač ne plasira na mesečnoj rang listi, gubi 30% zvezda
+                if (!isWeekly) {
+                    applyMonthlyStarReduction(rankedUserIds);
+                }
+
                 batch.commit().addOnSuccessListener(v -> {
                     if (isWeekly) {
                         if (context != null) {
@@ -139,11 +179,50 @@ public class RankingManager {
                             );
                         }
                     } else {
-                        // Mesečni ciklus - obradi regione
                         handleRegionalReset(context);
                     }
                 });
             });
+    }
+
+    private static void applyMonthlyStarReduction(java.util.Set<String> rankedUserIds) {
+        // We need to fetch all users who are NOT in rankedUserIds
+        db.collection("users").get().addOnSuccessListener(allUsers -> {
+            WriteBatch reductionBatch = db.batch();
+            int count = 0;
+            for (QueryDocumentSnapshot userDoc : allUsers) {
+                if (!rankedUserIds.contains(userDoc.getId())) {
+                    Long starsLong = userDoc.getLong("stars");
+                    long currentStars = starsLong != null ? starsLong : 0L;
+                    if (currentStars > 0) {
+                        long newStars = (long) (currentStars * 0.7); // lose 30%, keep 70%
+                        reductionBatch.update(userDoc.getReference(), "stars", newStars);
+                        
+                        // Recalculate league after reduction
+                        int newLeague = calculateLeague(newStars);
+                        reductionBatch.update(userDoc.getReference(), "league", (long) newLeague);
+
+                        // Spec 8.f: Obavesti korisnika o padu u ligu (ako se desilo)
+                        int oldL = userDoc.getLong("league") != null ? userDoc.getLong("league").intValue() : 0;
+                        if (newLeague != oldL) {
+                            java.util.Map<String, Object> pending = new java.util.HashMap<>();
+                            pending.put("oldLeague", (long) oldL);
+                            pending.put("newLeague", (long) newLeague);
+                            pending.put("title", "Obaveštenje o ligi");
+                            pending.put("body", "Sada ste u ligi: " + calculateLeagueName(newLeague));
+                            reductionBatch.update(userDoc.getReference(), "pendingLeagueChange", pending);
+                        }
+                        count++;
+                    }
+                }
+                if (count >= 450) { // Stay within 500 batch limit
+                    reductionBatch.commit();
+                    reductionBatch = db.batch();
+                    count = 0;
+                }
+            }
+            reductionBatch.commit();
+        });
     }
 
     private static void handleRegionalReset(Context context) {
@@ -164,7 +243,6 @@ public class RankingManager {
                         rank++;
                     }
 
-                    // Sačuvaj pobedničke regione u system/cycleState za avatar okvire
                     batch.update(db.collection("system").document("cycleState"),
                             "topRegionsLastMonth", topRegions);
 
@@ -193,10 +271,9 @@ public class RankingManager {
                 Boolean isDone = snapshot.getBoolean(missionKey);
                 if (isDone != null && !isDone) {
                     transaction.update(missionRef, missionKey, true);
-                    updateStars(userId, 3); // Spec 12b: +3 zvezde po misiji
+                    updateStars(userId, 3);
                 }
             } else {
-                // Dokument ne postoji (igrač nije otvorio DailyMissions) – kreiraj ga
                 java.util.Map<String, Object> init = new java.util.HashMap<>();
                 init.put("win_game", false);
                 init.put("send_chat", false);
@@ -205,7 +282,7 @@ public class RankingManager {
                 init.put("bonus_claimed", false);
                 init.put(missionKey, true);
                 transaction.set(missionRef, init);
-                updateStars(userId, 3); // Spec 12b: +3 zvezde po misiji
+                updateStars(userId, 3);
             }
             return null;
         });
