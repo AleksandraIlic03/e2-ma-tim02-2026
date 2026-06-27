@@ -15,76 +15,59 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.Slagalica">
-        <activity
-            android:name=".ResetPasswordActivity"
-            android:exported="false" />
-        <activity
-            android:name=".DataImportActivity"
-            android:exported="false" />
-        <activity
-            android:name=".WaitingRoomActivity"
-            android:exported="false" />
-        <activity
-            android:name=".MojBrojActivity"
-            android:exported="false" />
-        <activity
-            android:name=".SpojniceActivity"
-            android:exported="false" />
-        <activity
-            android:name=".KoZnaZnaActivity"
-            android:exported="false" />
-        <activity
-            android:name=".AsocijacijeActivity"
-            android:exported="false" />
-        <activity
-            android:name=".SkockoActivity"
-            android:exported="false" />
-        <activity
-            android:name=".NotificationsActivity"
-            android:exported="false" />
-        <activity
-            android:name=".KorakPoKorakActivity"
-            android:exported="false" />
-        <activity
-            android:name=".HomeActivity"
-            android:exported="false" />
-        <activity
-            android:name=".RankingActivity"
-            android:exported="false" />
-        <activity
-            android:name=".TournamentActivity"
-            android:exported="false" />
-        <activity
-            android:name=".DailyMissionsActivity"
-            android:exported="false" />
-        <activity
-            android:name=".RegisterActivity"
-            android:exported="false" />
-        <activity
-            android:name=".LoginActivity"
-            android:exported="true">
+
+        <!-- ═══════════ Activities ═══════════ -->
+        <activity android:name=".LoginActivity" android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity
-            android:name=".ProfileActivity"
-            android:exported="false" />
-        <activity
-            android:name=".StatisticsActivity"
-            android:exported="false" />
-        <activity
-            android:name=".MainActivity"
-            android:exported="false" />
 
-        <receiver android:name=".GameEventReceiver"
+        <activity android:name=".RegisterActivity"       android:exported="false" />
+        <activity android:name=".ResetPasswordActivity"  android:exported="false" />
+        <activity android:name=".MainActivity"           android:exported="false" />
+        <activity android:name=".HomeActivity"           android:exported="false" />
+        <activity android:name=".ProfileActivity"        android:exported="false" />
+        <activity android:name=".StatisticsActivity"     android:exported="false" />
+        <activity android:name=".RankingActivity"        android:exported="false" />
+        <activity android:name=".NotificationsActivity"  android:exported="false" />
+        <activity android:name=".DailyMissionsActivity"  android:exported="false" />
+        <activity android:name=".TournamentActivity"     android:exported="false" />
+
+        <!-- Chat — Spec 8 -->
+        <activity android:name=".ChatActivity"           android:exported="false" />
+
+        <!-- Igre -->
+        <activity android:name=".WaitingRoomActivity"    android:exported="false" />
+        <activity android:name=".KoZnaZnaActivity"       android:exported="false" />
+        <activity android:name=".SpojniceActivity"       android:exported="false" />
+        <activity android:name=".AsocijacijeActivity"    android:exported="false" />
+        <activity android:name=".SkockoActivity"         android:exported="false" />
+        <activity android:name=".KorakPoKorakActivity"   android:exported="false" />
+        <activity android:name=".MojBrojActivity"        android:exported="false" />
+
+        <!-- Ostalo -->
+        <activity android:name=".DataImportActivity"     android:exported="false" />
+
+        <!-- ═══════════ FCM Service — Spec 8e ═══════════ -->
+        <service
+            android:name=".MyFirebaseMessagingService"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+        </service>
+
+        <!-- ═══════════ Broadcast Receiver ═══════════ -->
+        <receiver
+            android:name=".GameEventReceiver"
             android:exported="false">
             <intent-filter>
                 <action android:name="com.example.slagalica.GAME_FINISHED" />
             </intent-filter>
         </receiver>
+
     </application>
 
 </manifest>
