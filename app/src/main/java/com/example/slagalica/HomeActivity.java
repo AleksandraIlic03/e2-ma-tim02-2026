@@ -71,6 +71,10 @@ public class HomeActivity extends AppCompatActivity {
         findViewById(R.id.btnChat).setOnClickListener(v -> {
             startActivity(new Intent(HomeActivity.this, ChatActivity.class));
         });
+
+        findViewById(R.id.btnMap).setOnClickListener(v -> {
+            startActivity(new Intent(HomeActivity.this, MapActivity.class));
+        });
         
         findViewById(R.id.btnFriendMatch).setOnClickListener(v -> {
              // Logic for inviting friends could go here or directly in WaitingRoom

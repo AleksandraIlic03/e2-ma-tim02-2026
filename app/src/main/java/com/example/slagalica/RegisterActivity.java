@@ -16,6 +16,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 
 public class RegisterActivity extends AppCompatActivity {
 
@@ -23,6 +24,37 @@ public class RegisterActivity extends AppCompatActivity {
     private AutoCompleteTextView dropdownRegion;
     private FirebaseAuth mAuth;
     private FirebaseFirestore db;
+    private Random random = new Random();
+
+    private static class BoundingBox {
+        double minLat, maxLat, minLng, maxLng;
+        BoundingBox(double minLat, double maxLat, double minLng, double maxLng) {
+            this.minLat = minLat; this.maxLat = maxLat; this.minLng = minLng; this.maxLng = maxLng;
+        }
+    }
+
+    private static final Map<String, BoundingBox> REGION_BOUNDS = new HashMap<>();
+    static {
+        REGION_BOUNDS.put("Beogradski region", new BoundingBox(44.6, 44.9, 20.2, 20.6));
+        REGION_BOUNDS.put("Vojvodina", new BoundingBox(44.8, 46.2, 18.8, 21.5));
+        REGION_BOUNDS.put("Šumadijski okrug", new BoundingBox(43.9, 44.4, 20.6, 21.2));
+        REGION_BOUNDS.put("Podunavski okrug", new BoundingBox(44.3, 44.7, 20.8, 21.2));
+        REGION_BOUNDS.put("Braničevski okrug", new BoundingBox(44.2, 44.8, 21.1, 21.9));
+        REGION_BOUNDS.put("Pomoravski okrug", new BoundingBox(43.8, 44.3, 21.1, 21.7));
+        REGION_BOUNDS.put("Borski okrug", new BoundingBox(44.0, 44.7, 21.8, 22.6));
+        REGION_BOUNDS.put("Zaječarski okrug", new BoundingBox(43.5, 44.2, 21.8, 22.5));
+        REGION_BOUNDS.put("Nišavski okrug", new BoundingBox(43.1, 43.6, 21.5, 22.1));
+        REGION_BOUNDS.put("Toplički okrug", new BoundingBox(42.9, 43.4, 21.1, 21.6));
+        REGION_BOUNDS.put("Pirotski okrug", new BoundingBox(42.8, 43.4, 22.3, 23.0));
+        REGION_BOUNDS.put("Jablanički okrug", new BoundingBox(42.7, 43.1, 21.5, 22.4));
+        REGION_BOUNDS.put("Pčinjski okrug", new BoundingBox(42.2, 42.7, 21.8, 22.6));
+        REGION_BOUNDS.put("Rasinski okrug", new BoundingBox(43.2, 43.7, 20.9, 21.5));
+        REGION_BOUNDS.put("Raški okrug", new BoundingBox(42.9, 43.6, 20.3, 21.0));
+        REGION_BOUNDS.put("Moravički okrug", new BoundingBox(43.5, 44.1, 20.0, 20.6));
+        REGION_BOUNDS.put("Zlatiborski okrug", new BoundingBox(43.2, 44.1, 19.3, 20.2));
+        REGION_BOUNDS.put("Kolubarski okrug", new BoundingBox(44.1, 44.6, 19.7, 20.4));
+        REGION_BOUNDS.put("Mačvanski okrug", new BoundingBox(44.2, 44.9, 19.1, 19.8));
+    }
 
     private static final List<String> REGIONS = Arrays.asList(
             "Beogradski region",
@@ -135,6 +167,14 @@ public class RegisterActivity extends AppCompatActivity {
                     user.put("starsMonthly", 0);
                     user.put("league", 0);
                     user.put("avatarUrl", "");
+
+                    BoundingBox bounds = REGION_BOUNDS.get(region);
+                    if (bounds != null) {
+                        double lat = bounds.minLat + (bounds.maxLat - bounds.minLat) * random.nextDouble();
+                        double lng = bounds.minLng + (bounds.maxLng - bounds.minLng) * random.nextDouble();
+                        user.put("lat", lat);
+                        user.put("lng", lng);
+                    }
 
                     db.collection("users").document(uid).set(user)
                             .addOnSuccessListener(unused -> {

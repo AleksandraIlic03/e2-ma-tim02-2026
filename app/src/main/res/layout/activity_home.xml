@@ -175,6 +175,19 @@
                 app:cornerRadius="100dp"
                 app:icon="@android:drawable/stat_notify_chat" />
 
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnMap"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:layout_marginTop="8dp"
+                android:backgroundTint="#2196F3"
+                android:fontFamily="@font/fredoka_bold"
+                android:text="MAPA REGIONA"
+                android:textColor="#FFFFFF"
+                android:textSize="14sp"
+                app:cornerRadius="100dp"
+                app:icon="@android:drawable/ic_dialog_map" />
+
         </LinearLayout>
     </ScrollView>
 
