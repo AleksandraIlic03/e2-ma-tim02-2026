@@ -99,6 +99,13 @@ public class WaitingRoomActivity extends AppCompatActivity {
             joinRoom();
             return;
         }
+
+        // Igra kod prijatelja: napravi friendly sobu i pošalji poziv
+        if (getIntent().getBooleanExtra("isFriendly", false)) {
+            createRoom(true, false);
+            return;
+        }
+
         if (getIntent().getBooleanExtra("autoCreate", false)) {
             createRoom(false, false);
             return;

@@ -108,8 +108,20 @@ public class HomeActivity extends AppCompatActivity {
                 .whereEqualTo("status", "pending")
                 .addSnapshotListener((snapshot, e) -> {
                     if (e != null || snapshot == null) return;
-                    for (com.google.firebase.firestore.DocumentSnapshot doc : snapshot.getDocuments()) {
-                        showGameInviteDialog(doc);
+                    for (com.google.firebase.firestore.DocumentChange dc : snapshot.getDocumentChanges()) {
+                        if (dc.getType() == com.google.firebase.firestore.DocumentChange.Type.ADDED) {
+                            com.google.firebase.firestore.DocumentSnapshot doc = dc.getDocument();
+
+                            String fromUsername = doc.getString("fromUsername");
+                            if (fromUsername == null) fromUsername = "Igrač";
+
+                            NotificationHelper.sendRealNotification(this,
+                                    "Poziv za partiju",
+                                    "Igrač " + fromUsername + " vas poziva na partiju.",
+                                    NotificationHelper.CHANNEL_OTHER);
+
+                            showGameInviteDialog(doc);
+                        }
                     }
                 });
     }
