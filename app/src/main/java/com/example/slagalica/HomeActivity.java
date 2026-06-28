@@ -21,7 +21,7 @@ public class HomeActivity extends AppCompatActivity {
 
     private TextView tvHomeStars, tvHomeTokens, tvHomeLeague;
     private FirebaseFirestore db;
-    private ListenerRegistration userListener;
+    private ListenerRegistration userListener, inviteListener, requestListener;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -34,6 +34,9 @@ public class HomeActivity extends AppCompatActivity {
         tvHomeLeague = findViewById(R.id.tvHomeLeague);
 
         listenToUserData();
+        listenForGameInvites();
+        listenForFriendRequests();
+        updateOnlineStatus(true);
         checkForRewards();
         grantDailyTokens();
 
@@ -60,6 +63,11 @@ public class HomeActivity extends AppCompatActivity {
             startActivity(intent);
         });
 
+        findViewById(R.id.btnNavFriends).setOnClickListener(v -> {
+            Intent intent = new Intent(HomeActivity.this, FriendsActivity.class);
+            startActivity(intent);
+        });
+
         findViewById(R.id.btnTournament).setOnClickListener(v -> {
             Intent intent = new Intent(HomeActivity.this, TournamentActivity.class);
             startActivity(intent);
@@ -79,11 +87,114 @@ public class HomeActivity extends AppCompatActivity {
         });
         
         findViewById(R.id.btnFriendMatch).setOnClickListener(v -> {
-             // Logic for inviting friends could go here or directly in WaitingRoom
-             Intent intent = new Intent(HomeActivity.this, WaitingRoomActivity.class);
-             intent.putExtra("isFriendly", true);
+             Intent intent = new Intent(HomeActivity.this, FriendsActivity.class);
              startActivity(intent);
         });
+    }
+
+    private void updateOnlineStatus(boolean online) {
+        String userId = FirebaseAuth.getInstance().getUid();
+        if (userId != null) {
+            db.collection("users").document(userId).update("isOnline", online, "isInGame", false);
+        }
+    }
+
+    private void listenForGameInvites() {
+        String userId = FirebaseAuth.getInstance().getUid();
+        if (userId == null) return;
+
+        inviteListener = db.collection("gameInvites")
+                .whereEqualTo("toUserId", userId)
+                .whereEqualTo("status", "pending")
+                .addSnapshotListener((snapshot, e) -> {
+                    if (e != null || snapshot == null) return;
+                    for (com.google.firebase.firestore.DocumentSnapshot doc : snapshot.getDocuments()) {
+                        showGameInviteDialog(doc);
+                    }
+                });
+    }
+
+    private void listenForFriendRequests() {
+        String userId = FirebaseAuth.getInstance().getUid();
+        if (userId == null) return;
+
+        // Dolazni zahtevi
+        requestListener = db.collection("friendRequests")
+                .whereEqualTo("toUserId", userId)
+                .whereEqualTo("status", "pending")
+                .addSnapshotListener((snapshot, e) -> {
+                    if (e != null || snapshot == null) return;
+                    for (com.google.firebase.firestore.DocumentChange dc : snapshot.getDocumentChanges()) {
+                        if (dc.getType() == com.google.firebase.firestore.DocumentChange.Type.ADDED) {
+                            String fromUsername = dc.getDocument().getString("fromUsername");
+                            if (fromUsername == null) fromUsername = "Neko";
+                            NotificationHelper.sendRealNotification(this, 
+                                    "Novi zahtev za prijateljstvo", 
+                                    "Korisnik " + fromUsername + " vam je poslao zahtev.", 
+                                    NotificationHelper.CHANNEL_OTHER);
+                        }
+                    }
+                });
+
+        // Prihvaćeni zahtevi (kad drugi prihvati naš zahtev)
+        db.collection("friendRequests")
+                .whereEqualTo("fromUserId", userId)
+                .whereEqualTo("status", "accepted")
+                .addSnapshotListener((snapshot, e) -> {
+                    if (e != null || snapshot == null) return;
+                    for (com.google.firebase.firestore.DocumentChange dc : snapshot.getDocumentChanges()) {
+                        if (dc.getType() == com.google.firebase.firestore.DocumentChange.Type.ADDED || 
+                            dc.getType() == com.google.firebase.firestore.DocumentChange.Type.MODIFIED) {
+                            
+                            // Check if it was just changed to accepted
+                            String status = dc.getDocument().getString("status");
+                            if ("accepted".equals(status)) {
+                                // Clear this request doc or mark as notified to avoid duplicate notifications
+                                // For now just notify
+                                NotificationHelper.sendRealNotification(this,
+                                        "Zahtev prihvaćen",
+                                        "Vaš zahtev za prijateljstvo je prihvaćen!",
+                                        NotificationHelper.CHANNEL_OTHER);
+                            }
+                        }
+                    }
+                });
+    }
+
+    private void showGameInviteDialog(com.google.firebase.firestore.DocumentSnapshot inviteDoc) {
+        String fromUsername = inviteDoc.getString("fromUsername");
+        String roomId = inviteDoc.getString("roomId");
+        String inviteId = inviteDoc.getId();
+
+        AlertDialog dialog = new AlertDialog.Builder(this)
+                .setTitle("Poziv za partiju")
+                .setMessage("Igrač " + fromUsername + " vas poziva na partiju.")
+                .setPositiveButton("Prihvati", (d, w) -> {
+                    FriendsManager.respondToGameInvite(inviteId, "accepted", new FriendsManager.ActionCallback() {
+                        @Override
+                        public void onSuccess() {
+                            Intent intent = new Intent(HomeActivity.this, WaitingRoomActivity.class);
+                            intent.putExtra("autoJoinRoomId", roomId);
+                            startActivity(intent);
+                        }
+                        @Override
+                        public void onFailure(Exception e) {}
+                    });
+                })
+                .setNegativeButton("Odbij", (d, w) -> {
+                    FriendsManager.respondToGameInvite(inviteId, "rejected", null);
+                })
+                .setCancelable(false)
+                .create();
+
+        dialog.show();
+
+        new android.os.Handler().postDelayed(() -> {
+            if (dialog.isShowing()) {
+                dialog.dismiss();
+                FriendsManager.respondToGameInvite(inviteId, "expired", null);
+            }
+        }, 10000);
     }
 
     private void listenToUserData() {
@@ -225,7 +336,10 @@ public class HomeActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        updateOnlineStatus(false);
         if (userListener != null) userListener.remove();
+        if (inviteListener != null) inviteListener.remove();
+        if (requestListener != null) requestListener.remove();
     }
 
     private void checkForRewards() {

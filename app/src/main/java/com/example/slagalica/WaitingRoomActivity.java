@@ -168,7 +168,7 @@ public class WaitingRoomActivity extends AppCompatActivity {
                         }
                         // Oduzmi token p2-u
                         db.collection("users").document(currentUserId)
-                                .update("tokens", FieldValue.increment(-1));
+                                .update("tokens", FieldValue.increment(-1), "isInGame", true);
                         roomId = targetRoomId;
                         listenForOpponent(false);
                     }).addOnFailureListener(e -> createRoom(false, true));
@@ -306,6 +306,22 @@ public class WaitingRoomActivity extends AppCompatActivity {
                         tvRoomId.setVisibility(View.VISIBLE);
                         tvStatus.setVisibility(View.VISIBLE);
                         progressBar.setVisibility(View.GONE);
+                        
+                        String opponentId = getIntent().getStringExtra("opponentId");
+                        if (isFriendly && opponentId != null) {
+                            FriendsManager.sendGameInvite(opponentId, currentUserName, roomId, new FriendsManager.ActionCallback() {
+                                @Override
+                                public void onSuccess() {
+                                    tvStatus.setText("Poziv poslat prijatelju...");
+                                }
+
+                                @Override
+                                public void onFailure(Exception e) {
+                                    Toast.makeText(WaitingRoomActivity.this, "Greška pri slanju poziva", Toast.LENGTH_SHORT).show();
+                                }
+                            });
+                        }
+
                         listenForOpponent(true);
                     });
         });
@@ -375,7 +391,8 @@ public class WaitingRoomActivity extends AppCompatActivity {
                     updates.put("player2Avatar", currentUserAvatar);
                     updates.put("status", "playing");
                     roomRef.update(updates).addOnSuccessListener(v -> {
-                        if (!isFriendly) db.collection("users").document(currentUserId).update("tokens", FieldValue.increment(-1));
+                        if (!isFriendly) db.collection("users").document(currentUserId).update("tokens", FieldValue.increment(-1), "isInGame", true);
+                        else db.collection("users").document(currentUserId).update("isInGame", true);
                         listenForOpponent(false);
                     });
                 });
@@ -391,6 +408,8 @@ public class WaitingRoomActivity extends AppCompatActivity {
                 .addSnapshotListener((snapshot, e) -> {
                     if (snapshot != null && snapshot.exists() && "playing".equals(snapshot.getString("status"))) {
                         if (roomListener != null) roomListener.remove();
+                        
+                        db.collection("users").document(currentUserId).update("isInGame", true);
 
                         String firstGame = snapshot.getString("currentGame");
                         if (firstGame == null) firstGame = "koZnaZna";

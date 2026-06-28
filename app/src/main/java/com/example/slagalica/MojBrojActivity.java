@@ -656,6 +656,8 @@ public class MojBrojActivity extends AppCompatActivity implements SensorEventLis
                         // Napravi finalnu kopiju da bi mogla da se koristi unutar lambde (addOnSuccessListener)
                         final int finalStarChange = starChange;
 
+                        db.collection("users").document(currentUserId).update("isInGame", false);
+
                         // Spec 3d-iii: 50 zvezda → 1 token; čitamo trenutne zvezde pre upisa
                         db.collection("users").document(currentUserId).get()
                                 .addOnSuccessListener(userDoc -> {
@@ -683,6 +685,7 @@ public class MojBrojActivity extends AppCompatActivity implements SensorEventLis
                         }
                     } else {
                         // Spec 3e: prijateljska partija — samo misija, bez zvezda/statistike
+                        db.collection("users").document(currentUserId).update("isInGame", false);
                         RankingManager.completeMission(currentUserId, "play_friendly");
                     }
 
@@ -731,10 +734,15 @@ public class MojBrojActivity extends AppCompatActivity implements SensorEventLis
         super.onDestroy();
         if (roundTimer != null) roundTimer.cancel();
         if (gameListener != null) gameListener.remove();
+
+        String uid = FirebaseAuth.getInstance().getUid();
+        if (uid != null) {
+            db.collection("users").document(uid).update("isInGame", false);
+        }
+
         if (!isFinishing()) {
             writePlayerLeft();
             // Spec 3f: Napuštanjem igre igrač gubi partiju i ne dobija zvezde (-10 zvezdi)
-            String uid = FirebaseAuth.getInstance().getUid();
             if (uid != null) {
                 // Proveri da li je friendly (treba nam snap, ali ovde smo u onDestroy)
                 // Za sad samo penalizuj, asinhrono je ionako.

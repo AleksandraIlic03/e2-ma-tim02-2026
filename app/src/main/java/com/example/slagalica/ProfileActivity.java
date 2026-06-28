@@ -18,10 +18,12 @@ import androidx.cardview.widget.CardView;
 import com.google.android.material.button.MaterialButton;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.zxing.BarcodeFormat;
+import com.journeyapps.barcodescanner.BarcodeEncoder;
 
 public class ProfileActivity extends AppCompatActivity {
 
-    private ImageView ivAvatar, ivLeagueIcon;
+    private ImageView ivAvatar, ivLeagueIcon, ivQrCode;
     private TextView tvUsername, tvEmail, tvTokens, tvStars, tvRegion, tvLeagueName;
     private CardView btnEditAvatar;
     private View avatarFrame;
@@ -76,10 +78,13 @@ public class ProfileActivity extends AppCompatActivity {
         ivLeagueIcon = findViewById(R.id.ivLeagueIcon);
         btnEditAvatar = findViewById(R.id.btnEditAvatar);
         avatarFrame = findViewById(R.id.avatarFrame);
+        ivQrCode = findViewById(R.id.ivQrCode);
     }
 
     private void loadUserData() {
         if (userId == null) return;
+        
+        generateQrCode(userId);
 
         db.collection("users").document(userId).get()
                 .addOnSuccessListener(documentSnapshot -> {
@@ -109,6 +114,20 @@ public class ProfileActivity extends AppCompatActivity {
                     }
                 })
                 .addOnFailureListener(e -> Toast.makeText(this, "Greška pri učitavanju podataka", Toast.LENGTH_SHORT).show());
+    }
+
+    private void generateQrCode(String content) {
+        if (ivQrCode == null) return;
+        try {
+            BarcodeEncoder barcodeEncoder = new BarcodeEncoder();
+            android.graphics.Bitmap bitmap = barcodeEncoder.encodeBitmap(content, BarcodeFormat.QR_CODE, 400, 400);
+            ivQrCode.setImageBitmap(bitmap);
+            ivQrCode.setPadding(0, 0, 0, 0);
+            ivQrCode.setBackgroundColor(android.graphics.Color.WHITE);
+            ivQrCode.setImageTintList(null);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     private void checkRegionAwards(String userRegion) {
