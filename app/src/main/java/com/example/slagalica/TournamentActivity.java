@@ -44,6 +44,7 @@ public class TournamentActivity extends AppCompatActivity {
     private boolean gameStarted = false;
     private String resultShownForMatchType = "";
     private String lastMatchType = "";
+    private boolean hasNavigatedHome = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -100,6 +101,16 @@ public class TournamentActivity extends AppCompatActivity {
         if (layoutResult != null) {
             layoutResult.setOnClickListener(v -> layoutResult.setVisibility(View.GONE));
         }
+    }
+
+    private void navigateToHome() {
+        if (hasNavigatedHome || isFinishing()) return;
+        hasNavigatedHome = true;
+        if (tournamentListener != null) tournamentListener.remove();
+        Intent intent = new Intent(this, HomeActivity.class);
+        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
+        startActivity(intent);
+        finish();
     }
 
     @Override
@@ -273,7 +284,7 @@ public class TournamentActivity extends AppCompatActivity {
     private void checkMyResult(Map<String, Object> data) {
         String status = (String) data.get("status");
 
-        if ("SEMI_FINALS".equals(status) && !resultShownForMatchType.equals("SEMI")) {
+        if ("SEMI_FINALS".equals(status)) {
             List<String> sf1 = (List<String>) data.get("semiFinal1");
             List<String> sf2 = (List<String>) data.get("semiFinal2");
             String sf1Winner = (String) data.get("sf1Winner");
@@ -283,28 +294,30 @@ public class TournamentActivity extends AppCompatActivity {
             if (sf1 != null && sf1.contains(userId)) myWinner = sf1Winner;
             else if (sf2 != null && sf2.contains(userId)) myWinner = sf2Winner;
 
-            if (myWinner != null) {
+            // Animacija se prikazuje samo jednom, čim je poznato ko je pobedio u mom polufinalu
+            if (myWinner != null && !resultShownForMatchType.equals("SEMI")) {
                 resultShownForMatchType = "SEMI";
                 boolean iWon = myWinner.equals(userId);
                 showResultAnimation(iWon, false); // Spec 10f
 
                 if (iWon) {
-                    // Spec 10d: pobednik polufinala dobija 2 tokena + zvezde (već dodate u MojBroj)
+                    // Spec 10d: pobednik polufinala dobija 2 tokena
                     db.collection("users").document(userId)
                             .update("tokens", FieldValue.increment(2));
                     NotificationHelper.sendRealNotification(this,
                             "Prošao si polufinale!", "+2 tokena. Čeka te finale!",
                             NotificationHelper.CHANNEL_REWARDS);
                 }
+            }
 
-                // Kada su oba polufinala gotova, sf1Winner pokreće finale
-                if (sf1Winner != null && sf2Winner != null
-                        && userId.equals(sf1Winner) && data.get("finalists") == null) {
-                    Map<String, Object> updates = new HashMap<>();
-                    updates.put("finalists", Arrays.asList(sf1Winner, sf2Winner));
-                    updates.put("status", "FINAL");
-                    db.collection("tournaments").document(tournamentId).update(updates);
-                }
+            // Finale kreira sf1Winner čim su oba polufinala gotova.
+            // Ovo je ODVOJENO od animacije — mora raditi i ako je animacija već prikazana ranije.
+            if (sf1Winner != null && sf2Winner != null
+                    && userId.equals(sf1Winner) && data.get("finalists") == null) {
+                Map<String, Object> updates = new HashMap<>();
+                updates.put("finalists", Arrays.asList(sf1Winner, sf2Winner));
+                updates.put("status", "FINAL");
+                db.collection("tournaments").document(tournamentId).update(updates);
             }
 
         } else if ("FINAL".equals(status) && !resultShownForMatchType.equals("FINAL")) {
@@ -343,6 +356,10 @@ public class TournamentActivity extends AppCompatActivity {
         else if (iWon) tvResultDetail.setText("+2 tokena – prošao si u finale!");
         else tvResultDetail.setText("Bolje sreće sledeći put.");
 
+        if (isFinal) {
+            layoutResult.setOnClickListener(v -> navigateToHome());
+        }
+
         layoutResult.setVisibility(View.VISIBLE);
         layoutResult.setAlpha(0f);
         layoutResult.setScaleX(0.6f);
@@ -356,6 +373,15 @@ public class TournamentActivity extends AppCompatActivity {
         );
         set.setDuration(450);
         set.start();
+
+        // Spec 10g: zvučna animacija
+        try {
+            android.media.Ringtone r = android.media.RingtoneManager.getRingtone(getApplicationContext(),
+                    android.media.RingtoneManager.getDefaultUri(android.media.RingtoneManager.TYPE_NOTIFICATION));
+            if (r != null) r.play();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     // ─── UI bracket ─────────────────────────────────────────────────────────
@@ -379,7 +405,12 @@ public class TournamentActivity extends AppCompatActivity {
         if ("WAITING".equals(status)) tvStatus.setText("Čekanje igrača...");
         else if ("SEMI_FINALS".equals(status)) tvStatus.setText("Polufinale u toku!");
         else if ("FINAL".equals(status)) tvStatus.setText("Finale!");
-        else if ("COMPLETED".equals(status)) tvStatus.setText("Turnir završen!");
+        else if ("COMPLETED".equals(status)) {
+            tvStatus.setText("Turnir završen!");
+            if (!hasNavigatedHome) {
+                new android.os.Handler(getMainLooper()).postDelayed(this::navigateToHome, 5000);
+            }
+        }
     }
 
     private static final String[] LEAGUE_NAMES = {
