@@ -21,7 +21,10 @@ public class HomeActivity extends AppCompatActivity {
 
     private TextView tvHomeStars, tvHomeTokens, tvHomeLeague;
     private FirebaseFirestore db;
-    private ListenerRegistration userListener, inviteListener, requestListener;
+    private boolean friendRequestsInitialized = false;
+    private boolean acceptedRequestsInitialized = false;
+    private boolean invitesInitialized = false;
+    private ListenerRegistration userListener, inviteListener, requestListener, acceptedListener;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -108,6 +111,13 @@ public class HomeActivity extends AppCompatActivity {
                 .whereEqualTo("status", "pending")
                 .addSnapshotListener((snapshot, e) -> {
                     if (e != null || snapshot == null) return;
+
+                    // Prvi snapshot = postojeci pozivi pri ulasku u app -> ignorisi
+                    if (!invitesInitialized) {
+                        invitesInitialized = true;
+                        return;
+                    }
+
                     for (com.google.firebase.firestore.DocumentChange dc : snapshot.getDocumentChanges()) {
                         if (dc.getType() == com.google.firebase.firestore.DocumentChange.Type.ADDED) {
                             com.google.firebase.firestore.DocumentSnapshot doc = dc.getDocument();
@@ -136,33 +146,44 @@ public class HomeActivity extends AppCompatActivity {
                 .whereEqualTo("status", "pending")
                 .addSnapshotListener((snapshot, e) -> {
                     if (e != null || snapshot == null) return;
+
+                    // Prvi snapshot = postojeci zahtevi pri ulasku u app -> ne notifikuj
+                    if (!friendRequestsInitialized) {
+                        friendRequestsInitialized = true;
+                        return;
+                    }
+
                     for (com.google.firebase.firestore.DocumentChange dc : snapshot.getDocumentChanges()) {
                         if (dc.getType() == com.google.firebase.firestore.DocumentChange.Type.ADDED) {
                             String fromUsername = dc.getDocument().getString("fromUsername");
                             if (fromUsername == null) fromUsername = "Neko";
-                            NotificationHelper.sendRealNotification(this, 
-                                    "Novi zahtev za prijateljstvo", 
-                                    "Korisnik " + fromUsername + " vam je poslao zahtev.", 
+                            NotificationHelper.sendRealNotification(this,
+                                    "Novi zahtev za prijateljstvo",
+                                    "Korisnik " + fromUsername + " vam je poslao zahtev.",
                                     NotificationHelper.CHANNEL_OTHER);
                         }
                     }
                 });
 
-        // Prihvaćeni zahtevi (kad drugi prihvati naš zahtev)
-        db.collection("friendRequests")
+        // Prihvaceni zahtevi (kad drugi prihvati nas zahtev)
+        acceptedListener = db.collection("friendRequests")
                 .whereEqualTo("fromUserId", userId)
                 .whereEqualTo("status", "accepted")
                 .addSnapshotListener((snapshot, e) -> {
                     if (e != null || snapshot == null) return;
+
+                    // Prvi snapshot = vec prihvaceni zahtevi pri ulasku -> ne notifikuj
+                    if (!acceptedRequestsInitialized) {
+                        acceptedRequestsInitialized = true;
+                        return;
+                    }
+
                     for (com.google.firebase.firestore.DocumentChange dc : snapshot.getDocumentChanges()) {
-                        if (dc.getType() == com.google.firebase.firestore.DocumentChange.Type.ADDED || 
-                            dc.getType() == com.google.firebase.firestore.DocumentChange.Type.MODIFIED) {
-                            
-                            // Check if it was just changed to accepted
+                        if (dc.getType() == com.google.firebase.firestore.DocumentChange.Type.ADDED ||
+                                dc.getType() == com.google.firebase.firestore.DocumentChange.Type.MODIFIED) {
+
                             String status = dc.getDocument().getString("status");
                             if ("accepted".equals(status)) {
-                                // Clear this request doc or mark as notified to avoid duplicate notifications
-                                // For now just notify
                                 NotificationHelper.sendRealNotification(this,
                                         "Zahtev prihvaćen",
                                         "Vaš zahtev za prijateljstvo je prihvaćen!",
