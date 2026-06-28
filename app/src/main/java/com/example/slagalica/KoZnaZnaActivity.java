@@ -43,6 +43,7 @@ public class KoZnaZnaActivity extends AppCompatActivity {
     private boolean nextGameButtonShown = false;
     private ListenerRegistration gameListener;
     private boolean p1Ready = false, p2Ready = false;
+    private long lastSyncedStartTime = -1;
 
     private final String COLOR_P1 = "#823FAB";
     private final String COLOR_P2 = "#2196F3";
@@ -161,7 +162,8 @@ public class KoZnaZnaActivity extends AppCompatActivity {
                     }
 
                     Long startLong = snapshot.getLong("questionStartTime");
-                    if (startLong != null && startLong > 0) {
+                    if (startLong != null && startLong > 0 && startLong != lastSyncedStartTime) {
+                        lastSyncedStartTime = startLong;
                         syncTimer(startLong);
                     } else if (isPlayer1 && (startLong == null || startLong == 0)) {
                         db.collection("gameRooms").document(roomId).update("questionStartTime", System.currentTimeMillis());
@@ -169,14 +171,25 @@ public class KoZnaZnaActivity extends AppCompatActivity {
                     
                     checkBothAnswered(snapshot);
 
+                    // PROVERA READY STANJA ZA SLEDECU IGRU
+                    p1Ready = snapshot.getBoolean("kzz_p1Ready") != null && snapshot.getBoolean("kzz_p1Ready");
+                    p2Ready = snapshot.getBoolean("kzz_p2Ready") != null && snapshot.getBoolean("kzz_p2Ready");
+
+                    if (p1Ready && p2Ready) {
+                        if (isPlayer1) {
+                            Map<String, Object> resetReady = new HashMap<>();
+                            resetReady.put("kzz_p1Ready", false);
+                            resetReady.put("kzz_p2Ready", false);
+                            resetReady.put("currentGame", "spojnice");
+                            db.collection("gameRooms").document(roomId).update(resetReady);
+                        }
+                    }
+
                     if (newIdx >= 4 && !nextGameButtonShown) {
                         Map<String, Object> answers = (Map<String, Object>) snapshot.get("answers_q4");
                         if (answers != null && answers.size() == 2) {
                             nextGameButtonShown = true;
-                            String playerLeftFinal = playerLeft;
-                            if (isPlayer1 || (playerLeftFinal != null && !playerLeftFinal.isEmpty() && !playerLeftFinal.equals(isPlayer1 ? "p1" : "p2"))) {
-                                 new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(this::triggerNextGame, 3000);
-                            }
+                            showNextGameButton();
                         }
                     }
                 });
