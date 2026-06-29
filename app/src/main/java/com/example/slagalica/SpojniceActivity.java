@@ -39,6 +39,7 @@ public class SpojniceActivity extends AppCompatActivity {
     private int currentRound = 1;
     private ListenerRegistration gameListener;
     private CountDownTimer timer;
+    private long prevP1Score = Long.MIN_VALUE, prevP2Score = Long.MIN_VALUE;
 
     private String currentTurn = "p1";
     private int currentLeftIndex = 0;
@@ -173,9 +174,16 @@ public class SpojniceActivity extends AppCompatActivity {
                     currentLeftIndex = snapshot.getLong("spojnice_currentLeftIndex") != null ? snapshot.getLong("spojnice_currentLeftIndex").intValue() : 0;
                     matchedRightIndices = (List<Long>) snapshot.get("spojnice_matchedRightIndices");
                     whoMatched = (List<String>) snapshot.get("spojnice_whoMatched");
-                    
-                    tvPlayer1Points.setText(String.valueOf(snapshot.getLong("player1Score")));
-                    tvPlayer2Points.setText(String.valueOf(snapshot.getLong("player2Score")));
+
+                    long newS1 = snapshot.getLong("player1Score") != null ? snapshot.getLong("player1Score") : 0;
+                    long newS2 = snapshot.getLong("player2Score") != null ? snapshot.getLong("player2Score") : 0;
+                    if (prevP1Score != Long.MIN_VALUE && newS1 != prevP1Score)
+                        showFloatingPoints(newS1 - prevP1Score, tvPlayer1Points, COLOR_P1);
+                    if (prevP2Score != Long.MIN_VALUE && newS2 != prevP2Score)
+                        showFloatingPoints(newS2 - prevP2Score, tvPlayer2Points, COLOR_P2);
+                    prevP1Score = newS1; prevP2Score = newS2;
+                    tvPlayer1Points.setText(String.valueOf(newS1));
+                    tvPlayer2Points.setText(String.valueOf(newS2));
 
                     tvPlayer1Name.setText(snapshot.getString("player1Name"));
                     tvPlayer2Name.setText(snapshot.getString("player2Name"));
@@ -344,6 +352,34 @@ public class SpojniceActivity extends AppCompatActivity {
             updates.put("spojnice_wrongClickTrigger", System.currentTimeMillis());
             db.collection("gameRooms").document(roomId).update(updates);
         }
+    }
+
+    private void showFloatingPoints(long delta, View anchor, String colorHex) {
+        if (delta == 0 || anchor == null) return;
+
+        final android.view.ViewGroup root = findViewById(android.R.id.content);
+        final TextView tv = new TextView(this);
+        tv.setText((delta > 0 ? "+" : "") + delta);
+        tv.setTextColor(Color.parseColor(colorHex));
+        tv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 22);
+        try {
+            tv.setTypeface(androidx.core.content.res.ResourcesCompat.getFont(this, R.font.fredoka_bold));
+        } catch (Exception ignored) {}
+
+        int[] rootLoc = new int[2];
+        root.getLocationInWindow(rootLoc);
+        int[] loc = new int[2];
+        anchor.getLocationInWindow(loc);
+
+        android.widget.FrameLayout.LayoutParams lp = new android.widget.FrameLayout.LayoutParams(
+                android.view.ViewGroup.LayoutParams.WRAP_CONTENT,
+                android.view.ViewGroup.LayoutParams.WRAP_CONTENT);
+        lp.leftMargin = loc[0] - rootLoc[0] + anchor.getWidth() / 2;
+        lp.topMargin = loc[1] - rootLoc[1];
+        root.addView(tv, lp);
+
+        tv.animate().translationYBy(-120f).alpha(0f).setDuration(1000)
+                .withEndAction(() -> root.removeView(tv)).start();
     }
 
     private void endRoundLocally() {

@@ -44,6 +44,7 @@ public class KoZnaZnaActivity extends AppCompatActivity {
     private ListenerRegistration gameListener;
     private boolean p1Ready = false, p2Ready = false;
     private long lastSyncedStartTime = -1;
+    private long prevP1Score = Long.MIN_VALUE, prevP2Score = Long.MIN_VALUE;
 
     private final String COLOR_P1 = "#823FAB";
     private final String COLOR_P2 = "#2196F3";
@@ -137,8 +138,22 @@ public class KoZnaZnaActivity extends AppCompatActivity {
                     setAvatar(ivPlayer1Avatar, avatar1);
                     setAvatar(ivPlayer2Avatar, avatar2);
 
-                    tvPlayer1Points.setText(String.valueOf(snapshot.getLong("player1Score")));
-                    tvPlayer2Points.setText(String.valueOf(snapshot.getLong("player2Score")));
+                    Long s1 = snapshot.getLong("player1Score");
+                    Long s2 = snapshot.getLong("player2Score");
+                    long newS1 = (s1 != null) ? s1 : 0;
+                    long newS2 = (s2 != null) ? s2 : 0;
+
+                    if (prevP1Score != Long.MIN_VALUE && newS1 != prevP1Score) {
+                        showFloatingPoints(newS1 - prevP1Score, tvPlayer1Points, COLOR_P1);
+                    }
+                    if (prevP2Score != Long.MIN_VALUE && newS2 != prevP2Score) {
+                        showFloatingPoints(newS2 - prevP2Score, tvPlayer2Points, COLOR_P2);
+                    }
+                    prevP1Score = newS1;
+                    prevP2Score = newS2;
+
+                    tvPlayer1Points.setText(String.valueOf(newS1));
+                    tvPlayer2Points.setText(String.valueOf(newS2));
 
                     // Spec 3f: protivnik napustio - automatski odgovori za njega
                     String playerLeft = snapshot.getString("playerLeft");
@@ -201,6 +216,38 @@ public class KoZnaZnaActivity extends AppCompatActivity {
         if (resId != 0) {
             iv.setImageResource(resId);
         }
+    }
+
+    private void showFloatingPoints(long delta, View anchor, String colorHex) {
+        if (delta == 0) return;
+
+        final android.view.ViewGroup root = findViewById(android.R.id.content);
+        final TextView tv = new TextView(this);
+        tv.setText((delta > 0 ? "+" : "") + delta);
+        tv.setTextColor(Color.parseColor(colorHex));
+        tv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 22);
+        try {
+            tv.setTypeface(androidx.core.content.res.ResourcesCompat.getFont(this, R.font.fredoka_bold));
+        } catch (Exception ignored) {}
+
+        int[] rootLoc = new int[2];
+        root.getLocationInWindow(rootLoc);
+        int[] loc = new int[2];
+        anchor.getLocationInWindow(loc);
+
+        android.widget.FrameLayout.LayoutParams lp = new android.widget.FrameLayout.LayoutParams(
+                android.view.ViewGroup.LayoutParams.WRAP_CONTENT,
+                android.view.ViewGroup.LayoutParams.WRAP_CONTENT);
+        lp.leftMargin = loc[0] - rootLoc[0] + anchor.getWidth() / 2;
+        lp.topMargin = loc[1] - rootLoc[1];
+        root.addView(tv, lp);
+
+        tv.animate()
+                .translationYBy(-120f)
+                .alpha(0f)
+                .setDuration(1000)
+                .withEndAction(() -> root.removeView(tv))
+                .start();
     }
 
     private void displayQuestion() {
