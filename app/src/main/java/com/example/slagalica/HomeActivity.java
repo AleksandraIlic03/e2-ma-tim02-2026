@@ -24,7 +24,7 @@ public class HomeActivity extends AppCompatActivity {
     private boolean friendRequestsInitialized = false;
     private boolean acceptedRequestsInitialized = false;
     private boolean invitesInitialized = false;
-    private ListenerRegistration userListener, inviteListener, requestListener, acceptedListener;
+    private ListenerRegistration userListener;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -37,8 +37,6 @@ public class HomeActivity extends AppCompatActivity {
         tvHomeLeague = findViewById(R.id.tvHomeLeague);
 
         listenToUserData();
-        listenForGameInvites();
-        listenForFriendRequests();
         updateOnlineStatus(true);
         checkForRewards();
         grantDailyTokens();
@@ -100,98 +98,6 @@ public class HomeActivity extends AppCompatActivity {
         if (userId != null) {
             db.collection("users").document(userId).update("isOnline", online, "isInGame", false);
         }
-    }
-
-    private void listenForGameInvites() {
-        String userId = FirebaseAuth.getInstance().getUid();
-        if (userId == null) return;
-
-        inviteListener = db.collection("gameInvites")
-                .whereEqualTo("toUserId", userId)
-                .whereEqualTo("status", "pending")
-                .addSnapshotListener((snapshot, e) -> {
-                    if (e != null || snapshot == null) return;
-
-                    // Prvi snapshot = postojeci pozivi pri ulasku u app -> ignorisi
-                    if (!invitesInitialized) {
-                        invitesInitialized = true;
-                        return;
-                    }
-
-                    for (com.google.firebase.firestore.DocumentChange dc : snapshot.getDocumentChanges()) {
-                        if (dc.getType() == com.google.firebase.firestore.DocumentChange.Type.ADDED) {
-                            com.google.firebase.firestore.DocumentSnapshot doc = dc.getDocument();
-
-                            String fromUsername = doc.getString("fromUsername");
-                            if (fromUsername == null) fromUsername = "Igrač";
-
-                            NotificationHelper.sendRealNotification(this,
-                                    "Poziv za partiju",
-                                    "Igrač " + fromUsername + " vas poziva na partiju.",
-                                    NotificationHelper.CHANNEL_OTHER);
-
-                            showGameInviteDialog(doc);
-                        }
-                    }
-                });
-    }
-
-    private void listenForFriendRequests() {
-        String userId = FirebaseAuth.getInstance().getUid();
-        if (userId == null) return;
-
-        // Dolazni zahtevi
-        requestListener = db.collection("friendRequests")
-                .whereEqualTo("toUserId", userId)
-                .whereEqualTo("status", "pending")
-                .addSnapshotListener((snapshot, e) -> {
-                    if (e != null || snapshot == null) return;
-
-                    // Prvi snapshot = postojeci zahtevi pri ulasku u app -> ne notifikuj
-                    if (!friendRequestsInitialized) {
-                        friendRequestsInitialized = true;
-                        return;
-                    }
-
-                    for (com.google.firebase.firestore.DocumentChange dc : snapshot.getDocumentChanges()) {
-                        if (dc.getType() == com.google.firebase.firestore.DocumentChange.Type.ADDED) {
-                            String fromUsername = dc.getDocument().getString("fromUsername");
-                            if (fromUsername == null) fromUsername = "Neko";
-                            NotificationHelper.sendRealNotification(this,
-                                    "Novi zahtev za prijateljstvo",
-                                    "Korisnik " + fromUsername + " vam je poslao zahtev.",
-                                    NotificationHelper.CHANNEL_OTHER);
-                        }
-                    }
-                });
-
-        // Prihvaceni zahtevi (kad drugi prihvati nas zahtev)
-        acceptedListener = db.collection("friendRequests")
-                .whereEqualTo("fromUserId", userId)
-                .whereEqualTo("status", "accepted")
-                .addSnapshotListener((snapshot, e) -> {
-                    if (e != null || snapshot == null) return;
-
-                    // Prvi snapshot = vec prihvaceni zahtevi pri ulasku -> ne notifikuj
-                    if (!acceptedRequestsInitialized) {
-                        acceptedRequestsInitialized = true;
-                        return;
-                    }
-
-                    for (com.google.firebase.firestore.DocumentChange dc : snapshot.getDocumentChanges()) {
-                        if (dc.getType() == com.google.firebase.firestore.DocumentChange.Type.ADDED ||
-                                dc.getType() == com.google.firebase.firestore.DocumentChange.Type.MODIFIED) {
-
-                            String status = dc.getDocument().getString("status");
-                            if ("accepted".equals(status)) {
-                                NotificationHelper.sendRealNotification(this,
-                                        "Zahtev prihvaćen",
-                                        "Vaš zahtev za prijateljstvo je prihvaćen!",
-                                        NotificationHelper.CHANNEL_OTHER);
-                            }
-                        }
-                    }
-                });
     }
 
     private void showGameInviteDialog(com.google.firebase.firestore.DocumentSnapshot inviteDoc) {
@@ -371,8 +277,6 @@ public class HomeActivity extends AppCompatActivity {
         super.onDestroy();
         updateOnlineStatus(false);
         if (userListener != null) userListener.remove();
-        if (inviteListener != null) inviteListener.remove();
-        if (requestListener != null) requestListener.remove();
     }
 
     private void checkForRewards() {

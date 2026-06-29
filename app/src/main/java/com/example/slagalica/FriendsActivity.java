@@ -21,6 +21,7 @@ import com.example.slagalica.models.FriendRequest;
 import com.example.slagalica.models.RankingEntry;
 import com.google.android.material.tabs.TabLayout;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.firestore.DocumentChange;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.ListenerRegistration;
@@ -52,7 +53,11 @@ public class FriendsActivity extends AppCompatActivity {
     private FriendRequestAdapter requestAdapter;
     private UserSearchAdapter searchAdapter;
 
-    private ListenerRegistration friendsListListener, friendsDetailsListener, requestsListener, sentRequestsListener;
+    private ListenerRegistration friendsListListener, friendsDetailsListener, requestsListener,
+            sentRequestsListener, acceptedSentListener;
+
+    // Da preskocimo prvi snapshot (vec prihvaceni zahtevi pri ulasku)
+    private boolean acceptedSentInitialized = false;
 
     private final ActivityResultLauncher<ScanOptions> barcodeLauncher = registerForActivityResult(new ScanContract(),
             result -> {
@@ -80,6 +85,8 @@ public class FriendsActivity extends AppCompatActivity {
         listenToFriends();
         listenToRequests();
         listenToSentRequests();
+        listenToAcceptedSentRequests();
+
     }
 
     private void listenToSentRequests() {
@@ -95,6 +102,45 @@ public class FriendsActivity extends AppCompatActivity {
                     }
                     searchAdapter.notifyDataSetChanged();
                 });
+    }
+
+    // Kad moj poslati zahtev bude PRIHVACEN -> osvezi prikaz prijatelja
+    private void listenToAcceptedSentRequests() {
+        if (currentUserId == null) return;
+        acceptedSentListener = db.collection("friendRequests")
+                .whereEqualTo("fromUserId", currentUserId)
+                .whereEqualTo("status", "accepted")
+                .addSnapshotListener((snapshot, e) -> {
+                    if (e != null || snapshot == null) return;
+
+                    // Prvi snapshot = vec prihvaceni zahtevi pri ulasku, ne osvezavamo
+                    if (!acceptedSentInitialized) {
+                        acceptedSentInitialized = true;
+                        return;
+                    }
+
+                    for (DocumentChange dc : snapshot.getDocumentChanges()) {
+                        if (dc.getType() == DocumentChange.Type.ADDED
+                                || dc.getType() == DocumentChange.Type.MODIFIED) {
+                            refreshFriendsView();
+                            break;
+                        }
+                    }
+                });
+    }
+
+    private void refreshFriendsView() {
+        runOnUiThread(() -> {
+            searchResults.clear();
+            searchAdapter.notifyDataSetChanged();
+
+            rvFriends.setAdapter(friendsAdapter);
+
+            TabLayout.Tab firstTab = tabLayoutFriends.getTabAt(0);
+            if (firstTab != null) firstTab.select();
+
+            listenToFriends();
+        });
     }
 
     private void fetchCurrentUsername() {
@@ -120,7 +166,7 @@ public class FriendsActivity extends AppCompatActivity {
 
     private void setupRecyclerViews() {
         rvFriends.setLayoutManager(new LinearLayoutManager(this));
-        
+
         friendsAdapter = new FriendsAdapter(friendsList, friend -> {
             // Start friendly match
             Intent intent = new Intent(this, WaitingRoomActivity.class);
@@ -229,7 +275,7 @@ public class FriendsActivity extends AppCompatActivity {
                     if (friendIds != null) {
                         currentFriendIds.addAll(friendIds);
                     }
-                    
+
                     // Filter out search results that are now friends
                     List<RankingEntry> toRemove = new ArrayList<>();
                     for (RankingEntry user : searchResults) {
@@ -253,7 +299,7 @@ public class FriendsActivity extends AppCompatActivity {
 
     private void listenToFriendsDetails(List<String> friendIds) {
         if (friendsDetailsListener != null) friendsDetailsListener.remove();
-        
+
         friendsDetailsListener = db.collection("users").whereIn("__name__", friendIds)
                 .addSnapshotListener((snapshot, e) -> {
                     if (e != null || snapshot == null) return;
@@ -288,9 +334,6 @@ public class FriendsActivity extends AppCompatActivity {
                         FriendRequest req = doc.toObject(FriendRequest.class);
                         if (req != null) {
                             req.setRequestId(doc.getId());
-                            // We need the fromUsername, it might not be in the request doc
-                            // Actually I added it to the model but not necessarily to the Firestore write
-                            // Let's fetch it if missing
                             if (req.getFromUsername() == null) {
                                 db.collection("users").document(req.getFromUserId()).get()
                                         .addOnSuccessListener(uDoc -> {
@@ -340,13 +383,10 @@ public class FriendsActivity extends AppCompatActivity {
     }
 
     private void searchAndAddFriend(String scanContent) {
-        // Assume scanContent is userId or username
-        // Try as userId first
         db.collection("users").document(scanContent).get().addOnSuccessListener(doc -> {
             if (doc.exists()) {
                 sendFriendRequest(doc.getId(), doc.getString("username"));
             } else {
-                // Try as username
                 db.collection("users").whereEqualTo("username", scanContent).get().addOnSuccessListener(querySnapshot -> {
                     if (!querySnapshot.isEmpty()) {
                         DocumentSnapshot userDoc = querySnapshot.getDocuments().get(0);
@@ -380,6 +420,7 @@ public class FriendsActivity extends AppCompatActivity {
         if (friendsDetailsListener != null) friendsDetailsListener.remove();
         if (requestsListener != null) requestsListener.remove();
         if (sentRequestsListener != null) sentRequestsListener.remove();
+        if (acceptedSentListener != null) acceptedSentListener.remove();
     }
 
     @Override
