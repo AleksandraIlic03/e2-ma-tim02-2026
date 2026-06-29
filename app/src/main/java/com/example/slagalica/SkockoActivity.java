@@ -172,6 +172,22 @@ public class SkockoActivity extends AppCompatActivity {
                         if (tvPlayer1Points != null) tvPlayer1Points.setText(String.valueOf(player1Score));
                         if (tvPlayer2Points != null) tvPlayer2Points.setText(String.valueOf(player2Score));
 
+                        // PROVERA READY STANJA ZA SLEDECU RUNDU/IGRU
+                        p1Ready = snapshot.getBoolean("skocko_p1Ready") != null && snapshot.getBoolean("skocko_p1Ready");
+                        p2Ready = snapshot.getBoolean("skocko_p2Ready") != null && snapshot.getBoolean("skocko_p2Ready");
+
+                        if (p1Ready && p2Ready) {
+                            if (isPlayer1) {
+                                Map<String, Object> resetReady = new HashMap<>();
+                                resetReady.put("skocko_p1Ready", false);
+                                resetReady.put("skocko_p2Ready", false);
+                                db.collection("gameRooms").document(roomId).update(resetReady);
+
+                                if (currentRound == 1) startNextRound();
+                                else transitionToNextGame();
+                            }
+                        }
+
                         // Spec 3f: protivnik napustio - preskoči njegov red odmah
                         String playerLeft = snapshot.getString("playerLeft");
                         if (playerLeft != null && !playerLeft.isEmpty()) {
@@ -293,7 +309,8 @@ public class SkockoActivity extends AppCompatActivity {
 
             if (!solved && stealDone) isGameOver = true;
 
-            if (isGameOver) {
+            if (isGameOver && !finishTimerStarted) {
+                finishTimerStarted = true;
                 db.collection("gameRooms").document(roomId).get().addOnSuccessListener(snapshot -> {
                     String playerLeft = snapshot.getString("playerLeft");
                     boolean opponentLeft = playerLeft != null && !playerLeft.isEmpty() && !playerLeft.equals(isPlayer1 ? "p1" : "p2");

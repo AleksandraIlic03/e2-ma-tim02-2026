@@ -66,6 +66,7 @@ public class AsocijacijeActivity extends AppCompatActivity {
     private int lastRecordedRound = 0;
     private int pointsAtRoundStart = 0;
     private boolean p1Ready = false, p2Ready = false;
+    private boolean roundTransitionScheduled = false;
 
     private void showExitConfirmation() {
         new androidx.appcompat.app.AlertDialog.Builder(this)
@@ -176,6 +177,7 @@ public class AsocijacijeActivity extends AppCompatActivity {
                             asocStatsUpdatedThisRound = false;
                             pointsAtRoundStart = isPlayer1 ? player1Score : player2Score;
                             hasOpenedThisTurn = false;
+                            roundTransitionScheduled = false;
                         }
                         currentRound = newRound;
                         currentTurn = snapshot.getString("asoc_turn") != null ? snapshot.getString("asoc_turn") : "p1";
@@ -205,6 +207,22 @@ public class AsocijacijeActivity extends AppCompatActivity {
                         if (snapshot.contains("roundStartTime")) {
                             startLocalTimer(snapshot.getLong("roundStartTime"));
                         }
+
+                        // PROVERA READY STANJA ZA SLEDECU RUNDU/IGRU
+                        p1Ready = snapshot.getBoolean("asoc_p1Ready") != null && snapshot.getBoolean("asoc_p1Ready");
+                        p2Ready = snapshot.getBoolean("asoc_p2Ready") != null && snapshot.getBoolean("asoc_p2Ready");
+
+                        if (p1Ready && p2Ready) {
+                            if (isPlayer1) {
+                                Map<String, Object> resetReady = new HashMap<>();
+                                resetReady.put("asoc_p1Ready", false);
+                                resetReady.put("asoc_p2Ready", false);
+                                db.collection("gameRooms").document(roomId).update(resetReady);
+
+                                if (currentRound == 1) startNextRound();
+                                else transitionToSkocko();
+                            }
+                        }
                         
                         // Spec 3f: protivnik napustio - preskoči čekanje
                         String playerLeft = snapshot.getString("playerLeft");
@@ -214,11 +232,12 @@ public class AsocijacijeActivity extends AppCompatActivity {
                                 if (currentTurn.equals(opponent)) {
                                     db.collection("gameRooms").document(roomId).update("asoc_turn", isPlayer1 ? "p1" : "p2");
                                 }
-                                if (isFinalSolved) {
-                                     new Handler(getMainLooper()).postDelayed(() -> {
-                                         if (currentRound == 1) startNextRound();
-                                         else transitionToSkocko();
-                                     }, 3000);
+                                if (isFinalSolved && !roundTransitionScheduled) {
+                                    roundTransitionScheduled = true;
+                                    new Handler(getMainLooper()).postDelayed(() -> {
+                                        if (currentRound == 1) startNextRound();
+                                        else transitionToSkocko();
+                                    }, 3000);
                                 }
                             }
                         }
@@ -315,13 +334,14 @@ public class AsocijacijeActivity extends AppCompatActivity {
 
             if (btnNextAction != null) btnNextAction.setVisibility(View.GONE);
 
-            String playerLeft = snapshot.getString("playerLeft"); 
+            String playerLeft = snapshot.getString("playerLeft");
             boolean opponentLeft = playerLeft != null && !playerLeft.isEmpty() && !playerLeft.equals(isPlayer1 ? "p1" : "p2");
-            if (isPlayer1 || opponentLeft) {
-                 new Handler(Looper.getMainLooper()).postDelayed(() -> {
-                     if (currentRound == 1) startNextRound();
-                     else transitionToSkocko();
-                 }, 3000);
+            if ((isPlayer1 || opponentLeft) && !roundTransitionScheduled) {
+                roundTransitionScheduled = true;
+                new Handler(Looper.getMainLooper()).postDelayed(() -> {
+                    if (currentRound == 1) startNextRound();
+                    else transitionToSkocko();
+                }, 3000);
             }
         } else {
             etKonacnoResenje.setEnabled(isMyTurn);
@@ -386,11 +406,17 @@ public class AsocijacijeActivity extends AppCompatActivity {
 
     private void transitionToSkocko() {
         if (countDownTimer != null) countDownTimer.cancel();
+        java.util.Random rng = new java.util.Random();
+        List<Integer> target1 = new ArrayList<>();
+        List<Integer> target2 = new ArrayList<>();
+        for (int i = 0; i < 4; i++) { target1.add(rng.nextInt(6)); target2.add(rng.nextInt(6)); }
         Map<String, Object> updates = new HashMap<>();
         updates.put("currentGame", "skocko");
         updates.put("skocko_currentRound", 1);
         updates.put("skocko_turn", "p1");
         updates.put("skocko_attempts", new ArrayList<>());
+        updates.put("skocko_target1", target1);
+        updates.put("skocko_target2", target2);
         updates.put("roundStartTime", System.currentTimeMillis());
         db.collection("gameRooms").document(roomId).update(updates);
     }
@@ -529,7 +555,8 @@ public class AsocijacijeActivity extends AppCompatActivity {
             db.collection("gameRooms").document(roomId).get().addOnSuccessListener(snapshot -> {
                 String playerLeft = snapshot.getString("playerLeft");
                 boolean opponentLeft = playerLeft != null && !playerLeft.isEmpty() && !playerLeft.equals(isPlayer1 ? "p1" : "p2");
-                if (isPlayer1 || opponentLeft) {
+                if ((isPlayer1 || opponentLeft) && !roundTransitionScheduled) {
+                    roundTransitionScheduled = true;
                     if (currentRound == 1) startNextRound();
                     else transitionToSkocko();
                 }
@@ -552,7 +579,8 @@ public class AsocijacijeActivity extends AppCompatActivity {
                 db.collection("gameRooms").document(roomId).get().addOnSuccessListener(snapshot -> {
                     String playerLeft = snapshot.getString("playerLeft");
                     boolean opponentLeft = playerLeft != null && !playerLeft.isEmpty() && !playerLeft.equals(isPlayer1 ? "p1" : "p2");
-                    if (isPlayer1 || opponentLeft) {
+                    if ((isPlayer1 || opponentLeft) && !roundTransitionScheduled) {
+                        roundTransitionScheduled = true;
                         if (currentRound == 1) startNextRound();
                         else transitionToSkocko();
                     }

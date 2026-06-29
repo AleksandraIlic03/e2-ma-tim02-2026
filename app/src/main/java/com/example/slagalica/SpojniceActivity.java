@@ -90,8 +90,7 @@ public class SpojniceActivity extends AppCompatActivity {
         });
 
         initViews();
-        fetchSpojniceFromRoom();
-        attachGameListener();
+        fetchSpojniceFromRoom(); // poziva attachGameListener() nakon što podaci stignu
     }
 
     private void initViews() {
@@ -126,18 +125,34 @@ public class SpojniceActivity extends AppCompatActivity {
         btnNext.setOnClickListener(v -> handleNextRound());
     }
 
+    @SuppressWarnings("unchecked")
     private void fetchSpojniceFromRoom() {
         db.collection("gameRooms").document(roomId).get()
                 .addOnSuccessListener(doc -> {
                     if (doc.exists()) {
-                        spojnice.add(doc.get("spojnica1", SpojnicaModel.class));
-                        spojnice.add(doc.get("spojnica2", SpojnicaModel.class));
-                        attachGameListener();
+                        SpojnicaModel sp1 = parseSpojnica((Map<String, Object>) doc.get("spojnica1"));
+                        SpojnicaModel sp2 = parseSpojnica((Map<String, Object>) doc.get("spojnica2"));
+                        if (sp1 != null) spojnice.add(sp1);
+                        if (sp2 != null) spojnice.add(sp2);
                     }
+                    attachGameListener();
                 });
     }
 
+    @SuppressWarnings("unchecked")
+    private SpojnicaModel parseSpojnica(Map<String, Object> data) {
+        if (data == null) return null;
+        String title = (String) data.get("title");
+        List<String> leftSide = (List<String>) data.get("leftSide");
+        List<String> rightSide = (List<String>) data.get("rightSide");
+        List<Long> rawMapping = (List<Long>) data.get("correctMapping");
+        List<Integer> mapping = new ArrayList<>();
+        if (rawMapping != null) for (Long l : rawMapping) mapping.add(l.intValue());
+        return new SpojnicaModel(title, leftSide, rightSide, mapping);
+    }
+
     private void attachGameListener() {
+        if (gameListener != null) gameListener.remove();
         gameListener = db.collection("gameRooms").document(roomId)
                 .addSnapshotListener((snapshot, e) -> {
                     if (snapshot == null || !snapshot.exists()) return;
@@ -170,6 +185,21 @@ public class SpojniceActivity extends AppCompatActivity {
 
                     tvPlayer1Name.setTextColor(Color.parseColor(COLOR_P1));
                     tvPlayer2Name.setTextColor(Color.parseColor(COLOR_P2));
+
+                    // PROVERA READY STANJA ZA SLEDECU RUNDU/IGRU
+                    p1Ready = snapshot.getBoolean("spojnice_p1Ready") != null && snapshot.getBoolean("spojnice_p1Ready");
+                    p2Ready = snapshot.getBoolean("spojnice_p2Ready") != null && snapshot.getBoolean("spojnice_p2Ready");
+
+                    if (p1Ready && p2Ready) {
+                        if (isPlayer1) {
+                            Map<String, Object> resetReady = new HashMap<>();
+                            resetReady.put("spojnice_p1Ready", false);
+                            resetReady.put("spojnice_p2Ready", false);
+                            db.collection("gameRooms").document(roomId).update(resetReady);
+
+                            handleNextRound();
+                        }
+                    }
 
                     // Spec 3f: protivnik napustio - preskoči njegov red odmah
                     String playerLeft = snapshot.getString("playerLeft");
@@ -319,6 +349,7 @@ public class SpojniceActivity extends AppCompatActivity {
     private void endRoundLocally() {
         if (timer != null) timer.cancel();
         if (transitioning) return;
+        transitioning = true; // Set synchronously before any async call
 
         if (!statsUpdatedThisRound && whoMatched != null) {
             statsUpdatedThisRound = true;
@@ -335,7 +366,6 @@ public class SpojniceActivity extends AppCompatActivity {
             String playerLeft = snapshot.getString("playerLeft");
             boolean opponentLeft = playerLeft != null && !playerLeft.isEmpty() && !playerLeft.equals(isPlayer1 ? "p1" : "p2");
             if (isPlayer1 || opponentLeft) {
-                transitioning = true;
                 new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(this::handleNextRound, 3000);
             }
         });

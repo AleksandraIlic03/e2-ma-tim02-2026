@@ -63,6 +63,7 @@ public class MojBrojActivity extends AppCompatActivity implements SensorEventLis
     private CountDownTimer revealTimer;
     private boolean statsUpdatedThisRound = false;
     private boolean p1Ready = false, p2Ready = false;
+    private boolean bothFinishedHandled = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -271,8 +272,8 @@ public class MojBrojActivity extends AppCompatActivity implements SensorEventLis
                 finishGame();
                 return;
             }
-            // Generisanje brojeva: Radi Player 1, ili preostali igrač ako je protivnik otišao
-            if (!generateCalled && (isPlayer1 || opponentLeft)) {
+            // Animacija vuče samo u rundi 1 — u rundi 2 brojevi su već upisani od calculateAndMove
+            if (!generateCalled && (isPlayer1 || opponentLeft) && phase.equals("p1_playing")) {
                 generateCalled = true;
                 startRollingAnimation();
             }
@@ -302,7 +303,8 @@ public class MojBrojActivity extends AppCompatActivity implements SensorEventLis
                  return;
             }
 
-            if (Boolean.TRUE.equals(snapshot.getBoolean("mojbroj_p1Finished")) && Boolean.TRUE.equals(snapshot.getBoolean("mojbroj_p2Finished"))) {
+            if (!bothFinishedHandled && Boolean.TRUE.equals(snapshot.getBoolean("mojbroj_p1Finished")) && Boolean.TRUE.equals(snapshot.getBoolean("mojbroj_p2Finished"))) {
+                bothFinishedHandled = true;
                 showComparison(snapshot);
                 updateLocalStats(snapshot);
 
@@ -318,9 +320,12 @@ public class MojBrojActivity extends AppCompatActivity implements SensorEventLis
 
     private void resetRoundUI() {
         if (roundTimer != null) roundTimer.cancel();
+        if (revealTimer != null) { revealTimer.cancel(); revealTimer = null; }
+        if (btnStop != null) btnStop.setVisibility(View.GONE);
         isFinalizingRound = false;
         myTurnFinished = false;
         statsUpdatedThisRound = false;
+        bothFinishedHandled = false;
         targetNumber = -1;
         numbersLoaded = false;
         generateCalled = false;
