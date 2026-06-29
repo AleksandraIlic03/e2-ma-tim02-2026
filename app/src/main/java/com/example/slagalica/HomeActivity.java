@@ -37,7 +37,6 @@ public class HomeActivity extends AppCompatActivity {
         tvHomeLeague = findViewById(R.id.tvHomeLeague);
 
         listenToUserData();
-        updateOnlineStatus(true);
         checkForRewards();
         grantDailyTokens();
 
@@ -93,12 +92,6 @@ public class HomeActivity extends AppCompatActivity {
         });
     }
 
-    private void updateOnlineStatus(boolean online) {
-        String userId = FirebaseAuth.getInstance().getUid();
-        if (userId != null) {
-            db.collection("users").document(userId).update("isOnline", online, "isInGame", false);
-        }
-    }
 
     private void showGameInviteDialog(com.google.firebase.firestore.DocumentSnapshot inviteDoc) {
         String fromUsername = inviteDoc.getString("fromUsername");
@@ -275,7 +268,6 @@ public class HomeActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        updateOnlineStatus(false);
         if (userListener != null) userListener.remove();
     }
 

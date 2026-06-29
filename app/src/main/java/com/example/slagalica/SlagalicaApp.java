@@ -17,6 +17,10 @@ import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.ListenerRegistration;
 
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
+
 
 public class SlagalicaApp extends Application implements Application.ActivityLifecycleCallbacks {
 
@@ -25,6 +29,19 @@ public class SlagalicaApp extends Application implements Application.ActivityLif
     // Trenutno vidljivi (foreground) Activity - za prikaz in-app dijaloga
     @Nullable
     private Activity currentActivity;
+
+    private int startedActivities = 0;
+
+    // Activity-ji koji se racunaju kao "u igri"
+    private static final Set<String> GAME_ACTIVITIES = new HashSet<>(Arrays.asList(
+            "WaitingRoomActivity",
+            "KoZnaZnaActivity",
+            "SpojniceActivity",
+            "AsocijacijeActivity",
+            "SkockoActivity",
+            "KorakPoKorakActivity",
+            "MojBrojActivity"
+    ));
 
     // Globalni listeneri
     private ListenerRegistration inviteListener, requestListener, acceptedListener;
@@ -49,13 +66,50 @@ public class SlagalicaApp extends Application implements Application.ActivityLif
         // Pokreni/zaustavi listenere u zavisnosti od toga da li je korisnik ulogovan
         authStateListener = firebaseAuth -> {
             if (firebaseAuth.getCurrentUser() != null) {
+                // Login: ako je app u prvom planu -> online
+                if (startedActivities > 0) {
+                    writeStatus(true, isGameActivity(currentActivity));
+                }
                 startGlobalListeners(firebaseAuth.getCurrentUser().getUid());
             } else {
+                // Logout/expired: samo gasimo listenere.
+                // Offline se upisuje u SlagalicaApp.logout() PRE signOut-a.
                 stopGlobalListeners();
             }
         };
         FirebaseAuth.getInstance().addAuthStateListener(authStateListener);
     }
+
+    // ----------------- Presence (online / in-game) -----------------
+
+    private boolean isGameActivity(@Nullable Activity a) {
+        return a != null && GAME_ACTIVITIES.contains(a.getClass().getSimpleName());
+    }
+
+    private void writeStatus(boolean online, boolean inGame) {
+        String uid = FirebaseAuth.getInstance().getUid();
+        if (uid == null) return;
+        db.collection("users").document(uid).update("isOnline", online, "isInGame", inGame);
+    }
+
+
+    public static void logout(@Nullable Runnable onDone) {
+        FirebaseFirestore fdb = FirebaseFirestore.getInstance();
+        String uid = FirebaseAuth.getInstance().getUid();
+        if (uid != null) {
+            fdb.collection("users").document(uid)
+                    .update("isOnline", false, "isInGame", false)
+                    .addOnCompleteListener(task -> {
+                        FirebaseAuth.getInstance().signOut();
+                        if (onDone != null) onDone.run();
+                    });
+        } else {
+            FirebaseAuth.getInstance().signOut();
+            if (onDone != null) onDone.run();
+        }
+    }
+
+    // ----------------- Globalni Firestore listeneri -----------------
 
     private void startGlobalListeners(String userId) {
         // Da ne dupliramo ako su vec aktivni
@@ -78,11 +132,11 @@ public class SlagalicaApp extends Application implements Application.ActivityLif
                         if (dc.getType() == DocumentChange.Type.ADDED) {
                             DocumentSnapshot doc = dc.getDocument();
                             String fromUsername = doc.getString("fromUsername");
-                            if (fromUsername == null) fromUsername = "Igrač";
+                            if (fromUsername == null) fromUsername = "Igrac";
 
                             NotificationHelper.sendRealNotification(this,
                                     "Poziv za partiju",
-                                    "Igrač " + fromUsername + " vas poziva na partiju.",
+                                    "Igrac " + fromUsername + " vas poziva na partiju.",
                                     NotificationHelper.CHANNEL_OTHER);
 
                             // In-app dijalog samo ako je neki ekran trenutno vidljiv
@@ -129,8 +183,8 @@ public class SlagalicaApp extends Application implements Application.ActivityLif
                             String status = dc.getDocument().getString("status");
                             if ("accepted".equals(status)) {
                                 NotificationHelper.sendRealNotification(this,
-                                        "Zahtev prihvaćen",
-                                        "Vaš zahtev za prijateljstvo je prihvaćen!",
+                                        "Zahtev prihvacen",
+                                        "Vas zahtev za prijateljstvo je prihvacen!",
                                         NotificationHelper.CHANNEL_OTHER);
                             }
                         }
@@ -174,7 +228,7 @@ public class SlagalicaApp extends Application implements Application.ActivityLif
                     dialogView.findViewById(R.id.btnInviteReject);
             View container = dialogView.findViewById(R.id.inviteContainer);
 
-            tvMsg.setText("Igrač " + (fromUsername != null ? fromUsername : "Igrač")
+            tvMsg.setText("Igrac " + (fromUsername != null ? fromUsername : "Igrac")
                     + " vas poziva na partiju.");
 
             // Animacija pojavljivanja (kao reward dijalozi)
@@ -214,9 +268,15 @@ public class SlagalicaApp extends Application implements Application.ActivityLif
         });
     }
 
+    // ----------------- ActivityLifecycleCallbacks -----------------
+
     @Override
     public void onActivityResumed(@NonNull Activity activity) {
         currentActivity = activity;
+        // Foreground + (mozda) u igri, samo ako je korisnik ulogovan
+        if (FirebaseAuth.getInstance().getCurrentUser() != null) {
+            writeStatus(true, isGameActivity(activity));
+        }
     }
 
     @Override
@@ -224,9 +284,21 @@ public class SlagalicaApp extends Application implements Application.ActivityLif
         if (currentActivity == activity) currentActivity = null;
     }
 
+    @Override
+    public void onActivityStarted(@NonNull Activity activity) {
+        startedActivities++;
+    }
+
+    @Override
+    public void onActivityStopped(@NonNull Activity activity) {
+        startedActivities--;
+        // App otisla u pozadinu -> offline (ako je jos ulogovan)
+        if (startedActivities == 0 && FirebaseAuth.getInstance().getCurrentUser() != null) {
+            writeStatus(false, false);
+        }
+    }
+
     @Override public void onActivityCreated(@NonNull Activity activity, @Nullable Bundle savedInstanceState) {}
-    @Override public void onActivityStarted(@NonNull Activity activity) {}
-    @Override public void onActivityStopped(@NonNull Activity activity) {}
     @Override public void onActivitySaveInstanceState(@NonNull Activity activity, @NonNull Bundle outState) {}
     @Override public void onActivityDestroyed(@NonNull Activity activity) {}
 }

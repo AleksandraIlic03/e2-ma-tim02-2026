@@ -260,7 +260,11 @@ public class FriendsActivity extends AppCompatActivity {
             public void onTabUnselected(TabLayout.Tab tab) {}
 
             @Override
-            public void onTabReselected(TabLayout.Tab tab) {}
+            public void onTabReselected(TabLayout.Tab tab) {
+                if (tab.getPosition() == 0) {
+                    rvFriends.setAdapter(friendsAdapter);
+                }
+            }
         });
     }
 
@@ -383,14 +387,29 @@ public class FriendsActivity extends AppCompatActivity {
     }
 
     private void searchAndAddFriend(String scanContent) {
+        if (currentFriendIds.contains(scanContent)) {
+            Toast.makeText(this, "Već ste prijatelji sa ovim korisnikom", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
         db.collection("users").document(scanContent).get().addOnSuccessListener(doc -> {
             if (doc.exists()) {
-                sendFriendRequest(doc.getId(), doc.getString("username"));
+                String foundUserId = doc.getId();
+                if (currentFriendIds.contains(foundUserId)) {
+                    Toast.makeText(this, "Već ste prijatelji sa ovim korisnikom", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+                sendFriendRequest(foundUserId, doc.getString("username"));
             } else {
                 db.collection("users").whereEqualTo("username", scanContent).get().addOnSuccessListener(querySnapshot -> {
                     if (!querySnapshot.isEmpty()) {
                         DocumentSnapshot userDoc = querySnapshot.getDocuments().get(0);
-                        sendFriendRequest(userDoc.getId(), userDoc.getString("username"));
+                        String foundUserId = userDoc.getId();
+                        if (currentFriendIds.contains(foundUserId)) {
+                            Toast.makeText(this, "Već ste prijatelji sa ovim korisnikom", Toast.LENGTH_SHORT).show();
+                            return;
+                        }
+                        sendFriendRequest(foundUserId, userDoc.getString("username"));
                     } else {
                         Toast.makeText(this, "Korisnik nije pronađen", Toast.LENGTH_SHORT).show();
                     }

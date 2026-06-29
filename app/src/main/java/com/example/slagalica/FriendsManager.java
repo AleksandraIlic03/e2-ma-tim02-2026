@@ -11,7 +11,10 @@ import java.util.Map;
 
 public class FriendsManager {
     private static final FirebaseFirestore db = FirebaseFirestore.getInstance();
-    private static final String currentUserId = FirebaseAuth.getInstance().getUid();
+
+    private static String getCurrentUserId() {
+        return FirebaseAuth.getInstance().getUid();
+    }
 
     public interface ActionCallback {
         void onSuccess();
@@ -19,7 +22,11 @@ public class FriendsManager {
     }
 
     public static void sendFriendRequest(String toUserId, String toUsername, String fromUsername, ActionCallback callback) {
-        if (currentUserId == null || toUserId == null) return;
+        String currentUserId = getCurrentUserId();
+        if (currentUserId == null || toUserId == null) {
+            if (callback != null) callback.onFailure(new Exception("Korisnik nije prijavljen"));
+            return;
+        }
         if (currentUserId.equals(toUserId)) return;
 
         db.collection("friendRequests")
@@ -36,15 +43,25 @@ public class FriendsManager {
                         request.put("timestamp", FieldValue.serverTimestamp());
 
                         db.collection("friendRequests").add(request)
-                                .addOnSuccessListener(documentReference -> callback.onSuccess())
-                                .addOnFailureListener(callback::onFailure);
+                                .addOnSuccessListener(documentReference -> {
+                                    if (callback != null) callback.onSuccess();
+                                })
+                                .addOnFailureListener(e -> {
+                                    if (callback != null) callback.onFailure(e);
+                                });
                     } else {
-                        callback.onSuccess();
+                        if (callback != null) callback.onSuccess();
                     }
                 });
     }
 
     public static void acceptFriendRequest(String requestId, String fromUserId, ActionCallback callback) {
+        String currentUserId = getCurrentUserId();
+        if (currentUserId == null) {
+            if (callback != null) callback.onFailure(new Exception("Korisnik nije prijavljen"));
+            return;
+        }
+
         WriteBatch batch = db.batch();
         DocumentReference requestRef = db.collection("friendRequests").document(requestId);
         batch.update(requestRef, "status", "accepted");
@@ -56,18 +73,29 @@ public class FriendsManager {
         batch.update(otherUserRef, "friends", FieldValue.arrayUnion(currentUserId));
 
         batch.commit()
-                .addOnSuccessListener(aVoid -> callback.onSuccess())
-                .addOnFailureListener(callback::onFailure);
+                .addOnSuccessListener(aVoid -> {
+                    if (callback != null) callback.onSuccess();
+                })
+                .addOnFailureListener(e -> {
+                    if (callback != null) callback.onFailure(e);
+                });
     }
 
     public static void rejectFriendRequest(String requestId, ActionCallback callback) {
         db.collection("friendRequests").document(requestId)
                 .delete()
-                .addOnSuccessListener(aVoid -> callback.onSuccess())
-                .addOnFailureListener(callback::onFailure);
+                .addOnSuccessListener(aVoid -> {
+                    if (callback != null) callback.onSuccess();
+                })
+                .addOnFailureListener(e -> {
+                    if (callback != null) callback.onFailure(e);
+                });
     }
 
     public static void cancelFriendRequest(String toUserId, ActionCallback callback) {
+        String currentUserId = getCurrentUserId();
+        if (currentUserId == null) return;
+
         db.collection("friendRequests")
                 .whereEqualTo("fromUserId", currentUserId)
                 .whereEqualTo("toUserId", toUserId)
@@ -79,12 +107,19 @@ public class FriendsManager {
                         batch.delete(doc.getReference());
                     }
                     batch.commit()
-                            .addOnSuccessListener(aVoid -> callback.onSuccess())
-                            .addOnFailureListener(callback::onFailure);
+                            .addOnSuccessListener(aVoid -> {
+                                if (callback != null) callback.onSuccess();
+                            })
+                            .addOnFailureListener(e -> {
+                                if (callback != null) callback.onFailure(e);
+                            });
                 });
     }
 
     public static void removeFriend(String friendId, ActionCallback callback) {
+        String currentUserId = getCurrentUserId();
+        if (currentUserId == null) return;
+
         WriteBatch batch = db.batch();
         DocumentReference currentUserRef = db.collection("users").document(currentUserId);
         DocumentReference otherUserRef = db.collection("users").document(friendId);
@@ -93,11 +128,16 @@ public class FriendsManager {
         batch.update(otherUserRef, "friends", FieldValue.arrayRemove(currentUserId));
 
         batch.commit()
-                .addOnSuccessListener(aVoid -> callback.onSuccess())
-                .addOnFailureListener(callback::onFailure);
+                .addOnSuccessListener(aVoid -> {
+                    if (callback != null) callback.onSuccess();
+                })
+                .addOnFailureListener(e -> {
+                    if (callback != null) callback.onFailure(e);
+                });
     }
 
     public static void sendGameInvite(String toUserId, String fromUsername, String roomId, ActionCallback callback) {
+        String currentUserId = getCurrentUserId();
         if (currentUserId == null || toUserId == null) return;
 
         Map<String, Object> invite = new HashMap<>();
@@ -109,18 +149,29 @@ public class FriendsManager {
         invite.put("timestamp", FieldValue.serverTimestamp());
 
         db.collection("gameInvites").add(invite)
-                .addOnSuccessListener(documentReference -> callback.onSuccess())
-                .addOnFailureListener(callback::onFailure);
+                .addOnSuccessListener(documentReference -> {
+                    if (callback != null) callback.onSuccess();
+                })
+                .addOnFailureListener(e -> {
+                    if (callback != null) callback.onFailure(e);
+                });
     }
 
     public static void respondToGameInvite(String inviteId, String status, ActionCallback callback) {
         db.collection("gameInvites").document(inviteId)
                 .update("status", status)
-                .addOnSuccessListener(aVoid -> callback.onSuccess())
-                .addOnFailureListener(callback::onFailure);
+                .addOnSuccessListener(aVoid -> {
+                    if (callback != null) callback.onSuccess();
+                })
+                .addOnFailureListener(e -> {
+                    if (callback != null) callback.onFailure(e);
+                });
     }
 
     public static void cancelGameInvite(String roomId, ActionCallback callback) {
+        String currentUserId = getCurrentUserId();
+        if (currentUserId == null) return;
+
         db.collection("gameInvites")
                 .whereEqualTo("fromUserId", currentUserId)
                 .whereEqualTo("roomId", roomId)
@@ -132,8 +183,12 @@ public class FriendsManager {
                         batch.update(doc.getReference(), "status", "cancelled");
                     }
                     batch.commit()
-                            .addOnSuccessListener(aVoid -> callback.onSuccess())
-                            .addOnFailureListener(callback::onFailure);
+                            .addOnSuccessListener(aVoid -> {
+                                if (callback != null) callback.onSuccess();
+                            })
+                            .addOnFailureListener(e -> {
+                                if (callback != null) callback.onFailure(e);
+                            });
                 });
     }
 }

@@ -150,6 +150,7 @@ public class RegisterActivity extends AppCompatActivity {
                     user.put("starsMonthly", 0);
                     user.put("league", 0);
                     user.put("avatarUrl", "");
+                    user.put("friends", Arrays.asList());
 
                     BoundingBox bounds = REGION_BOUNDS.get(region);
                     if (bounds != null) {
