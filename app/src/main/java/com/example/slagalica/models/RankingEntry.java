@@ -10,6 +10,8 @@ public class RankingEntry {
     public RankingEntry() {}
 
     private int league;
+    private boolean isOnline;
+    private boolean isInGame;
 
     public RankingEntry(String userId, String username, String avatarUrl, long stars) {
         this.userId = userId;
@@ -25,6 +27,22 @@ public class RankingEntry {
         this.stars = stars;
         this.league = league;
     }
+
+    public RankingEntry(String userId, String username, String avatarUrl, long stars, int league, boolean isOnline, boolean isInGame) {
+        this.userId = userId;
+        this.username = username;
+        this.avatarUrl = avatarUrl;
+        this.stars = stars;
+        this.league = league;
+        this.isOnline = isOnline;
+        this.isInGame = isInGame;
+    }
+
+    public boolean isOnline() { return isOnline; }
+    public void setOnline(boolean online) { isOnline = online; }
+
+    public boolean isInGame() { return isInGame; }
+    public void setInGame(boolean inGame) { isInGame = inGame; }
 
     public String getUserId() { return userId; }
     public void setUserId(String userId) { this.userId = userId; }

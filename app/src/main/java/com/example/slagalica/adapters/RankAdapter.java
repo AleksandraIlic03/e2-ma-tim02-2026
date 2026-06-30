@@ -30,8 +30,7 @@ public class RankAdapter extends RecyclerView.Adapter<RankAdapter.RankViewHolder
     }
 
     private static final String[] LEAGUE_NAMES = {
-        "Bronzana liga", "Srebrna liga", "Zlatna liga",
-        "Platinasta liga", "Dijamantska liga", "Velika liga"
+        "Miš", "Vuk", "Medved", "Lav", "Orao", "Zmaj"
     };
 
     @Override

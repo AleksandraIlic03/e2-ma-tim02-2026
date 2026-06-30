@@ -2,6 +2,7 @@ package com.example.slagalica;
 
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Color;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
@@ -64,6 +65,9 @@ public class MojBrojActivity extends AppCompatActivity implements SensorEventLis
     private boolean statsUpdatedThisRound = false;
     private boolean p1Ready = false, p2Ready = false;
     private boolean bothFinishedHandled = false;
+
+    private final String COLOR_P1 = "#823FAB", COLOR_P2 = "#2196F3";
+    private long prevP1Score = Long.MIN_VALUE, prevP2Score = Long.MIN_VALUE;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -223,9 +227,16 @@ public class MojBrojActivity extends AppCompatActivity implements SensorEventLis
 
         tvPlayer1Name.setText(snapshot.getString("player1Name"));
         tvPlayer2Name.setText(snapshot.getString("player2Name"));
-        tvPlayer1Points.setText(String.valueOf(snapshot.getLong("player1Score") != null ? snapshot.getLong("player1Score") : 0));
-        tvPlayer2Points.setText(String.valueOf(snapshot.getLong("player2Score") != null ? snapshot.getLong("player2Score") : 0));
 
+        long newS1 = snapshot.getLong("player1Score") != null ? snapshot.getLong("player1Score") : 0;
+        long newS2 = snapshot.getLong("player2Score") != null ? snapshot.getLong("player2Score") : 0;
+        if (prevP1Score != Long.MIN_VALUE && newS1 != prevP1Score)
+            showFloatingPoints(newS1 - prevP1Score, tvPlayer1Points, COLOR_P1);
+        if (prevP2Score != Long.MIN_VALUE && newS2 != prevP2Score)
+            showFloatingPoints(newS2 - prevP2Score, tvPlayer2Points, COLOR_P2);
+        prevP1Score = newS1; prevP2Score = newS2;
+        tvPlayer1Points.setText(String.valueOf(newS1));
+        tvPlayer2Points.setText(String.valueOf(newS2));
         setAvatar(ivPlayer1Avatar, snapshot.getString("player1Avatar"));
         setAvatar(ivPlayer2Avatar, snapshot.getString("player2Avatar"));
 
@@ -392,7 +403,33 @@ public class MojBrojActivity extends AppCompatActivity implements SensorEventLis
             @Override public void onFinish() { if (!myTurnFinished) confirmAnswer(); }
         }.start();
     }
+    private void showFloatingPoints(long delta, View anchor, String colorHex) {
+        if (delta == 0 || anchor == null) return;
 
+        final android.view.ViewGroup root = findViewById(android.R.id.content);
+        final TextView tv = new TextView(this);
+        tv.setText((delta > 0 ? "+" : "") + delta);
+        tv.setTextColor(Color.parseColor(colorHex));
+        tv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 22);
+        try {
+            tv.setTypeface(androidx.core.content.res.ResourcesCompat.getFont(this, R.font.fredoka_bold));
+        } catch (Exception ignored) {}
+
+        int[] rootLoc = new int[2];
+        root.getLocationInWindow(rootLoc);
+        int[] loc = new int[2];
+        anchor.getLocationInWindow(loc);
+
+        android.widget.FrameLayout.LayoutParams lp = new android.widget.FrameLayout.LayoutParams(
+                android.view.ViewGroup.LayoutParams.WRAP_CONTENT,
+                android.view.ViewGroup.LayoutParams.WRAP_CONTENT);
+        lp.leftMargin = loc[0] - rootLoc[0] + anchor.getWidth() / 2;
+        lp.topMargin = loc[1] - rootLoc[1];
+        root.addView(tv, lp);
+
+        tv.animate().translationYBy(-120f).alpha(0f).setDuration(1000)
+                .withEndAction(() -> root.removeView(tv)).start();
+    }
     private void confirmAnswer() {
         if (myTurnFinished) return;
         myTurnFinished = true;
@@ -661,6 +698,8 @@ public class MojBrojActivity extends AppCompatActivity implements SensorEventLis
                         // Napravi finalnu kopiju da bi mogla da se koristi unutar lambde (addOnSuccessListener)
                         final int finalStarChange = starChange;
 
+                        db.collection("users").document(currentUserId).update("isInGame", false);
+
                         // Spec 3d-iii: 50 zvezda → 1 token; čitamo trenutne zvezde pre upisa
                         db.collection("users").document(currentUserId).get()
                                 .addOnSuccessListener(userDoc -> {
@@ -688,6 +727,7 @@ public class MojBrojActivity extends AppCompatActivity implements SensorEventLis
                         }
                     } else {
                         // Spec 3e: prijateljska partija — samo misija, bez zvezda/statistike
+                        db.collection("users").document(currentUserId).update("isInGame", false);
                         RankingManager.completeMission(currentUserId, "play_friendly");
                     }
 
@@ -736,10 +776,15 @@ public class MojBrojActivity extends AppCompatActivity implements SensorEventLis
         super.onDestroy();
         if (roundTimer != null) roundTimer.cancel();
         if (gameListener != null) gameListener.remove();
+
+        String uid = FirebaseAuth.getInstance().getUid();
+        if (uid != null) {
+            db.collection("users").document(uid).update("isInGame", false);
+        }
+
         if (!isFinishing()) {
             writePlayerLeft();
             // Spec 3f: Napuštanjem igre igrač gubi partiju i ne dobija zvezde (-10 zvezdi)
-            String uid = FirebaseAuth.getInstance().getUid();
             if (uid != null) {
                 // Proveri da li je friendly (treba nam snap, ali ovde smo u onDestroy)
                 // Za sad samo penalizuj, asinhrono je ionako.

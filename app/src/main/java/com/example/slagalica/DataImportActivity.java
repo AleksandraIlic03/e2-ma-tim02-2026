@@ -6,7 +6,12 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.example.slagalica.models.KoZnaZnaQuestion;
 import com.example.slagalica.models.SpojnicaModel;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.QueryDocumentSnapshot;
+import com.google.firebase.firestore.WriteBatch;
+
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 
 public class DataImportActivity extends AppCompatActivity {
 
@@ -16,6 +21,35 @@ public class DataImportActivity extends AppCompatActivity {
         
         // Pokrećemo uvoz podataka
         importData();
+        importRegions();
+    }
+
+    private void importRegions() {
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+        
+        db.collection("users").get().addOnSuccessListener(userSnap -> {
+            Map<String, Long> starSums = new HashMap<>();
+            for (QueryDocumentSnapshot doc : userSnap) {
+                String reg = doc.getString("region");
+                Long stars = doc.getLong("starsMonthly");
+                if (reg != null && stars != null) {
+                    long current = starSums.getOrDefault(reg, 0L);
+                    starSums.put(reg, current + stars);
+                }
+            }
+
+            WriteBatch batch = db.batch();
+            for (String regionName : RegionUtils.ALL_REGIONS) {
+                Map<String, Object> data = new HashMap<>();
+                long stars = starSums.getOrDefault(regionName, 0L);
+                data.put("starsMonthly", stars);
+                // Koristimo merge da ne bismo pregazili firstPlaces, secondPlaces...
+                batch.set(db.collection("regions").document(regionName), data, com.google.firebase.firestore.SetOptions.merge());
+            }
+            
+            batch.commit().addOnSuccessListener(aVoid -> 
+                Toast.makeText(this, "Regioni su uspešno uvezeni i sinhronizovani!", Toast.LENGTH_SHORT).show());
+        });
     }
 
     private void importData() {

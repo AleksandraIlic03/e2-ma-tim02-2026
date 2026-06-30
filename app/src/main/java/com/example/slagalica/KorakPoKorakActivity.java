@@ -1,6 +1,7 @@
 package com.example.slagalica;
 
 import android.content.Intent;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.os.CountDownTimer;
 import android.view.LayoutInflater;
@@ -50,6 +51,9 @@ public class KorakPoKorakActivity extends AppCompatActivity {
     private final List<String> steps1 = new ArrayList<>();
     private final List<String> steps2 = new ArrayList<>();
     private List<String> currentSteps = new ArrayList<>();
+
+    private final String COLOR_P1 = "#823FAB", COLOR_P2 = "#2196F3";
+    private long prevDisplay1 = Long.MIN_VALUE, prevDisplay2 = Long.MIN_VALUE;
     private String currentAnswer = "";
 
     private static final int[] POINTS_PER_STEP = {20, 18, 16, 14, 12, 10, 7};
@@ -162,10 +166,18 @@ public class KorakPoKorakActivity extends AppCompatActivity {
         // Header
         tvPlayer1Name.setText(snapshot.getString("player1Name"));
         tvPlayer2Name.setText(snapshot.getString("player2Name"));
+
         long p1Score = snapshot.getLong("player1Score") != null ? snapshot.getLong("player1Score") : 0;
         long p2Score = snapshot.getLong("player2Score") != null ? snapshot.getLong("player2Score") : 0;
-        tvPlayer1Points.setText(String.valueOf(p1Score + (isPlayer1 ? myPoints : 0)));
-        tvPlayer2Points.setText(String.valueOf(p2Score + (!isPlayer1 ? myPoints : 0)));
+        long disp1 = p1Score + (isPlayer1 ? myPoints : 0);
+        long disp2 = p2Score + (!isPlayer1 ? myPoints : 0);
+        if (prevDisplay1 != Long.MIN_VALUE && disp1 != prevDisplay1)
+            showFloatingPoints(disp1 - prevDisplay1, tvPlayer1Points, COLOR_P1);
+        if (prevDisplay2 != Long.MIN_VALUE && disp2 != prevDisplay2)
+            showFloatingPoints(disp2 - prevDisplay2, tvPlayer2Points, COLOR_P2);
+        prevDisplay1 = disp1; prevDisplay2 = disp2;
+        tvPlayer1Points.setText(String.valueOf(disp1));
+        tvPlayer2Points.setText(String.valueOf(disp2));
 
         setAvatar(ivPlayer1Avatar, snapshot.getString("player1Avatar"));
         setAvatar(ivPlayer2Avatar, snapshot.getString("player2Avatar"));
@@ -372,6 +384,34 @@ public class KorakPoKorakActivity extends AppCompatActivity {
                 onBonusFailed();
             }
         }.start();
+    }
+
+    private void showFloatingPoints(long delta, View anchor, String colorHex) {
+        if (delta == 0 || anchor == null) return;
+
+        final android.view.ViewGroup root = findViewById(android.R.id.content);
+        final TextView tv = new TextView(this);
+        tv.setText((delta > 0 ? "+" : "") + delta);
+        tv.setTextColor(Color.parseColor(colorHex));
+        tv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 22);
+        try {
+            tv.setTypeface(androidx.core.content.res.ResourcesCompat.getFont(this, R.font.fredoka_bold));
+        } catch (Exception ignored) {}
+
+        int[] rootLoc = new int[2];
+        root.getLocationInWindow(rootLoc);
+        int[] loc = new int[2];
+        anchor.getLocationInWindow(loc);
+
+        android.widget.FrameLayout.LayoutParams lp = new android.widget.FrameLayout.LayoutParams(
+                android.view.ViewGroup.LayoutParams.WRAP_CONTENT,
+                android.view.ViewGroup.LayoutParams.WRAP_CONTENT);
+        lp.leftMargin = loc[0] - rootLoc[0] + anchor.getWidth() / 2;
+        lp.topMargin = loc[1] - rootLoc[1];
+        root.addView(tv, lp);
+
+        tv.animate().translationYBy(-120f).alpha(0f).setDuration(1000)
+                .withEndAction(() -> root.removeView(tv)).start();
     }
 
     private void showAllSteps(List<String> stepsToShow) {

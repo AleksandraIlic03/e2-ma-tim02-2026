@@ -32,6 +32,8 @@ public class SkockoActivity extends AppCompatActivity {
     private int[][] attempts = new int[6][4];
     private int currentAttemptIndex = 0;
     private int currentSymbolIndex = 0;
+    private final String COLOR_P1 = "#823FAB", COLOR_P2 = "#2196F3";
+    private long prevP1Score = Long.MIN_VALUE, prevP2Score = Long.MIN_VALUE;
 
     private TextView tvTimer, tvPoints, tvPlayer1Name, tvPlayer2Name, tvPlayer1Points, tvPlayer2Points;
     private ImageView ivPlayer1Avatar, ivPlayer2Avatar;
@@ -168,6 +170,12 @@ public class SkockoActivity extends AppCompatActivity {
                         player1Score = p1s != null ? p1s.intValue() : 0;
                         player2Score = p2s != null ? p2s.intValue() : 0;
 
+                        if (prevP1Score != Long.MIN_VALUE && player1Score != prevP1Score)
+                            showFloatingPoints(player1Score - prevP1Score, tvPlayer1Points, COLOR_P1);
+                        if (prevP2Score != Long.MIN_VALUE && player2Score != prevP2Score)
+                            showFloatingPoints(player2Score - prevP2Score, tvPlayer2Points, COLOR_P2);
+                        prevP1Score = player1Score; prevP2Score = player2Score;
+
                         tvPoints.setText("⭐ " + (isPlayer1 ? player1Score : player2Score));
                         if (tvPlayer1Points != null) tvPlayer1Points.setText(String.valueOf(player1Score));
                         if (tvPlayer2Points != null) tvPlayer2Points.setText(String.valueOf(player2Score));
@@ -243,6 +251,33 @@ public class SkockoActivity extends AppCompatActivity {
                         }
                     });
                 });
+    }
+    private void showFloatingPoints(long delta, View anchor, String colorHex) {
+        if (delta == 0 || anchor == null) return;
+
+        final android.view.ViewGroup root = findViewById(android.R.id.content);
+        final TextView tv = new TextView(this);
+        tv.setText((delta > 0 ? "+" : "") + delta);
+        tv.setTextColor(Color.parseColor(colorHex));
+        tv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 22);
+        try {
+            tv.setTypeface(androidx.core.content.res.ResourcesCompat.getFont(this, R.font.fredoka_bold));
+        } catch (Exception ignored) {}
+
+        int[] rootLoc = new int[2];
+        root.getLocationInWindow(rootLoc);
+        int[] loc = new int[2];
+        anchor.getLocationInWindow(loc);
+
+        android.widget.FrameLayout.LayoutParams lp = new android.widget.FrameLayout.LayoutParams(
+                android.view.ViewGroup.LayoutParams.WRAP_CONTENT,
+                android.view.ViewGroup.LayoutParams.WRAP_CONTENT);
+        lp.leftMargin = loc[0] - rootLoc[0] + anchor.getWidth() / 2;
+        lp.topMargin = loc[1] - rootLoc[1];
+        root.addView(tv, lp);
+
+        tv.animate().translationYBy(-120f).alpha(0f).setDuration(1000)
+                .withEndAction(() -> root.removeView(tv)).start();
     }
 
     private void setAvatar(ImageView iv, String avatarName) {
