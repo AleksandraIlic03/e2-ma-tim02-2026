@@ -54,7 +54,7 @@
                     app:boxCornerRadiusTopStart="16dp"
                     app:boxStrokeColor="#823FAB"
                     app:hintTextColor="#823FAB"
-                    style="@style/Widget.Material3.TextInputLayout.OutlinedBox">
+                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
 
                     <com.google.android.material.textfield.TextInputEditText
                         android:id="@+id/etEmailUsername"
@@ -76,7 +76,7 @@
                     app:boxStrokeColor="#823FAB"
                     app:hintTextColor="#823FAB"
                     app:passwordToggleEnabled="true"
-                    style="@style/Widget.Material3.TextInputLayout.OutlinedBox">
+                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
 
                     <com.google.android.material.textfield.TextInputEditText
                         android:id="@+id/etPassword"

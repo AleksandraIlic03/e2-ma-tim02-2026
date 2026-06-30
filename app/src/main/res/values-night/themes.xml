@@ -1,7 +1,13 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
     <!-- Base application theme. -->
-    <style name="Base.Theme.Slagalica" parent="Theme.Material3.DayNight.NoActionBar">
+    <style name="Base.Theme.Slagalica" parent="Theme.MaterialComponents.DayNight.NoActionBar">
         <!-- Customize your dark theme here. -->
-        <!-- <item name="colorPrimary">@color/my_dark_primary</item> -->
+        <item name="colorPrimary">@color/monster_purple</item>
+        <item name="colorPrimaryVariant">#4A148C</item>
+        <item name="colorOnPrimary">@color/white</item>
+        <item name="colorSecondary">@color/monster_pink</item>
+        <item name="colorOnSecondary">@color/white</item>
+        <item name="android:windowBackground">#121212</item>
+        <item name="fontFamily">@font/fredoka_regular</item>
     </style>
 </resources>

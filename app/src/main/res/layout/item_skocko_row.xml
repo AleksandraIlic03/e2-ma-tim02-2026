@@ -6,7 +6,7 @@
     android:orientation="horizontal"
     android:gravity="center"
     android:paddingHorizontal="4dp"
-    android:paddingVertical="2dp">
+    android:paddingVertical="4dp">
 
     <!-- 4 polja za simbole -->
     <LinearLayout
@@ -18,84 +18,85 @@
 
         <ImageView
             android:id="@+id/ivSymbol1"
-            android:layout_width="52dp"
-            android:layout_height="52dp"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
             android:layout_margin="2dp"
-            android:background="@drawable/circle_placeholder"
-            android:backgroundTint="#C8BDD9"
-            android:padding="10dp"
+            android:background="@drawable/input_bg_rounded"
+            android:backgroundTint="#EDE0F5"
+            android:padding="8dp"
             android:scaleType="centerInside" />
 
         <ImageView
             android:id="@+id/ivSymbol2"
-            android:layout_width="52dp"
-            android:layout_height="52dp"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
             android:layout_margin="2dp"
-            android:background="@drawable/circle_placeholder"
-            android:backgroundTint="#C8BDD9"
-            android:padding="10dp"
+            android:background="@drawable/input_bg_rounded"
+            android:backgroundTint="#EDE0F5"
+            android:padding="8dp"
             android:scaleType="centerInside" />
 
         <ImageView
             android:id="@+id/ivSymbol3"
-            android:layout_width="52dp"
-            android:layout_height="52dp"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
             android:layout_margin="2dp"
-            android:background="@drawable/circle_placeholder"
-            android:backgroundTint="#C8BDD9"
-            android:padding="10dp"
+            android:background="@drawable/input_bg_rounded"
+            android:backgroundTint="#EDE0F5"
+            android:padding="8dp"
             android:scaleType="centerInside" />
 
         <ImageView
             android:id="@+id/ivSymbol4"
-            android:layout_width="52dp"
-            android:layout_height="52dp"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
             android:layout_margin="2dp"
-            android:background="@drawable/circle_placeholder"
-            android:backgroundTint="#C8BDD9"
-            android:padding="10dp"
+            android:background="@drawable/input_bg_rounded"
+            android:backgroundTint="#EDE0F5"
+            android:padding="8dp"
             android:scaleType="centerInside" />
     </LinearLayout>
 
     <!-- 2x2 hint tačkice -->
     <GridLayout
+        android:id="@+id/gridHints"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:columnCount="2"
         android:rowCount="2"
-        android:layout_marginStart="12dp">
+        android:layout_marginStart="16dp">
 
         <ImageView
             android:id="@+id/ivHint1"
-            android:layout_width="14dp"
-            android:layout_height="14dp"
+            android:layout_width="16dp"
+            android:layout_height="16dp"
             android:layout_margin="2dp"
             android:src="@drawable/small_circle_placeholder"
-            app:tint="#DADCE0" />
+            app:tint="#D5C4E0" />
 
         <ImageView
             android:id="@+id/ivHint2"
-            android:layout_width="14dp"
-            android:layout_height="14dp"
+            android:layout_width="16dp"
+            android:layout_height="16dp"
             android:layout_margin="2dp"
             android:src="@drawable/small_circle_placeholder"
-            app:tint="#DADCE0" />
+            app:tint="#D5C4E0" />
 
         <ImageView
             android:id="@+id/ivHint3"
-            android:layout_width="14dp"
-            android:layout_height="14dp"
+            android:layout_width="16dp"
+            android:layout_height="16dp"
             android:layout_margin="2dp"
             android:src="@drawable/small_circle_placeholder"
-            app:tint="#DADCE0" />
+            app:tint="#D5C4E0" />
 
         <ImageView
             android:id="@+id/ivHint4"
-            android:layout_width="14dp"
-            android:layout_height="14dp"
+            android:layout_width="16dp"
+            android:layout_height="16dp"
             android:layout_margin="2dp"
             android:src="@drawable/small_circle_placeholder"
-            app:tint="#DADCE0" />
+            app:tint="#D5C4E0" />
     </GridLayout>
 
 </LinearLayout>

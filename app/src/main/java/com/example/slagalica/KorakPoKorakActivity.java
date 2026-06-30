@@ -52,7 +52,7 @@ public class KorakPoKorakActivity extends AppCompatActivity {
     private final List<String> steps2 = new ArrayList<>();
     private List<String> currentSteps = new ArrayList<>();
 
-    private final String COLOR_P1 = "#823FAB", COLOR_P2 = "#2196F3";
+    private final String COLOR_P1 = "#D81B60", COLOR_P2 = "#6A1B9A";
     private long prevDisplay1 = Long.MIN_VALUE, prevDisplay2 = Long.MIN_VALUE;
     private String currentAnswer = "";
 

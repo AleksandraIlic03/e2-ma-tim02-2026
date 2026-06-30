@@ -32,7 +32,7 @@ public class SkockoActivity extends AppCompatActivity {
     private int[][] attempts = new int[6][4];
     private int currentAttemptIndex = 0;
     private int currentSymbolIndex = 0;
-    private final String COLOR_P1 = "#823FAB", COLOR_P2 = "#2196F3";
+    private final String COLOR_P1 = "#D81B60", COLOR_P2 = "#6A1B9A";
     private long prevP1Score = Long.MIN_VALUE, prevP2Score = Long.MIN_VALUE;
 
     private TextView tvTimer, tvPoints, tvPlayer1Name, tvPlayer2Name, tvPlayer1Points, tvPlayer2Points;
@@ -523,15 +523,18 @@ public class SkockoActivity extends AppCompatActivity {
     }
 
     private void updateStealRowUI() {
-        LinearLayout symbolLayout = (LinearLayout) row7.getChildAt(0);
+        LinearLayout symbolLayout = row7.findViewById(R.id.containerSymbols);
+        if (symbolLayout == null) return;
+        
         for (int i = 0; i < 4; i++) {
             ImageView iv = (ImageView) symbolLayout.getChildAt(i);
             if (stealAttempt[i] != -1) {
                 iv.setImageResource(symbolDrawables[stealAttempt[i]]);
                 iv.setBackgroundTintList(null);
+                iv.setPadding(8, 8, 8, 8);
             } else {
                 iv.setImageDrawable(null);
-                iv.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor("#C8BDD9")));
+                iv.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor("#EDE0F5")));
             }
         }
     }
@@ -652,36 +655,48 @@ public class SkockoActivity extends AppCompatActivity {
 
     private void updateHints(int rowIndex, int correctPlace, int wrongPlace) {
         LinearLayout row = rows[rowIndex];
-        GridLayout hintGrid = (GridLayout) row.getChildAt(1);
+        // gridHints je drugi element u item_skocko_row (indeks 1)
+        GridLayout hintGrid = row.findViewById(R.id.gridHints);
+        if (hintGrid == null) return;
+        
         for (int i = 0; i < 4; i++) {
             ImageView hint = (ImageView) hintGrid.getChildAt(i);
-            if (i < correctPlace) hint.setImageTintList(ColorStateList.valueOf(Color.RED));
-            else if (i < correctPlace + wrongPlace) hint.setImageTintList(ColorStateList.valueOf(Color.YELLOW));
-            else hint.setImageTintList(ColorStateList.valueOf(Color.parseColor("#DADCE0")));
+            if (i < correctPlace) {
+                hint.setImageTintList(ColorStateList.valueOf(Color.parseColor("#D81B60"))); // Pink/Crveno za tačno mesto
+            } else if (i < correctPlace + wrongPlace) {
+                hint.setImageTintList(ColorStateList.valueOf(Color.parseColor("#FF7043"))); // Narandžasto/Žuto za tačan znak
+            } else {
+                hint.setImageTintList(ColorStateList.valueOf(Color.parseColor("#D5C4E0"))); // Default sivo
+            }
         }
     }
 
     private void resetHints(int rowIndex) {
         LinearLayout row = rows[rowIndex];
-        GridLayout hintGrid = (GridLayout) row.getChildAt(1);
+        GridLayout hintGrid = row.findViewById(R.id.gridHints);
+        if (hintGrid == null) return;
+        
         for (int i = 0; i < 4; i++) {
             ImageView hint = (ImageView) hintGrid.getChildAt(i);
-            hint.setImageTintList(ColorStateList.valueOf(Color.parseColor("#DADCE0")));
+            hint.setImageTintList(ColorStateList.valueOf(Color.parseColor("#D5C4E0")));
         }
     }
 
     private void updateRowUI(int rowIndex) {
         LinearLayout row = rows[rowIndex];
-        LinearLayout symbolLayout = (LinearLayout) row.getChildAt(0);
+        LinearLayout symbolLayout = row.findViewById(R.id.containerSymbols);
+        if (symbolLayout == null) return;
+        
         int[] currentAttempt = attempts[rowIndex];
         for (int i = 0; i < 4; i++) {
             ImageView iv = (ImageView) symbolLayout.getChildAt(i);
             if (currentAttempt[i] != -1) {
                 iv.setImageResource(symbolDrawables[currentAttempt[i]]);
                 iv.setBackgroundTintList(null);
+                iv.setPadding(8, 8, 8, 8);
             } else {
                 iv.setImageDrawable(null);
-                iv.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor("#C8BDD9")));
+                iv.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor("#EDE0F5")));
             }
         }
     }

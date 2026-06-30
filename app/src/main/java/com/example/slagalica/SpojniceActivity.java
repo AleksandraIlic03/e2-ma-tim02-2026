@@ -53,10 +53,10 @@ public class SpojniceActivity extends AppCompatActivity {
     private int lastRecordedRound = 0;
     private boolean p1Ready = false, p2Ready = false;
 
-    private final String COLOR_P1 = "#823FAB"; // Purple
-    private final String COLOR_P2 = "#2196F3"; // Blue
-    private final String COLOR_DEFAULT = "#D5C4E0";
-    private final String COLOR_TEXT_DEFAULT = "#2D1B4E";
+    private final String COLOR_P1 = "#D81B60"; // Pink
+    private final String COLOR_P2 = "#6A1B9A"; // Purple
+    private final String COLOR_DEFAULT = "#FEFEFE";
+    private final String COLOR_TEXT_DEFAULT = "#321C1C";
     private final String COLOR_WRONG = "#C62828";
 
     private void showExitConfirmation() {
@@ -292,8 +292,11 @@ public class SpojniceActivity extends AppCompatActivity {
             leftButtons[i].setBackgroundTintList(android.content.res.ColorStateList.valueOf(Color.parseColor(COLOR_DEFAULT)));
             leftButtons[i].setTextColor(Color.parseColor(COLOR_TEXT_DEFAULT));
             rightButtons[i].setBackgroundTintList(android.content.res.ColorStateList.valueOf(Color.parseColor(COLOR_DEFAULT)));
+            rightButtons[i].setStrokeColor(android.content.res.ColorStateList.valueOf(Color.parseColor("#EDE0F5")));
+            rightButtons[i].setStrokeWidth(2);
             rightButtons[i].setTextColor(Color.parseColor(COLOR_TEXT_DEFAULT));
             rightButtons[i].setEnabled(isMyTurn);
+            rightButtons[i].setAlpha(1.0f); // Ne izgleda disabled
         }
 
         if (matchedRightIndices != null) {

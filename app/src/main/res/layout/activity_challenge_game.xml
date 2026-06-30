@@ -1,0 +1,388 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#FBF7EF"
+    android:orientation="vertical"
+    android:fitsSystemWindows="true">
+
+    <!-- Header -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="#FEFEFE"
+        android:elevation="4dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:padding="14dp">
+
+        <TextView
+            android:id="@+id/tvChallengeGameTitle"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:fontFamily="@font/fredoka_bold"
+            android:text="Izazov"
+            android:textColor="#321C1C"
+            android:textSize="18sp" />
+
+        <TextView
+            android:id="@+id/tvChallengeTimer"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="12dp"
+            android:fontFamily="@font/fredoka_semibold"
+            android:text="⏱ 0s"
+            android:textColor="#D81B60"
+            android:textSize="16sp" />
+
+        <TextView
+            android:id="@+id/tvChallengeScore"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:fontFamily="@font/fredoka_bold"
+            android:text="⭐ 0"
+            android:textColor="#321C1C"
+            android:textSize="16sp" />
+
+    </LinearLayout>
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:fillViewport="true">
+
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="16dp">
+
+            <!-- LOADING -->
+            <LinearLayout
+                android:id="@+id/panelLoading"
+                android:layout_width="match_parent"
+                android:layout_height="200dp"
+                android:gravity="center"
+                android:orientation="vertical">
+                <ProgressBar android:layout_width="wrap_content" android:layout_height="wrap_content" android:indeterminateTint="#6A1B9A" />
+            </LinearLayout>
+
+            <!-- 1. KO ZNA ZNA -->
+            <LinearLayout
+                android:id="@+id/panelKoZnaZna"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <TextView
+                    android:id="@+id/tvKzzQuestion"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="24dp"
+                    android:fontFamily="@font/fredoka_semibold"
+                    android:textColor="#321C1C"
+                    android:gravity="center"
+                    android:textSize="20sp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnKzzAnswer1"
+                    android:layout_width="match_parent"
+                    android:layout_height="60dp"
+                    android:layout_marginBottom="12dp"
+                    android:backgroundTint="#6A1B9A"
+                    android:fontFamily="@font/fredoka_semibold"
+                    app:cornerRadius="20dp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnKzzAnswer2"
+                    android:layout_width="match_parent"
+                    android:layout_height="60dp"
+                    android:layout_marginBottom="12dp"
+                    android:backgroundTint="#6A1B9A"
+                    android:fontFamily="@font/fredoka_semibold"
+                    app:cornerRadius="20dp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnKzzAnswer3"
+                    android:layout_width="match_parent"
+                    android:layout_height="60dp"
+                    android:layout_marginBottom="12dp"
+                    android:backgroundTint="#6A1B9A"
+                    android:fontFamily="@font/fredoka_semibold"
+                    app:cornerRadius="20dp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnKzzAnswer4"
+                    android:layout_width="match_parent"
+                    android:layout_height="60dp"
+                    android:backgroundTint="#6A1B9A"
+                    android:fontFamily="@font/fredoka_semibold"
+                    app:cornerRadius="20dp" />
+
+            </LinearLayout>
+
+            <!-- 2. SPOJNICE -->
+            <LinearLayout
+                android:id="@+id/panelSpojnice"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <TextView
+                    android:id="@+id/tvSpojniceTitle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="24dp"
+                    android:fontFamily="@font/fredoka_bold"
+                    android:gravity="center"
+                    android:textColor="#321C1C"
+                    android:textSize="18sp" />
+
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal">
+
+                    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical" android:layout_marginEnd="6dp">
+                        <com.google.android.material.button.MaterialButton android:id="@+id/btnSpLeft1" style="@style/Widget.MaterialComponents.Button.UnelevatedButton" app:cornerRadius="14dp" android:layout_width="match_parent" android:layout_height="56dp" android:layout_marginBottom="10dp" android:enabled="false" android:textSize="13sp" android:fontFamily="@font/fredoka_semibold" />
+                        <com.google.android.material.button.MaterialButton android:id="@+id/btnSpLeft2" style="@style/Widget.MaterialComponents.Button.UnelevatedButton" app:cornerRadius="14dp" android:layout_width="match_parent" android:layout_height="56dp" android:layout_marginBottom="10dp" android:enabled="false" android:textSize="13sp" android:fontFamily="@font/fredoka_semibold" />
+                        <com.google.android.material.button.MaterialButton android:id="@+id/btnSpLeft3" style="@style/Widget.MaterialComponents.Button.UnelevatedButton" app:cornerRadius="14dp" android:layout_width="match_parent" android:layout_height="56dp" android:layout_marginBottom="10dp" android:enabled="false" android:textSize="13sp" android:fontFamily="@font/fredoka_semibold" />
+                        <com.google.android.material.button.MaterialButton android:id="@+id/btnSpLeft4" style="@style/Widget.MaterialComponents.Button.UnelevatedButton" app:cornerRadius="14dp" android:layout_width="match_parent" android:layout_height="56dp" android:layout_marginBottom="10dp" android:enabled="false" android:textSize="13sp" android:fontFamily="@font/fredoka_semibold" />
+                        <com.google.android.material.button.MaterialButton android:id="@+id/btnSpLeft5" style="@style/Widget.MaterialComponents.Button.UnelevatedButton" app:cornerRadius="14dp" android:layout_width="match_parent" android:layout_height="56dp" android:enabled="false" android:textSize="13sp" android:fontFamily="@font/fredoka_semibold" />
+                    </LinearLayout>
+
+                    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical" android:layout_marginStart="6dp">
+                        <com.google.android.material.button.MaterialButton android:id="@+id/btnSpRight1" style="@style/Widget.MaterialComponents.Button.OutlinedButton" app:strokeColor="#D5C4E0" app:strokeWidth="2dp" app:cornerRadius="14dp" android:layout_width="match_parent" android:layout_height="56dp" android:layout_marginBottom="10dp" android:textSize="13sp" android:textColor="#321C1C" android:fontFamily="@font/fredoka_semibold" />
+                        <com.google.android.material.button.MaterialButton android:id="@+id/btnSpRight2" style="@style/Widget.MaterialComponents.Button.OutlinedButton" app:strokeColor="#D5C4E0" app:strokeWidth="2dp" app:cornerRadius="14dp" android:layout_width="match_parent" android:layout_height="56dp" android:layout_marginBottom="10dp" android:textSize="13sp" android:textColor="#321C1C" android:fontFamily="@font/fredoka_semibold" />
+                        <com.google.android.material.button.MaterialButton android:id="@+id/btnSpRight3" style="@style/Widget.MaterialComponents.Button.OutlinedButton" app:strokeColor="#D5C4E0" app:strokeWidth="2dp" app:cornerRadius="14dp" android:layout_width="match_parent" android:layout_height="56dp" android:layout_marginBottom="10dp" android:textSize="13sp" android:textColor="#321C1C" android:fontFamily="@font/fredoka_semibold" />
+                        <com.google.android.material.button.MaterialButton android:id="@+id/btnSpRight4" style="@style/Widget.MaterialComponents.Button.OutlinedButton" app:strokeColor="#D5C4E0" app:strokeWidth="2dp" app:cornerRadius="14dp" android:layout_width="match_parent" android:layout_height="56dp" android:layout_marginBottom="10dp" android:textSize="13sp" android:textColor="#321C1C" android:fontFamily="@font/fredoka_semibold" />
+                        <com.google.android.material.button.MaterialButton android:id="@+id/btnSpRight5" style="@style/Widget.MaterialComponents.Button.OutlinedButton" app:strokeColor="#D5C4E0" app:strokeWidth="2dp" app:cornerRadius="14dp" android:layout_width="match_parent" android:layout_height="56dp" android:textSize="13sp" android:textColor="#321C1C" android:fontFamily="@font/fredoka_semibold" />
+                    </LinearLayout>
+
+                </LinearLayout>
+            </LinearLayout>
+
+            <!-- 3. ASOCIJACIJE -->
+            <LinearLayout
+                android:id="@+id/panelAsocijacije"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:layout_marginBottom="12dp">
+                    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical" android:layout_marginEnd="2dp">
+                        <com.google.android.material.button.MaterialButton android:id="@+id/btnAsA1" android:layout_width="match_parent" android:layout_height="44dp" android:textSize="11sp" android:layout_marginBottom="3dp" android:backgroundTint="#6A1B9A" android:fontFamily="@font/fredoka_semibold" />
+                        <com.google.android.material.button.MaterialButton android:id="@+id/btnAsA2" android:layout_width="match_parent" android:layout_height="44dp" android:textSize="11sp" android:layout_marginBottom="3dp" android:backgroundTint="#6A1B9A" android:fontFamily="@font/fredoka_semibold" />
+                        <com.google.android.material.button.MaterialButton android:id="@+id/btnAsA3" android:layout_width="match_parent" android:layout_height="44dp" android:textSize="11sp" android:layout_marginBottom="3dp" android:backgroundTint="#6A1B9A" android:fontFamily="@font/fredoka_semibold" />
+                        <com.google.android.material.button.MaterialButton android:id="@+id/btnAsA4" android:layout_width="match_parent" android:layout_height="44dp" android:textSize="11sp" android:layout_marginBottom="6dp" android:backgroundTint="#6A1B9A" android:fontFamily="@font/fredoka_semibold" />
+                        <EditText android:id="@+id/etAsResA" android:layout_width="match_parent" android:layout_height="44dp" android:hint="A" android:textSize="12sp" android:background="@drawable/input_bg_rounded" android:paddingHorizontal="8dp" android:gravity="center" android:imeOptions="actionDone" android:singleLine="true" android:fontFamily="@font/fredoka_bold" />
+                    </LinearLayout>
+                    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical" android:layout_marginStart="2dp" android:layout_marginEnd="2dp">
+                        <com.google.android.material.button.MaterialButton android:id="@+id/btnAsB1" android:layout_width="match_parent" android:layout_height="44dp" android:textSize="11sp" android:layout_marginBottom="3dp" android:backgroundTint="#6A1B9A" android:fontFamily="@font/fredoka_semibold" />
+                        <com.google.android.material.button.MaterialButton android:id="@+id/btnAsB2" android:layout_width="match_parent" android:layout_height="44dp" android:textSize="11sp" android:layout_marginBottom="3dp" android:backgroundTint="#6A1B9A" android:fontFamily="@font/fredoka_semibold" />
+                        <com.google.android.material.button.MaterialButton android:id="@+id/btnAsB3" android:layout_width="match_parent" android:layout_height="44dp" android:textSize="11sp" android:layout_marginBottom="3dp" android:backgroundTint="#6A1B9A" android:fontFamily="@font/fredoka_semibold" />
+                        <com.google.android.material.button.MaterialButton android:id="@+id/btnAsB4" android:layout_width="match_parent" android:layout_height="44dp" android:textSize="11sp" android:layout_marginBottom="6dp" android:backgroundTint="#6A1B9A" android:fontFamily="@font/fredoka_semibold" />
+                        <EditText android:id="@+id/etAsResB" android:layout_width="match_parent" android:layout_height="44dp" android:hint="B" android:textSize="12sp" android:background="@drawable/input_bg_rounded" android:paddingHorizontal="8dp" android:gravity="center" android:imeOptions="actionDone" android:singleLine="true" android:fontFamily="@font/fredoka_bold" />
+                    </LinearLayout>
+                    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical" android:layout_marginStart="2dp" android:layout_marginEnd="2dp">
+                        <com.google.android.material.button.MaterialButton android:id="@+id/btnAsV1" android:layout_width="match_parent" android:layout_height="44dp" android:textSize="11sp" android:layout_marginBottom="3dp" android:backgroundTint="#6A1B9A" android:fontFamily="@font/fredoka_semibold" />
+                        <com.google.android.material.button.MaterialButton android:id="@+id/btnAsV2" android:layout_width="match_parent" android:layout_height="44dp" android:textSize="11sp" android:layout_marginBottom="3dp" android:backgroundTint="#6A1B9A" android:fontFamily="@font/fredoka_semibold" />
+                        <com.google.android.material.button.MaterialButton android:id="@+id/btnAsV3" android:layout_width="match_parent" android:layout_height="44dp" android:textSize="11sp" android:layout_marginBottom="3dp" android:backgroundTint="#6A1B9A" android:fontFamily="@font/fredoka_semibold" />
+                        <com.google.android.material.button.MaterialButton android:id="@+id/btnAsV4" android:layout_width="match_parent" android:layout_height="44dp" android:textSize="11sp" android:layout_marginBottom="6dp" android:backgroundTint="#6A1B9A" android:fontFamily="@font/fredoka_semibold" />
+                        <EditText android:id="@+id/etAsResV" android:layout_width="match_parent" android:layout_height="44dp" android:hint="V" android:textSize="12sp" android:background="@drawable/input_bg_rounded" android:paddingHorizontal="8dp" android:gravity="center" android:imeOptions="actionDone" android:singleLine="true" android:fontFamily="@font/fredoka_bold" />
+                    </LinearLayout>
+                    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical" android:layout_marginStart="2dp">
+                        <com.google.android.material.button.MaterialButton android:id="@+id/btnAsG1" android:layout_width="match_parent" android:layout_height="44dp" android:textSize="11sp" android:layout_marginBottom="3dp" android:backgroundTint="#6A1B9A" android:fontFamily="@font/fredoka_semibold" />
+                        <com.google.android.material.button.MaterialButton android:id="@+id/btnAsG2" android:layout_width="match_parent" android:layout_height="44dp" android:textSize="11sp" android:layout_marginBottom="3dp" android:backgroundTint="#6A1B9A" android:fontFamily="@font/fredoka_semibold" />
+                        <com.google.android.material.button.MaterialButton android:id="@+id/btnAsG3" android:layout_width="match_parent" android:layout_height="44dp" android:textSize="11sp" android:layout_marginBottom="3dp" android:backgroundTint="#6A1B9A" android:fontFamily="@font/fredoka_semibold" />
+                        <com.google.android.material.button.MaterialButton android:id="@+id/btnAsG4" android:layout_width="match_parent" android:layout_height="44dp" android:textSize="11sp" android:layout_marginBottom="6dp" android:backgroundTint="#6A1B9A" android:fontFamily="@font/fredoka_semibold" />
+                        <EditText android:id="@+id/etAsResG" android:layout_width="match_parent" android:layout_height="44dp" android:hint="G" android:textSize="12sp" android:background="@drawable/input_bg_rounded" android:paddingHorizontal="8dp" android:gravity="center" android:imeOptions="actionDone" android:singleLine="true" android:fontFamily="@font/fredoka_bold" />
+                    </LinearLayout>
+                </LinearLayout>
+
+                <EditText
+                    android:id="@+id/etAsResFinal"
+                    android:layout_width="match_parent"
+                    android:layout_height="60dp"
+                    android:layout_marginTop="16dp"
+                    android:background="@drawable/final_resenje_bg"
+                    android:gravity="center"
+                    android:hint="Konačno rešenje"
+                    android:fontFamily="@font/fredoka_bold"
+                    android:imeOptions="actionDone"
+                    android:singleLine="true"
+                    android:textColor="#FFFFFF"
+                    android:textSize="18sp" />
+
+            </LinearLayout>
+
+            <!-- 4. SKOČKO -->
+            <LinearLayout
+                android:id="@+id/panelSkocko"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:background="@drawable/input_bg_rounded"
+                    android:backgroundTint="#EDE0F5"
+                    android:padding="8dp">
+                    <include android:id="@+id/row1" layout="@layout/item_skocko_row" />
+                    <include android:id="@+id/row2" layout="@layout/item_skocko_row" />
+                    <include android:id="@+id/row3" layout="@layout/item_skocko_row" />
+                    <include android:id="@+id/row4" layout="@layout/item_skocko_row" />
+                    <include android:id="@+id/row5" layout="@layout/item_skocko_row" />
+                    <include android:id="@+id/row6" layout="@layout/item_skocko_row" />
+                </LinearLayout>
+
+                <TextView
+                    android:id="@+id/tvSkCurrentInput"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:layout_marginBottom="12dp"
+                    android:background="@drawable/input_bg_rounded"
+                    android:gravity="center"
+                    android:padding="12dp"
+                    android:fontFamily="@font/fredoka_bold"
+                    android:textColor="#6A1B9A"
+                    android:textSize="22sp" />
+
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center">
+                    <com.google.android.material.button.MaterialButton android:id="@+id/btnSkSym1" android:layout_width="60dp" android:layout_height="60dp" android:layout_margin="3dp" android:backgroundTint="#FFFFFF" app:iconTint="@null" app:cornerRadius="30dp" />
+                    <com.google.android.material.button.MaterialButton android:id="@+id/btnSkSym2" android:layout_width="60dp" android:layout_height="60dp" android:layout_margin="3dp" android:backgroundTint="#FFFFFF" app:iconTint="@null" app:cornerRadius="30dp" />
+                    <com.google.android.material.button.MaterialButton android:id="@+id/btnSkSym3" android:layout_width="60dp" android:layout_height="60dp" android:layout_margin="3dp" android:backgroundTint="#FFFFFF" app:iconTint="@null" app:cornerRadius="30dp" />
+                </LinearLayout>
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:layout_marginBottom="16dp" android:gravity="center">
+                    <com.google.android.material.button.MaterialButton android:id="@+id/btnSkSym4" android:layout_width="60dp" android:layout_height="60dp" android:layout_margin="3dp" android:backgroundTint="#FFFFFF" app:iconTint="@null" app:cornerRadius="30dp" />
+                    <com.google.android.material.button.MaterialButton android:id="@+id/btnSkSym5" android:layout_width="60dp" android:layout_height="60dp" android:layout_margin="3dp" android:backgroundTint="#FFFFFF" app:iconTint="@null" app:cornerRadius="30dp" />
+                    <com.google.android.material.button.MaterialButton android:id="@+id/btnSkSym6" android:layout_width="60dp" android:layout_height="60dp" android:layout_margin="3dp" android:backgroundTint="#FFFFFF" app:iconTint="@null" app:cornerRadius="30dp" />
+                </LinearLayout>
+
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal">
+                    <com.google.android.material.button.MaterialButton android:id="@+id/btnSkDelete" android:layout_width="0dp" android:layout_height="56dp" android:layout_weight="1" android:layout_marginEnd="6dp" android:text="OBRIŠI" android:backgroundTint="#D81B60" android:fontFamily="@font/fredoka_bold" app:cornerRadius="16dp" />
+                    <com.google.android.material.button.MaterialButton android:id="@+id/btnSkConfirm" android:layout_width="0dp" android:layout_height="56dp" android:layout_weight="1" android:layout_marginStart="6dp" android:text="POTVRDI" android:backgroundTint="#8BC34A" android:fontFamily="@font/fredoka_bold" app:cornerRadius="16dp" />
+                </LinearLayout>
+
+            </LinearLayout>
+
+            <!-- 5. KORAK PO KORAK -->
+            <LinearLayout
+                android:id="@+id/panelKorakPoKorak"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <TextView
+                    android:id="@+id/tvKpkPointsHint"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="16dp"
+                    android:fontFamily="@font/fredoka_bold"
+                    android:textColor="#D81B60"
+                    android:gravity="center"
+                    android:textSize="16sp" />
+
+                <LinearLayout
+                    android:id="@+id/llChallengeSteps"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:layout_marginBottom="16dp" />
+
+                <EditText
+                    android:id="@+id/etKpkAnswer"
+                    android:layout_width="match_parent"
+                    android:layout_height="56dp"
+                    android:hint="Tvoj odgovor"
+                    android:background="@drawable/input_bg_rounded"
+                    android:paddingHorizontal="16dp"
+                    android:gravity="center"
+                    android:fontFamily="@font/fredoka_bold"
+                    android:textColor="#6A1B9A"
+                    android:singleLine="true" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnKpkGuess"
+                    android:layout_width="match_parent"
+                    android:layout_height="56dp"
+                    android:layout_marginTop="12dp"
+                    android:backgroundTint="#6A1B9A"
+                    android:fontFamily="@font/fredoka_bold"
+                    android:text="POGODI"
+                    app:cornerRadius="16dp" />
+
+            </LinearLayout>
+
+            <!-- 6. MOJ BROJ -->
+            <LinearLayout
+                android:id="@+id/panelMojBroj"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <androidx.cardview.widget.CardView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:layout_marginBottom="24dp"
+                    app:cardBackgroundColor="#6A1B9A"
+                    app:cardCornerRadius="20dp"
+                    app:cardElevation="4dp">
+                    <TextView
+                        android:id="@+id/tvMbTarget"
+                        android:layout_width="160dp"
+                        android:layout_height="80dp"
+                        android:fontFamily="@font/fredoka_bold"
+                        android:gravity="center"
+                        android:text="000"
+                        android:textColor="#FFFFFF"
+                        android:textSize="44sp" />
+                </androidx.cardview.widget.CardView>
+
+                <LinearLayout
+                    android:id="@+id/llMbNumbers"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:layout_marginBottom="16dp"
+                    android:gravity="center" />
+
+                <TextView
+                    android:id="@+id/tvMbExpression"
+                    android:layout_width="match_parent"
+                    android:layout_height="60dp"
+                    android:layout_marginBottom="16dp"
+                    android:background="@drawable/input_bg_rounded"
+                    android:gravity="center"
+                    android:padding="12dp"
+                    android:fontFamily="@font/fredoka_bold"
+                    android:textColor="#321C1C"
+                    android:textSize="22sp" />
+
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:layout_marginBottom="12dp">
+                    <com.google.android.material.button.MaterialButton android:id="@+id/btnMbPlus" android:layout_width="0dp" android:layout_height="56dp" android:layout_weight="1" android:layout_margin="3dp" android:text="+" android:backgroundTint="#FF7043" android:fontFamily="@font/fredoka_bold" android:textSize="22sp" />
+                    <com.google.android.material.button.MaterialButton android:id="@+id/btnMbMinus" android:layout_width="0dp" android:layout_height="56dp" android:layout_weight="1" android:layout_margin="3dp" android:text="−" android:backgroundTint="#FF7043" android:fontFamily="@font/fredoka_bold" android:textSize="22sp" />
+                    <com.google.android.material.button.MaterialButton android:id="@+id/btnMbMultiply" android:layout_width="0dp" android:layout_height="56dp" android:layout_weight="1" android:layout_margin="3dp" android:text="×" android:backgroundTint="#FF7043" android:fontFamily="@font/fredoka_bold" android:textSize="22sp" />
+                    <com.google.android.material.button.MaterialButton android:id="@+id/btnMbDivide" android:layout_width="0dp" android:layout_height="56dp" android:layout_weight="1" android:layout_margin="3dp" android:text="÷" android:backgroundTint="#FF7043" android:fontFamily="@font/fredoka_bold" android:textSize="22sp" />
+                </LinearLayout>
+
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal">
+                    <com.google.android.material.button.MaterialButton android:id="@+id/btnMbClear" android:layout_width="0dp" android:layout_height="56dp" android:layout_weight="1" android:layout_marginEnd="6dp" android:text="OČISTI" android:backgroundTint="#D81B60" android:fontFamily="@font/fredoka_bold" app:cornerRadius="16dp" />
+                    <com.google.android.material.button.MaterialButton android:id="@+id/btnMbConfirm" android:layout_width="0dp" android:layout_height="56dp" android:layout_weight="1" android:layout_marginStart="6dp" android:text="POTVRDI" android:backgroundTint="#8BC34A" android:fontFamily="@font/fredoka_bold" app:cornerRadius="16dp" />
+                </LinearLayout>
+
+            </LinearLayout>
+
+        </FrameLayout>
+    </ScrollView>
+
+</LinearLayout>
