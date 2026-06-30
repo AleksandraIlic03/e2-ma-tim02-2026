@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#FBF7EF"
+    android:orientation="vertical"
+    android:fitsSystemWindows="true">
+
+    <androidx.appcompat.widget.Toolbar
+        android:id="@+id/toolbar"
+        android:layout_width="match_parent"
+        android:layout_height="?attr/actionBarSize"
+        android:background="#FEFEFE"
+        android:elevation="4dp"
+        app:titleTextColor="#321C1C" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="24dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:fontFamily="@font/fredoka_bold"
+            android:text="Postavi izazov"
+            android:textColor="#321C1C"
+            android:textSize="22sp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:fontFamily="@font/fredoka_regular"
+            android:text="Odaberi koliko zvezda i tokena želiš da uložiš. Maksimalno 3 dodatna igrača mogu da se odazovu."
+            android:textColor="#877777"
+            android:textSize="13sp" />
+
+        <!-- Zvezde -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:fontFamily="@font/fredoka_semibold"
+            android:text="⭐ Zvezde za ulog"
+            android:textColor="#321C1C"
+            android:textSize="16sp" />
+
+        <TextView
+            android:id="@+id/tvUserStars"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:fontFamily="@font/fredoka_regular"
+            android:textColor="#877777"
+            android:textSize="12sp" />
+
+        <com.google.android.material.slider.Slider
+            android:id="@+id/sliderStars"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:thumbColor="#823FAB"
+            app:trackColorActive="#823FAB"
+            app:trackColorInactive="#EDE0F5" />
+
+        <TextView
+            android:id="@+id/tvStarsValue"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:fontFamily="@font/fredoka_bold"
+            android:text="0"
+            android:textColor="#823FAB"
+            android:textSize="20sp" />
+
+        <!-- Tokeni -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:fontFamily="@font/fredoka_semibold"
+            android:text="🎟️ Tokeni za ulog"
+            android:textColor="#321C1C"
+            android:textSize="16sp" />
+
+        <TextView
+            android:id="@+id/tvUserTokens"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:fontFamily="@font/fredoka_regular"
+            android:textColor="#877777"
+            android:textSize="12sp" />
+
+        <com.google.android.material.slider.Slider
+            android:id="@+id/sliderTokens"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:thumbColor="#823FAB"
+            app:trackColorActive="#823FAB"
+            app:trackColorInactive="#EDE0F5" />
+
+        <TextView
+            android:id="@+id/tvTokensValue"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:fontFamily="@font/fredoka_bold"
+            android:text="0"
+            android:textColor="#823FAB"
+            android:textSize="20sp" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnCreateChallenge"
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+            android:layout_marginTop="32dp"
+            android:backgroundTint="#823FAB"
+            android:fontFamily="@font/fredoka_bold"
+            android:text="POKRENI IZAZOV"
+            android:textColor="#FFFFFF"
+            app:cornerRadius="100dp" />
+
+    </LinearLayout>
+
+</LinearLayout>

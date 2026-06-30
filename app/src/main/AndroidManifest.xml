@@ -43,6 +43,10 @@
         <activity android:name=".TournamentActivity"     android:exported="false" />
         <activity android:name=".RegionDetailActivity"   android:exported="false" />
         <activity android:name=".FriendsActivity"        android:exported="false" />
+        <activity android:name=".ChallengeListActivity"  android:exported="false" />
+        <activity android:name=".CreateChallengeActivity" android:exported="false" />
+        <activity android:name=".ChallengeGameActivity"  android:exported="false" />
+        <activity android:name=".ChallengeResultActivity" android:exported="false" />
         <activity android:name=".CaptureActivityPortrait" android:exported="false" android:screenOrientation="portrait" tools:replace="android:screenOrientation" />
 
         <!-- Chat — Spec 8 -->

@@ -85,6 +85,25 @@ public class HomeActivity extends AppCompatActivity {
         findViewById(R.id.btnMap).setOnClickListener(v -> {
             startActivity(new Intent(HomeActivity.this, MapActivity.class));
         });
+
+        findViewById(R.id.btnChallenges).setOnClickListener(v -> {
+            String uid = FirebaseAuth.getInstance().getUid();
+            if (uid != null) {
+                db.collection("users").document(uid).get()
+                        .addOnSuccessListener(doc -> {
+                            String userRegion = doc.getString("region");
+                            if (userRegion != null) {
+                                Intent intent = new Intent(HomeActivity.this, ChallengeListActivity.class);
+                                intent.putExtra("regionName", userRegion);
+                                startActivity(intent);
+                            } else {
+                                Toast.makeText(this, "Region nije pronađen.", Toast.LENGTH_SHORT).show();
+                            }
+                        });
+            } else {
+                Toast.makeText(this, "Nisi ulogovan.", Toast.LENGTH_SHORT).show();
+            }
+        });
         
         findViewById(R.id.btnFriendMatch).setOnClickListener(v -> {
              Intent intent = new Intent(HomeActivity.this, FriendsActivity.class);

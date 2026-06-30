@@ -1,5 +1,6 @@
 package com.example.slagalica;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -32,6 +33,12 @@ public class RegionDetailActivity extends AppCompatActivity {
 
         ((TextView) findViewById(R.id.tvRegionName)).setText(regionName);
         ((ImageView) findViewById(R.id.ivRegionIcon)).setImageResource(RegionUtils.getIconRes(regionName));
+
+        findViewById(R.id.btnRegionChallenges).setOnClickListener(v -> {
+            Intent intent = new Intent(this, ChallengeListActivity.class);
+            intent.putExtra("regionName", regionName);
+            startActivity(intent);
+        });
 
         loadRegionStats();
     }

@@ -41,7 +41,7 @@ public class AsocijacijeActivity extends AppCompatActivity {
     private CountDownTimer countDownTimer;
     private MaterialButton btnNextAction;
 
-    private final String COLOR_P1 = "#823FAB", COLOR_P2 = "#2196F3";
+    private final String COLOR_P1 = "#D81B60", COLOR_P2 = "#6A1B9A";
     private long prevP1Score = Long.MIN_VALUE, prevP2Score = Long.MIN_VALUE;
 
     private final MaterialButton[] buttonsA = new MaterialButton[4];
@@ -306,9 +306,13 @@ public class AsocijacijeActivity extends AppCompatActivity {
                 if (openedFields[colIdx][i] || solved || isFinalSolved) {
                     btns[i].setText(data[i]);
                     btns[i].setEnabled(false);
+                    btns[i].setBackgroundTintList(android.content.res.ColorStateList.valueOf(Color.parseColor("#E0D5EE")));
+                    btns[i].setTextColor(Color.parseColor("#877777"));
                 } else {
                     btns[i].setText(col + "" + (i + 1));
                     btns[i].setEnabled(isMyTurn && !hasOpenedThisTurn);
+                    btns[i].setBackgroundTintList(android.content.res.ColorStateList.valueOf(Color.parseColor("#6A1B9A")));
+                    btns[i].setTextColor(Color.WHITE);
                 }
             }
 
@@ -332,6 +336,31 @@ public class AsocijacijeActivity extends AppCompatActivity {
             etKonacnoResenje.setText(fr != null ? fr.toUpperCase() : "");
             etKonacnoResenje.setEnabled(false);
             etKonacnoResenje.setBackgroundResource(R.drawable.final_success_bg);
+
+            // Otkrij sve asinhrono čim je finalno rešenje pogođeno
+            if (currentAsocijacija != null) {
+                isA_Solved = isB_Solved = isV_Solved = isG_Solved = true;
+                char[] cArr = {'A', 'B', 'V', 'G'};
+                for (char c : cArr) {
+                    int colIdx = colToIdx(c);
+                    for (int j = 0; j < 4; j++) openedFields[colIdx][j] = true;
+                    
+                    EditText etCol = getET(c);
+                    if (etCol != null) {
+                        etCol.setText(getCorrectRes(c).toUpperCase());
+                        etCol.setBackgroundResource(R.drawable.input_success_bg);
+                        etCol.setEnabled(false);
+                    }
+                    MaterialButton[] bArr = getBtns(c);
+                    String[] dArr = getColData(c);
+                    if (bArr != null && dArr != null) {
+                        for (int i = 0; i < 4; i++) {
+                            bArr[i].setText(dArr[i]);
+                            bArr[i].setEnabled(false);
+                        }
+                    }
+                }
+            }
 
             if (!asocStatsUpdatedThisRound) {
                 asocStatsUpdatedThisRound = true;

@@ -66,7 +66,8 @@ public class MojBrojActivity extends AppCompatActivity implements SensorEventLis
     private boolean p1Ready = false, p2Ready = false;
     private boolean bothFinishedHandled = false;
 
-    private final String COLOR_P1 = "#823FAB", COLOR_P2 = "#2196F3";
+    private final String COLOR_P1 = "#D81B60"; // Pink
+    private final String COLOR_P2 = "#6A1B9A"; // Purple
     private long prevP1Score = Long.MIN_VALUE, prevP2Score = Long.MIN_VALUE;
 
     @Override
@@ -374,16 +375,26 @@ public class MojBrojActivity extends AppCompatActivity implements SensorEventLis
 
     private void startRoundLocally() {
         tvTargetNumber.setText(String.valueOf(targetNumber));
+        tvTargetNumber.setTextColor(Color.WHITE); // Bolja vidljivost
         llNumberButtons.removeAllViews();
         for (int i = 0; i < numbers.size(); i++) {
             final int idx = i;
             MaterialButton btn = new MaterialButton(this);
-            btn.setText(String.valueOf(numbers.get(i)));
-            int num = numbers.get(i);
-            btn.setBackgroundTintList(android.content.res.ColorStateList.valueOf(
-                    num >= 25 ? 0xFFE94560 : (num >= 10 ? 0xFFFF912B : 0xFF9B59B6)));
+            btn.setText(String.valueOf(numbers.get(idx)));
+            btn.setTextColor(Color.WHITE);
+            try {
+                btn.setTypeface(androidx.core.content.res.ResourcesCompat.getFont(this, R.font.fredoka_bold));
+            } catch (Exception ignored) {}
+            
+            int num = numbers.get(idx);
+            // Paleta na osnovu slike čudovišta
+            int color = (num >= 25) ? Color.parseColor("#FF7043") : // Narandžasta
+                        (num >= 10) ? Color.parseColor("#6A1B9A") : // Ljubičasta
+                                      Color.parseColor("#D81B60");   // Roze
+            
+            btn.setBackgroundTintList(android.content.res.ColorStateList.valueOf(color));
             LinearLayout.LayoutParams p = new LinearLayout.LayoutParams(0, 120, 1f);
-            p.setMargins(3, 3, 3, 3);
+            p.setMargins(4, 4, 4, 4);
             btn.setLayoutParams(p);
             btn.setCornerRadius(16);
             btn.setOnClickListener(v -> {
@@ -391,7 +402,8 @@ public class MojBrojActivity extends AppCompatActivity implements SensorEventLis
                     usedIndices.add(idx);
                     expression.append(numbers.get(idx));
                     updateExpression();
-                    btn.setBackgroundTintList(android.content.res.ColorStateList.valueOf(0xFFD5C4E0));
+                    btn.setBackgroundTintList(android.content.res.ColorStateList.valueOf(Color.parseColor("#D5C4E0")));
+                    btn.setTextColor(Color.parseColor("#877777"));
                 }
             });
             llNumberButtons.addView(btn);

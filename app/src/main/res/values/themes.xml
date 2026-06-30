@@ -1,8 +1,14 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
     <!-- Base application theme. -->
-    <style name="Base.Theme.Slagalica" parent="Theme.Material3.DayNight.NoActionBar">
+    <style name="Base.Theme.Slagalica" parent="Theme.MaterialComponents.DayNight.NoActionBar">
         <!-- Customize your light theme here. -->
-        <!-- <item name="colorPrimary">@color/my_light_primary</item> -->
+        <item name="colorPrimary">@color/monster_purple</item>
+        <item name="colorPrimaryVariant">#4A148C</item>
+        <item name="colorOnPrimary">@color/white</item>
+        <item name="colorSecondary">@color/monster_pink</item>
+        <item name="colorOnSecondary">@color/white</item>
+        <item name="android:windowBackground">@color/monster_bg</item>
+        <item name="fontFamily">@font/fredoka_regular</item>
     </style>
 
     <style name="Theme.Slagalica" parent="Base.Theme.Slagalica" />
