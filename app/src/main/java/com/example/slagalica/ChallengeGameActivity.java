@@ -1,10 +1,19 @@
 package com.example.slagalica;
 
+import android.content.Context;
 import android.content.Intent;
+import android.content.res.ColorStateList;
+import android.graphics.Color;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
 import android.os.Bundle;
 import android.os.CountDownTimer;
 import android.view.View;
 import android.widget.EditText;
+import android.widget.GridLayout;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -27,11 +36,9 @@ import java.util.Random;
  * Spec 9d: Samostalna (solo) partija za Izazov.
  * Igrač prolazi kroz svih 6 igara jednom (bez protivnika uživo), bodovi se
  * sabiraju i na kraju upisuju u ChallengeManager.submitScore.
- *
- * Pravila bodovanja kopirana iz specifikacije, pojednostavljena za solo mod
- * (nema "brži igrač", nema "ukradi poen" mehanika koje zahtevaju protivnika).
+ * Redosled: Ko zna zna -> Spojnice -> Asocijacije -> Skočko -> Korak po korak -> Moj broj.
  */
-public class ChallengeGameActivity extends AppCompatActivity {
+public class ChallengeGameActivity extends AppCompatActivity implements SensorEventListener {
 
     private FirebaseFirestore db;
     private String challengeId;
@@ -44,6 +51,14 @@ public class ChallengeGameActivity extends AppCompatActivity {
             panelSkocko, panelKorakPoKorak, panelMojBroj, panelLoading;
 
     private CountDownTimer activeTimer;
+    private CountDownTimer revealTimer;
+
+    // Shake sensor fields
+    private SensorManager sensorManager;
+    private float acceleration;
+    private float currentAcceleration;
+    private float lastAcceleration;
+    private static final int SHAKE_THRESHOLD = 12;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -59,6 +74,11 @@ public class ChallengeGameActivity extends AppCompatActivity {
             finish();
             return;
         }
+
+        sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
+        acceleration = 0f;
+        currentAcceleration = SensorManager.GRAVITY_EARTH;
+        lastAcceleration = SensorManager.GRAVITY_EARTH;
 
         getOnBackPressedDispatcher().addCallback(this, new androidx.activity.OnBackPressedCallback(true) {
             @Override
@@ -91,6 +111,7 @@ public class ChallengeGameActivity extends AppCompatActivity {
                 .setMessage("Ako sada izađeš, tvoj rezultat u izazovu ostaje na trenutnom broju bodova. Da li si siguran?")
                 .setPositiveButton("Da", (d, w) -> {
                     if (activeTimer != null) activeTimer.cancel();
+                    if (revealTimer != null) revealTimer.cancel();
                     submitFinalScore();
                 })
                 .setNegativeButton("Ne", null)
@@ -113,7 +134,7 @@ public class ChallengeGameActivity extends AppCompatActivity {
     }
 
     // =========================================================================================
-    // 1. KO ZNA ZNA — Spec igra 1: 5 pitanja, 5s svako, +10 tačno / -5 netačno
+    // 1. KO ZNA ZNA — 5 pitanja, 5s svako, +10 tačno / -5 netačno
     // =========================================================================================
 
     private List<Map<String, Object>> kzzQuestions = new ArrayList<>();
@@ -149,7 +170,7 @@ public class ChallengeGameActivity extends AppCompatActivity {
         for (int i = 0; i < 4; i++) {
             MaterialButton btn = findViewById(btnIds[i]);
             btn.setEnabled(true);
-            btn.setBackgroundTintList(android.content.res.ColorStateList.valueOf(0xFF823FAB));
+            btn.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor("#6A1B9A")));
             if (answers != null && i < answers.size()) {
                 final int idx = i;
                 btn.setText(answers.get(i));
@@ -161,10 +182,18 @@ public class ChallengeGameActivity extends AppCompatActivity {
         activeTimer = new CountDownTimer(5000, 1000) {
             @Override public void onTick(long ms) { tvTimer.setText("⏱ " + (ms / 1000 + 1) + "s"); }
             @Override public void onFinish() {
-                // Spec 3g: timeout = 0 bodova za to pitanje
                 tvTimer.setText("⏱ 0s");
+                // Spec 3g: timeout = 0 bodova; pokaži tačan odgovor pre prelaska
+                Long correctL = (Long) q.get("correctAnswerIndex");
+                int correct = correctL != null ? correctL.intValue() : -1;
+                int[] btnIdsTimeout = {R.id.btnKzzAnswer1, R.id.btnKzzAnswer2, R.id.btnKzzAnswer3, R.id.btnKzzAnswer4};
+                for (int id : btnIdsTimeout) findViewById(id).setEnabled(false);
+                if (correct >= 0 && correct < 4) {
+                    MaterialButton correctBtn = findViewById(btnIdsTimeout[correct]);
+                    correctBtn.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor("#4CAF50")));
+                }
                 kzzIndex++;
-                displayKzzQuestion();
+                new android.os.Handler(getMainLooper()).postDelayed(ChallengeGameActivity.this::displayKzzQuestion, 1100);
             }
         }.start();
     }
@@ -174,7 +203,27 @@ public class ChallengeGameActivity extends AppCompatActivity {
         Long correctL = (Long) q.get("correctAnswerIndex");
         int correct = correctL != null ? correctL.intValue() : -1;
 
-        if (selected == correct) {
+        int[] btnIds = {R.id.btnKzzAnswer1, R.id.btnKzzAnswer2, R.id.btnKzzAnswer3, R.id.btnKzzAnswer4};
+
+        // Onemogući sve odgovore da igrač ne može da klikne ponovo dok traje feedback
+        for (int id : btnIds) {
+            findViewById(id).setEnabled(false);
+        }
+
+        // Obeleži tačan odgovor zelenom bojom uvek, a ako je igrač pogrešio,
+        // njegov izbor oboji crveno
+        MaterialButton correctBtn = correct >= 0 && correct < 4 ? findViewById(btnIds[correct]) : null;
+        if (correctBtn != null) {
+            correctBtn.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor("#4CAF50")));
+        }
+
+        boolean isCorrect = selected == correct;
+        if (!isCorrect && selected >= 0 && selected < 4) {
+            MaterialButton selectedBtn = findViewById(btnIds[selected]);
+            selectedBtn.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor("#D81B60")));
+        }
+
+        if (isCorrect) {
             totalScore += 10;
             updateScoreDisplay();
         } else {
@@ -182,11 +231,12 @@ public class ChallengeGameActivity extends AppCompatActivity {
             updateScoreDisplay();
         }
         kzzIndex++;
-        new android.os.Handler(getMainLooper()).postDelayed(this::displayKzzQuestion, 400);
+        // Pauza malo duža da se feedback boja stigne videti pre prelaska
+        new android.os.Handler(getMainLooper()).postDelayed(this::displayKzzQuestion, 1100);
     }
 
     // =========================================================================================
-    // 2. SPOJNICE — Spec igra 2: 5 pojmova, 2 boda po pojmu, max 10 bodova (1 runda solo)
+    // 2. SPOJNICE — 5 pojmova, 2 boda po pojmu, max 10 bodova
     // =========================================================================================
 
     private SpojnicaModelLite spojnica;
@@ -233,12 +283,16 @@ public class ChallengeGameActivity extends AppCompatActivity {
         for (int i = 0; i < 5; i++) {
             MaterialButton leftBtn = findViewById(leftIds[i]);
             leftBtn.setText(spojnica.left.get(i));
-            leftBtn.setBackgroundTintList(android.content.res.ColorStateList.valueOf(0xFFD5C4E0));
+            leftBtn.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor("#D81B60"))); // P1 boja
 
             MaterialButton rightBtn = findViewById(rightIds[i]);
             rightBtn.setText(spojnica.right.get(i));
-            rightBtn.setBackgroundTintList(android.content.res.ColorStateList.valueOf(0xFFD5C4E0));
+            rightBtn.setBackgroundTintList(ColorStateList.valueOf(Color.WHITE));
+            rightBtn.setStrokeColor(ColorStateList.valueOf(Color.parseColor("#6A1B9A")));
+            rightBtn.setStrokeWidth(2);
+            rightBtn.setTextColor(Color.parseColor("#321C1C"));
             rightBtn.setEnabled(true);
+            rightBtn.setAlpha(1.0f);
             final int rightIndex = i;
             rightBtn.setOnClickListener(v -> onSpojniceRightClick(rightIndex));
         }
@@ -260,8 +314,8 @@ public class ChallengeGameActivity extends AppCompatActivity {
         for (int i = 0; i < 5; i++) {
             MaterialButton btn = findViewById(leftIds[i]);
             if (i == spIndex) {
-                btn.setBackgroundTintList(android.content.res.ColorStateList.valueOf(0xFF823FAB));
-                btn.setTextColor(0xFFFFFFFF);
+                btn.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor("#6A1B9A")));
+                btn.setTextColor(Color.WHITE);
             }
         }
     }
@@ -278,9 +332,9 @@ public class ChallengeGameActivity extends AppCompatActivity {
         if (rightIndex == correctIndex) {
             totalScore += 2;
             updateScoreDisplay();
-            rightBtn.setBackgroundTintList(android.content.res.ColorStateList.valueOf(0xFF4CAF50));
+            rightBtn.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor("#8BC34A")));
             rightBtn.setEnabled(false);
-            leftBtn.setBackgroundTintList(android.content.res.ColorStateList.valueOf(0xFF4CAF50));
+            leftBtn.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor("#8BC34A")));
             spIndex++;
             if (spIndex >= 5) {
                 if (activeTimer != null) activeTimer.cancel();
@@ -289,14 +343,16 @@ public class ChallengeGameActivity extends AppCompatActivity {
                 markSpojniceCurrentLeft();
             }
         } else {
-            rightBtn.setBackgroundTintList(android.content.res.ColorStateList.valueOf(0xFFC62828));
-            new android.os.Handler(getMainLooper()).postDelayed(() ->
-                    rightBtn.setBackgroundTintList(android.content.res.ColorStateList.valueOf(0xFFD5C4E0)), 400);
+            rightBtn.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor("#D81B60")));
+            new android.os.Handler(getMainLooper()).postDelayed(() -> {
+                rightBtn.setBackgroundTintList(ColorStateList.valueOf(Color.WHITE));
+                rightBtn.setTextColor(Color.parseColor("#321C1C"));
+            }, 400);
         }
     }
 
     // =========================================================================================
-    // 3. ASOCIJACIJE — Spec igra 3: 4 kolone x 4 polja, bodovanje po specifikaciji (1 runda solo)
+    // 3. ASOCIJACIJE — 4 kolone x 4 polja
     // =========================================================================================
 
     private String[] asocKolA, asocKolB, asocKolV, asocKolG;
@@ -352,26 +408,27 @@ public class ChallengeGameActivity extends AppCompatActivity {
                 {R.id.btnAsV1, R.id.btnAsV2, R.id.btnAsV3, R.id.btnAsV4},
                 {R.id.btnAsG1, R.id.btnAsG2, R.id.btnAsG3, R.id.btnAsG4}
         };
-        String[][] kolData = {asocKolA, asocKolB, asocKolV, asocKolG};
         char[] labels = {'A', 'B', 'V', 'G'};
 
-        for (int col = 0; col < 4; col++) {
-            for (int row = 0; row < 4; row++) {
-                final int c = col, r = row;
-                MaterialButton btn = findViewById(btnIds[col][row]);
-                btn.setText(labels[col] + "" + (row + 1));
+        for (int c = 0; c < 4; c++) {
+            for (int r = 0; r < 4; r++) {
+                final int col = c, row = r;
+                MaterialButton btn = findViewById(btnIds[c][r]);
+                btn.setText(labels[c] + "" + (r + 1));
+                btn.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor("#6A1B9A")));
+                btn.setTextColor(Color.WHITE);
                 btn.setEnabled(true);
-                btn.setOnClickListener(v -> openAsocField(c, r));
+                btn.setOnClickListener(v -> openAsocField(col, row));
             }
         }
 
         int[] etIds = {R.id.etAsResA, R.id.etAsResB, R.id.etAsResV, R.id.etAsResG};
-        String[] correct = {asocResA, asocResB, asocResV, asocResG};
         for (int col = 0; col < 4; col++) {
             final int c = col;
             EditText et = findViewById(etIds[col]);
             et.setText("");
             et.setEnabled(true);
+            et.setBackgroundResource(R.drawable.input_bg_rounded);
             et.setOnEditorActionListener((v, actionId, event) -> {
                 checkAsocColumn(c, et.getText().toString().trim());
                 return true;
@@ -381,6 +438,7 @@ public class ChallengeGameActivity extends AppCompatActivity {
         EditText etFinal = findViewById(R.id.etAsResFinal);
         etFinal.setText("");
         etFinal.setEnabled(true);
+        etFinal.setBackgroundResource(R.drawable.final_resenje_bg);
         etFinal.setOnEditorActionListener((v, actionId, event) -> {
             checkAsocFinal(etFinal.getText().toString().trim());
             return true;
@@ -410,6 +468,8 @@ public class ChallengeGameActivity extends AppCompatActivity {
         String[][] kolData = {asocKolA, asocKolB, asocKolV, asocKolG};
         MaterialButton btn = findViewById(btnIds[col][row]);
         btn.setText(kolData[col][row]);
+        btn.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor("#E0D5EE")));
+        btn.setTextColor(Color.parseColor("#877777"));
         btn.setEnabled(false);
     }
 
@@ -420,12 +480,17 @@ public class ChallengeGameActivity extends AppCompatActivity {
 
         if (input.equalsIgnoreCase(correct[col])) {
             int unopened = 0;
-            for (int i = 0; i < 4; i++) if (!asocOpened[col][i]) unopened++;
-            // Spec 3f: 2 boda + 1 bod za svako neotvoreno polje
+            for (int i = 0; i < 4; i++) {
+                if (!asocOpened[col][i]) {
+                    unopened++;
+                    openAsocField(col, i);
+                }
+            }
             totalScore += 2 + unopened;
             updateScoreDisplay();
             asocSolved[col] = true;
             EditText et = findViewById(etIds[col]);
+            et.setText(correct[col].toUpperCase());
             et.setEnabled(false);
             et.setBackgroundResource(R.drawable.input_success_bg);
         } else {
@@ -438,30 +503,37 @@ public class ChallengeGameActivity extends AppCompatActivity {
     private void checkAsocFinal(String input) {
         if (asocFinalSolved) return;
         if (input.equalsIgnoreCase(asocFinal)) {
-            // Spec 3g: 7 bodova + 6 bodova za svaku neotvorenu kolonu (nerešenu) +
-            // dobijeni bodovi za otvorene/delimično otvorene kolone
             int points = 7;
             String[] correct = {asocResA, asocResB, asocResV, asocResG};
+            int[] etIds = {R.id.etAsResA, R.id.etAsResB, R.id.etAsResV, R.id.etAsResG};
+
             for (int col = 0; col < 4; col++) {
-                if (asocSolved[col]) continue; // već nagrađeno ranije
-                int opened = 0;
-                for (int i = 0; i < 4; i++) if (asocOpened[col][i]) opened++;
-                if (opened == 0) {
-                    points += 6;
-                } else {
-                    points += 2 + (4 - opened);
+                if (!asocSolved[col]) {
+                    int opened = 0;
+                    for (int i = 0; i < 4; i++) {
+                        if (asocOpened[col][i]) opened++;
+                        else openAsocField(col, i);
+                    }
+                    points += (opened == 0) ? 6 : (2 + (4 - opened));
+                    asocSolved[col] = true;
+                    EditText etCol = findViewById(etIds[col]);
+                    etCol.setText(correct[col].toUpperCase());
+                    etCol.setEnabled(false);
+                    etCol.setBackgroundResource(R.drawable.input_success_bg);
                 }
             }
+
             totalScore += points;
             updateScoreDisplay();
             asocFinalSolved = true;
             if (activeTimer != null) activeTimer.cancel();
 
             EditText etFinal = findViewById(R.id.etAsResFinal);
+            etFinal.setText(asocFinal.toUpperCase());
             etFinal.setEnabled(false);
             etFinal.setBackgroundResource(R.drawable.input_success_bg);
 
-            new android.os.Handler(getMainLooper()).postDelayed(this::startSkocko, 1500);
+            new android.os.Handler(getMainLooper()).postDelayed(this::startSkocko, 3000);
         } else {
             EditText etFinal = findViewById(R.id.etAsResFinal);
             etFinal.setText("");
@@ -470,14 +542,22 @@ public class ChallengeGameActivity extends AppCompatActivity {
     }
 
     // =========================================================================================
-    // 4. SKOČKO — Spec igra 4: pogodi kombinaciju 4 znaka u 6 pokušaja (1 runda solo)
+    // 4. SKOČKO — pogodi kombinaciju 4 znakova u 6 pokušaja
     // =========================================================================================
 
     private final int[] skTarget = new int[4];
     private final List<int[]> skAttempts = new ArrayList<>();
     private final int[] skCurrentInput = new int[]{-1, -1, -1, -1};
     private int skInputIndex = 0;
-    private static final int[] SK_DRAWABLES_FALLBACK = {0, 1, 2, 3, 4, 5};
+
+    private final int[] symbolDrawables = {
+            R.drawable.img,
+            R.drawable.ic_kvadrat,
+            R.drawable.ic_krug,
+            R.drawable.ic_srce,
+            R.drawable.ic_trougao,
+            R.drawable.ic_zvezda
+    };
 
     private void startSkocko() {
         showPanel(panelLoading);
@@ -493,13 +573,14 @@ public class ChallengeGameActivity extends AppCompatActivity {
         setupSkockoUI();
     }
 
-    private final String[] skSymbolNames = {"⭐", "■", "●", "♥", "▲", "✦"};
-
     private void setupSkockoUI() {
         int[] symbolBtnIds = {R.id.btnSkSym1, R.id.btnSkSym2, R.id.btnSkSym3, R.id.btnSkSym4, R.id.btnSkSym5, R.id.btnSkSym6};
         for (int i = 0; i < 6; i++) {
             MaterialButton btn = findViewById(symbolBtnIds[i]);
-            btn.setText(skSymbolNames[i]);
+            btn.setIcon(androidx.core.content.res.ResourcesCompat.getDrawable(getResources(), symbolDrawables[i], null));
+            btn.setIconGravity(MaterialButton.ICON_GRAVITY_TEXT_START);
+            btn.setPadding(0,0,0,0);
+            btn.setIconTint(null);
             final int symIdx = i;
             btn.setOnClickListener(v -> addSkSymbol(symIdx));
         }
@@ -507,8 +588,20 @@ public class ChallengeGameActivity extends AppCompatActivity {
         findViewById(R.id.btnSkConfirm).setOnClickListener(v -> confirmSkAttempt());
         findViewById(R.id.btnSkDelete).setOnClickListener(v -> deleteSkSymbol());
 
+        // Reset all rows
+        int[] rowIds = {R.id.row1, R.id.row2, R.id.row3, R.id.row4, R.id.row5, R.id.row6};
+        for(int id : rowIds) {
+            View row = findViewById(id);
+            LinearLayout container = row.findViewById(R.id.containerSymbols);
+            GridLayout hints = row.findViewById(R.id.gridHints);
+            for(int i=0; i<4; i++) {
+                ((ImageView)container.getChildAt(i)).setImageDrawable(null);
+                ((ImageView)container.getChildAt(i)).setBackgroundTintList(ColorStateList.valueOf(Color.parseColor("#EDE0F5")));
+                ((ImageView)hints.getChildAt(i)).setImageTintList(ColorStateList.valueOf(Color.parseColor("#D5C4E0")));
+            }
+        }
+
         updateSkCurrentInputUI();
-        updateSkAttemptsUI();
 
         if (activeTimer != null) activeTimer.cancel();
         activeTimer = new CountDownTimer(30000, 1000) {
@@ -535,14 +628,29 @@ public class ChallengeGameActivity extends AppCompatActivity {
     }
 
     private void updateSkCurrentInputUI() {
+        int rowIdx = Math.min(skAttempts.size(), 5);
+        int[] rowIds = {R.id.row1, R.id.row2, R.id.row3, R.id.row4, R.id.row5, R.id.row6};
+        View row = findViewById(rowIds[rowIdx]);
+        LinearLayout symbolLayout = row.findViewById(R.id.containerSymbols);
+
+        for (int i = 0; i < 4; i++) {
+            ImageView iv = (ImageView) symbolLayout.getChildAt(i);
+            if (skCurrentInput[i] != -1) {
+                iv.setImageResource(symbolDrawables[skCurrentInput[i]]);
+                iv.setBackgroundTintList(null);
+                iv.setPadding(8, 8, 8, 8);
+            } else {
+                iv.setImageDrawable(null);
+                iv.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor("#EDE0F5")));
+            }
+        }
+
         TextView tvInput = findViewById(R.id.tvSkCurrentInput);
-        StringBuilder sb = new StringBuilder();
-        for (int v : skCurrentInput) sb.append(v == -1 ? "_ " : skSymbolNames[v] + " ");
-        tvInput.setText(sb.toString());
+        tvInput.setText("Pokušaj " + (skAttempts.size() + 1));
     }
 
     private void confirmSkAttempt() {
-        for (int v : skCurrentInput) if (v == -1) {
+        if (skInputIndex < 4) {
             Toast.makeText(this, "Popuni sva polja!", Toast.LENGTH_SHORT).show();
             return;
         }
@@ -562,38 +670,47 @@ public class ChallengeGameActivity extends AppCompatActivity {
             }
         }
 
+        updateHints(skAttempts.size() - 1, correct, wrong);
+
         skInputIndex = 0;
         java.util.Arrays.fill(skCurrentInput, -1);
-        updateSkCurrentInputUI();
-        updateSkAttemptsUI();
 
         if (correct == 4) {
             int attemptNum = skAttempts.size();
-            int points = attemptNum <= 2 ? 20 : (attemptNum <= 4 ? 15 : 10); // Spec 4c
+            int points = attemptNum <= 2 ? 20 : (attemptNum <= 4 ? 15 : 10);
             totalScore += points;
             updateScoreDisplay();
             if (activeTimer != null) activeTimer.cancel();
             Toast.makeText(this, "Pogodio si! +" + points + " bodova", Toast.LENGTH_SHORT).show();
-            new android.os.Handler(getMainLooper()).postDelayed(this::startKorakPoKorak, 1200);
+            new android.os.Handler(getMainLooper()).postDelayed(this::startKorakPoKorak, 2000);
         } else if (skAttempts.size() >= 6) {
             if (activeTimer != null) activeTimer.cancel();
             Toast.makeText(this, "Nisi pogodio kombinaciju.", Toast.LENGTH_SHORT).show();
-            new android.os.Handler(getMainLooper()).postDelayed(this::startKorakPoKorak, 1200);
+            new android.os.Handler(getMainLooper()).postDelayed(this::startKorakPoKorak, 2000);
+        } else {
+            updateSkCurrentInputUI();
         }
     }
 
-    private void updateSkAttemptsUI() {
-        TextView tvAttempts = findViewById(R.id.tvSkAttemptsHistory);
-        StringBuilder sb = new StringBuilder();
-        for (int[] a : skAttempts) {
-            for (int v : a) sb.append(skSymbolNames[v]).append(" ");
-            sb.append("\n");
+    private void updateHints(int rowIndex, int correctPlace, int wrongPlace) {
+        int[] rowIds = {R.id.row1, R.id.row2, R.id.row3, R.id.row4, R.id.row5, R.id.row6};
+        View row = findViewById(rowIds[rowIndex]);
+        GridLayout hintGrid = row.findViewById(R.id.gridHints);
+
+        for (int i = 0; i < 4; i++) {
+            ImageView hint = (ImageView) hintGrid.getChildAt(i);
+            if (i < correctPlace) {
+                hint.setImageTintList(ColorStateList.valueOf(Color.parseColor("#D81B60")));
+            } else if (i < correctPlace + wrongPlace) {
+                hint.setImageTintList(ColorStateList.valueOf(Color.parseColor("#FF7043")));
+            } else {
+                hint.setImageTintList(ColorStateList.valueOf(Color.parseColor("#D5C4E0")));
+            }
         }
-        tvAttempts.setText(sb.toString());
     }
 
     // =========================================================================================
-    // 5. KORAK PO KORAK — Spec igra 5: max 7 koraka, 10s svaki, opadajući bodovi (1 runda solo)
+    // 5. KORAK PO KORAK — max 7 koraka, 10s svaki
     // =========================================================================================
 
     private final List<String> kpkSteps = new ArrayList<>();
@@ -633,11 +750,25 @@ public class ChallengeGameActivity extends AppCompatActivity {
             return;
         }
         LinearLayout llSteps = findViewById(R.id.llChallengeSteps);
-        TextView stepView = new TextView(this);
-        stepView.setText((kpkSteps.size() - kpkStep) + ". " + kpkSteps.get(kpkStep));
-        stepView.setTextSize(15);
-        stepView.setPadding(8, 8, 8, 8);
-        llSteps.addView(stepView, 0);
+
+        View card = android.view.LayoutInflater.from(this).inflate(R.layout.item_step_card, llSteps, false);
+        TextView tvNum = card.findViewById(R.id.tvStepNumber);
+        TextView tvText = card.findViewById(R.id.tvStepText);
+
+        tvNum.setText(String.valueOf(7 - kpkStep));
+        tvText.setText(kpkSteps.get(kpkStep));
+
+        int[] colors = {0xFF823FAB, 0xFF9B59B6, 0xFFA873C7, 0xFFB990D4, 0xFFCCADE0, 0xFFD5C4E0, 0xFFE0D5EE};
+        int bgColor = colors[Math.min(kpkStep, colors.length - 1)];
+        ((androidx.cardview.widget.CardView) card).setCardBackgroundColor(bgColor);
+
+        // Poslednje 3 boje su svetle — koristi taman tekst da ostane čitljiv
+        boolean isLightBg = kpkStep >= 4;
+        int textColor = isLightBg ? Color.parseColor("#321C1C") : Color.WHITE;
+        tvText.setTextColor(textColor);
+        tvNum.setTextColor(isLightBg ? Color.parseColor("#823FAB") : Color.parseColor("#823FAB"));
+
+        llSteps.addView(card, 0);
 
         int points = KPK_POINTS[Math.min(kpkStep, KPK_POINTS.length - 1)];
         TextView tvPts = findViewById(R.id.tvKpkPointsHint);
@@ -674,51 +805,115 @@ public class ChallengeGameActivity extends AppCompatActivity {
     }
 
     // =========================================================================================
-    // 6. MOJ BROJ — Spec igra 6: pogodi target koristeći 6 brojeva i 4 operacije (1 runda solo)
+    // 6. MOJ BROJ — pogodi target koristeći 6 brojeva i 4 operacije
     // =========================================================================================
 
     private int mbTarget = -1;
     private final List<Integer> mbNumbers = new ArrayList<>();
     private StringBuilder mbExpression = new StringBuilder();
     private final List<Integer> mbUsedIndices = new ArrayList<>();
+    private boolean mbStarted = false;
 
     private void startMojBroj() {
         showPanel(panelLoading);
         tvGameTitle.setText("Moj broj");
 
+        mbNumbers.clear();
+        mbExpression = new StringBuilder();
+        mbUsedIndices.clear();
+        mbStarted = false;
+
+        showPanel(panelMojBroj);
+        startRollingAnimation();
+    }
+
+    private void startRollingAnimation() {
+        MaterialButton btnStop = new MaterialButton(this);
+        btnStop.setText("STOP");
+        btnStop.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor("#6A1B9A")));
+        btnStop.setOnClickListener(v -> stopRolling());
+
+        LinearLayout ll = (LinearLayout) panelMojBroj.getChildAt(0); // CardView logic
+        // Find or add STOP button to layout
+        findViewById(R.id.btnMbConfirm).setVisibility(View.GONE);
+        MaterialButton btnClear = findViewById(R.id.btnMbClear);
+        btnClear.setText("STOP");
+        btnClear.setOnClickListener(v -> stopRolling());
+
+        revealTimer = new CountDownTimer(30000, 100) {
+            Random r = new Random();
+            @Override
+            public void onTick(long ms) {
+                TextView tvMbT = findViewById(R.id.tvMbTarget);
+                tvMbT.setText(String.valueOf(r.nextInt(900) + 100));
+            }
+            @Override
+            public void onFinish() { stopRolling(); }
+        }.start();
+    }
+
+    private void stopRolling() {
+        if (revealTimer != null) revealTimer.cancel();
+        mbStarted = true;
+
         Random r = new Random();
         mbTarget = r.nextInt(900) + 100;
+        TextView tvMbTarget = findViewById(R.id.tvMbTarget);
+        if (tvMbTarget != null) tvMbTarget.setText(String.valueOf(mbTarget));
+
         mbNumbers.clear();
         for (int i = 0; i < 4; i++) mbNumbers.add(r.nextInt(9) + 1);
         mbNumbers.add(new int[]{10, 15, 20}[r.nextInt(3)]);
         mbNumbers.add(new int[]{25, 50, 75, 100}[r.nextInt(4)]);
 
-        mbExpression = new StringBuilder();
-        mbUsedIndices.clear();
+        findViewById(R.id.btnMbConfirm).setVisibility(View.VISIBLE);
+        MaterialButton btnClear = findViewById(R.id.btnMbClear);
+        if (btnClear != null) {
+            btnClear.setText("OČISTI");
+            btnClear.setOnClickListener(v -> {
+                mbExpression = new StringBuilder();
+                mbUsedIndices.clear();
+                updateMbExpression();
+                setupMojBrojUI();
+            });
+        }
 
-        showPanel(panelMojBroj);
         setupMojBrojUI();
+
+        if (activeTimer != null) activeTimer.cancel();
+        activeTimer = new CountDownTimer(60000, 1000) {
+            @Override public void onTick(long ms) { tvTimer.setText(String.valueOf(ms / 1000)); }
+            @Override public void onFinish() { confirmMbAnswer(); }
+        }.start();
     }
 
     private void setupMojBrojUI() {
-        TextView tvTarget = findViewById(R.id.tvMbTarget);
-        tvTarget.setText(String.valueOf(mbTarget));
-
         LinearLayout llNumbers = findViewById(R.id.llMbNumbers);
         llNumbers.removeAllViews();
         for (int i = 0; i < mbNumbers.size(); i++) {
             final int idx = i;
             MaterialButton btn = new MaterialButton(this);
-            btn.setText(String.valueOf(mbNumbers.get(i)));
+            int val = mbNumbers.get(idx);
+            btn.setText(String.valueOf(val));
+            btn.setTextColor(Color.WHITE);
+            try { btn.setTypeface(androidx.core.content.res.ResourcesCompat.getFont(this, R.font.fredoka_bold)); } catch (Exception ignored) {}
+
+            int color = (val >= 25) ? Color.parseColor("#FF7043") :
+                    (val >= 10) ? Color.parseColor("#6A1B9A") :
+                            Color.parseColor("#D81B60");
+
+            btn.setBackgroundTintList(ColorStateList.valueOf(color));
             LinearLayout.LayoutParams p = new LinearLayout.LayoutParams(0, 120, 1f);
-            p.setMargins(3, 3, 3, 3);
+            p.setMargins(4, 4, 4, 4);
             btn.setLayoutParams(p);
+            btn.setCornerRadius(16);
             btn.setOnClickListener(v -> {
                 if (!mbUsedIndices.contains(idx)) {
                     mbUsedIndices.add(idx);
                     mbExpression.append(mbNumbers.get(idx));
                     updateMbExpression();
-                    btn.setEnabled(false);
+                    btn.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor("#D5C4E0")));
+                    btn.setTextColor(Color.parseColor("#877777"));
                 }
             });
             llNumbers.addView(btn);
@@ -728,20 +923,8 @@ public class ChallengeGameActivity extends AppCompatActivity {
         findViewById(R.id.btnMbMinus).setOnClickListener(v -> mbExpression.append("-"));
         findViewById(R.id.btnMbMultiply).setOnClickListener(v -> mbExpression.append("*"));
         findViewById(R.id.btnMbDivide).setOnClickListener(v -> mbExpression.append("/"));
-        findViewById(R.id.btnMbClear).setOnClickListener(v -> {
-            mbExpression = new StringBuilder();
-            mbUsedIndices.clear();
-            updateMbExpression();
-            setupMojBrojUI();
-        });
         findViewById(R.id.btnMbConfirm).setOnClickListener(v -> confirmMbAnswer());
         updateMbExpression();
-
-        if (activeTimer != null) activeTimer.cancel();
-        activeTimer = new CountDownTimer(60000, 1000) {
-            @Override public void onTick(long ms) { tvTimer.setText(String.valueOf(ms / 1000)); }
-            @Override public void onFinish() { confirmMbAnswer(); }
-        }.start();
     }
 
     private void updateMbExpression() {
@@ -752,17 +935,10 @@ public class ChallengeGameActivity extends AppCompatActivity {
     private void confirmMbAnswer() {
         if (activeTimer != null) activeTimer.cancel();
         int result = -1;
-        try {
-            result = evaluateExpression(mbExpression.toString());
-        } catch (Exception ignored) {}
+        try { result = evaluateExpression(mbExpression.toString()); } catch (Exception ignored) {}
 
-        // Spec 6g: 10 bodova ako se pogodi traženi broj; solo mod nema poređenje sa
-        // protivnikom, pa ovde dajemo i 5 bodova ako je rezultat dovoljno blizu (≤5 razlike)
-        if (result == mbTarget) {
-            totalScore += 10;
-        } else if (result >= 0 && Math.abs(result - mbTarget) <= 5) {
-            totalScore += 5;
-        }
+        if (result == mbTarget) totalScore += 10;
+        else if (result >= 0 && Math.abs(result - mbTarget) <= 5) totalScore += 5;
         updateScoreDisplay();
 
         finishChallengeGame();
@@ -794,6 +970,28 @@ public class ChallengeGameActivity extends AppCompatActivity {
         try { return Integer.parseInt(s.trim()); } catch (Exception ex) { return -1; }
     }
 
+    @Override
+    public void onSensorChanged(SensorEvent event) {
+        float x = event.values[0], y = event.values[1], z = event.values[2];
+        lastAcceleration = currentAcceleration;
+        currentAcceleration = (float) Math.sqrt(x * x + y * y + z * z);
+        float delta = currentAcceleration - lastAcceleration;
+        acceleration = acceleration * 0.9f + delta;
+        if (acceleration > SHAKE_THRESHOLD && panelMojBroj.getVisibility() == View.VISIBLE && !mbStarted) {
+            stopRolling();
+        }
+    }
+
+    @Override public void onAccuracyChanged(Sensor sensor, int accuracy) {}
+    @Override protected void onResume() {
+        super.onResume();
+        sensorManager.registerListener(this, sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER), SensorManager.SENSOR_DELAY_NORMAL);
+    }
+    @Override protected void onPause() {
+        sensorManager.unregisterListener(this);
+        super.onPause();
+    }
+
     // =========================================================================================
     // ZAVRŠETAK IZAZOVA
     // =========================================================================================
@@ -816,7 +1014,6 @@ public class ChallengeGameActivity extends AppCompatActivity {
                         startActivity(intent);
                         finish();
                     }
-
                     @Override
                     public void onError(String message) {
                         Toast.makeText(ChallengeGameActivity.this, message, Toast.LENGTH_SHORT).show();
@@ -829,5 +1026,6 @@ public class ChallengeGameActivity extends AppCompatActivity {
     protected void onDestroy() {
         super.onDestroy();
         if (activeTimer != null) activeTimer.cancel();
+        if (revealTimer != null) revealTimer.cancel();
     }
 }
