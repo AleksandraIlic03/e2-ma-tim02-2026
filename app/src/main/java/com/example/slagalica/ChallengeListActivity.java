@@ -174,10 +174,32 @@ public class ChallengeListActivity extends AppCompatActivity {
             boolean isCreator = currentUserId != null && currentUserId.equals(challenge.get("creatorId"));
             boolean alreadyJoined = participants != null && currentUserId != null && participants.containsKey(currentUserId);
             boolean isFull = participantCount >= maxParticipants;
+            boolean creatorAlreadyPlayed = false;
+            if (isCreator && participants != null && participants.containsKey(currentUserId)) {
+                Map<String, Object> creatorP = (Map<String, Object>) participants.get(currentUserId);
+                creatorAlreadyPlayed = creatorP != null && Boolean.TRUE.equals(creatorP.get("finished"));
+            }
 
             if (isCreator) {
-                holder.btnJoin.setText("ČEKAŠ IGRAČE");
-                holder.btnJoin.setEnabled(false);
+                if (creatorAlreadyPlayed) {
+                    // Kreator je već odigrao — vodi ga na rezultate
+                    holder.btnJoin.setText("VIDI REZULTATE");
+                    holder.btnJoin.setEnabled(true);
+                    holder.btnJoin.setOnClickListener(v -> {
+                        Intent intent = new Intent(ChallengeListActivity.this, ChallengeResultActivity.class);
+                        intent.putExtra("challengeId", challengeId);
+                        startActivity(intent);
+                    });
+                } else if (participantCount > 1) {
+                    // Ima bar 1 drugi igrač — kreator može da igra
+                    holder.btnJoin.setText("IGRAJ");
+                    holder.btnJoin.setEnabled(true);
+                    holder.btnJoin.setOnClickListener(v -> openChallengeGame(challengeId));
+                } else {
+                    // Niko se još nije pridružio
+                    holder.btnJoin.setText("ČEKAŠ IGRAČE");
+                    holder.btnJoin.setEnabled(false);
+                }
             } else if (alreadyJoined) {
                 holder.btnJoin.setText("VEĆ SI PRIJAVLJEN");
                 holder.btnJoin.setEnabled(false);

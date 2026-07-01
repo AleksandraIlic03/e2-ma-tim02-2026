@@ -183,17 +183,8 @@ public class ChallengeGameActivity extends AppCompatActivity implements SensorEv
             @Override public void onTick(long ms) { tvTimer.setText("⏱ " + (ms / 1000 + 1) + "s"); }
             @Override public void onFinish() {
                 tvTimer.setText("⏱ 0s");
-                // Spec 3g: timeout = 0 bodova; pokaži tačan odgovor pre prelaska
-                Long correctL = (Long) q.get("correctAnswerIndex");
-                int correct = correctL != null ? correctL.intValue() : -1;
-                int[] btnIdsTimeout = {R.id.btnKzzAnswer1, R.id.btnKzzAnswer2, R.id.btnKzzAnswer3, R.id.btnKzzAnswer4};
-                for (int id : btnIdsTimeout) findViewById(id).setEnabled(false);
-                if (correct >= 0 && correct < 4) {
-                    MaterialButton correctBtn = findViewById(btnIdsTimeout[correct]);
-                    correctBtn.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor("#4CAF50")));
-                }
                 kzzIndex++;
-                new android.os.Handler(getMainLooper()).postDelayed(ChallengeGameActivity.this::displayKzzQuestion, 1100);
+                displayKzzQuestion();
             }
         }.start();
     }
@@ -203,27 +194,7 @@ public class ChallengeGameActivity extends AppCompatActivity implements SensorEv
         Long correctL = (Long) q.get("correctAnswerIndex");
         int correct = correctL != null ? correctL.intValue() : -1;
 
-        int[] btnIds = {R.id.btnKzzAnswer1, R.id.btnKzzAnswer2, R.id.btnKzzAnswer3, R.id.btnKzzAnswer4};
-
-        // Onemogući sve odgovore da igrač ne može da klikne ponovo dok traje feedback
-        for (int id : btnIds) {
-            findViewById(id).setEnabled(false);
-        }
-
-        // Obeleži tačan odgovor zelenom bojom uvek, a ako je igrač pogrešio,
-        // njegov izbor oboji crveno
-        MaterialButton correctBtn = correct >= 0 && correct < 4 ? findViewById(btnIds[correct]) : null;
-        if (correctBtn != null) {
-            correctBtn.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor("#4CAF50")));
-        }
-
-        boolean isCorrect = selected == correct;
-        if (!isCorrect && selected >= 0 && selected < 4) {
-            MaterialButton selectedBtn = findViewById(btnIds[selected]);
-            selectedBtn.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor("#D81B60")));
-        }
-
-        if (isCorrect) {
+        if (selected == correct) {
             totalScore += 10;
             updateScoreDisplay();
         } else {
@@ -231,8 +202,7 @@ public class ChallengeGameActivity extends AppCompatActivity implements SensorEv
             updateScoreDisplay();
         }
         kzzIndex++;
-        // Pauza malo duža da se feedback boja stigne videti pre prelaska
-        new android.os.Handler(getMainLooper()).postDelayed(this::displayKzzQuestion, 1100);
+        new android.os.Handler(getMainLooper()).postDelayed(this::displayKzzQuestion, 400);
     }
 
     // =========================================================================================
@@ -570,17 +540,26 @@ public class ChallengeGameActivity extends AppCompatActivity implements SensorEv
         java.util.Arrays.fill(skCurrentInput, -1);
 
         showPanel(panelSkocko);
+
+        // Sakrij solution label od prethodne igre ako postoji
+        TextView tvSol = findViewById(R.id.tvSkSolution);
+        if (tvSol != null) tvSol.setVisibility(View.GONE);
+
         setupSkockoUI();
     }
 
     private void setupSkockoUI() {
         int[] symbolBtnIds = {R.id.btnSkSym1, R.id.btnSkSym2, R.id.btnSkSym3, R.id.btnSkSym4, R.id.btnSkSym5, R.id.btnSkSym6};
+        int iconSizePx = (int) (40 * getResources().getDisplayMetrics().density);
         for (int i = 0; i < 6; i++) {
             MaterialButton btn = findViewById(symbolBtnIds[i]);
             btn.setIcon(androidx.core.content.res.ResourcesCompat.getDrawable(getResources(), symbolDrawables[i], null));
             btn.setIconGravity(MaterialButton.ICON_GRAVITY_TEXT_START);
-            btn.setPadding(0,0,0,0);
+            btn.setIconSize(iconSizePx);
+            btn.setPadding(0, 0, 0, 0);
+            btn.setIconPadding(0);
             btn.setIconTint(null);
+            btn.setText("");
             final int symIdx = i;
             btn.setOnClickListener(v -> addSkSymbol(symIdx));
         }
@@ -588,16 +567,21 @@ public class ChallengeGameActivity extends AppCompatActivity implements SensorEv
         findViewById(R.id.btnSkConfirm).setOnClickListener(v -> confirmSkAttempt());
         findViewById(R.id.btnSkDelete).setOnClickListener(v -> deleteSkSymbol());
 
-        // Reset all rows
+        // Reset svih 6 redova
         int[] rowIds = {R.id.row1, R.id.row2, R.id.row3, R.id.row4, R.id.row5, R.id.row6};
-        for(int id : rowIds) {
-            View row = findViewById(id);
-            LinearLayout container = row.findViewById(R.id.containerSymbols);
-            GridLayout hints = row.findViewById(R.id.gridHints);
-            for(int i=0; i<4; i++) {
-                ((ImageView)container.getChildAt(i)).setImageDrawable(null);
-                ((ImageView)container.getChildAt(i)).setBackgroundTintList(ColorStateList.valueOf(Color.parseColor("#EDE0F5")));
-                ((ImageView)hints.getChildAt(i)).setImageTintList(ColorStateList.valueOf(Color.parseColor("#D5C4E0")));
+        int[] symbolSlotIds = {R.id.ivSymbol1, R.id.ivSymbol2, R.id.ivSymbol3, R.id.ivSymbol4};
+        int[] hintIds = {R.id.ivHint1, R.id.ivHint2, R.id.ivHint3, R.id.ivHint4};
+
+        for (int rowId : rowIds) {
+            View row = findViewById(rowId);
+            for (int slotId : symbolSlotIds) {
+                ImageView iv = row.findViewById(slotId);
+                iv.setImageDrawable(null);
+                iv.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor("#EDE0F5")));
+            }
+            for (int hintId : hintIds) {
+                ImageView hint = row.findViewById(hintId);
+                hint.setImageTintList(ColorStateList.valueOf(Color.parseColor("#D5C4E0")));
             }
         }
 
@@ -608,9 +592,27 @@ public class ChallengeGameActivity extends AppCompatActivity implements SensorEv
             @Override public void onTick(long ms) { tvTimer.setText("⏱ " + (ms / 1000) + "s"); }
             @Override public void onFinish() {
                 tvTimer.setText("⏱ 0s");
-                startKorakPoKorak();
+                showSkockoSolution();
+                Toast.makeText(ChallengeGameActivity.this, "Vreme isteklo!", Toast.LENGTH_SHORT).show();
+                new android.os.Handler(getMainLooper()).postDelayed(ChallengeGameActivity.this::startKorakPoKorak, 2500);
             }
         }.start();
+    }
+
+    /**
+     * Prikazuje tačnu kombinaciju u posebnom TextView-u ispod tabele.
+     */
+    private void showSkockoSolution() {
+        TextView tvSolution = findViewById(R.id.tvSkSolution);
+        if (tvSolution == null) return;
+        StringBuilder sb = new StringBuilder("Rešenje: ");
+        for (int v : skTarget) {
+            // Koristimo emoji simbole za prikaz jer drawable nije moguće staviti u TextView
+            String[] names = {"⭐", "■", "●", "♥", "▲", "✦"};
+            sb.append(names[v]).append(" ");
+        }
+        tvSolution.setText(sb.toString());
+        tvSolution.setVisibility(View.VISIBLE);
     }
 
     private void addSkSymbol(int symbol) {
@@ -631,13 +633,15 @@ public class ChallengeGameActivity extends AppCompatActivity implements SensorEv
         int rowIdx = Math.min(skAttempts.size(), 5);
         int[] rowIds = {R.id.row1, R.id.row2, R.id.row3, R.id.row4, R.id.row5, R.id.row6};
         View row = findViewById(rowIds[rowIdx]);
-        LinearLayout symbolLayout = row.findViewById(R.id.containerSymbols);
+
+        int[] symbolSlotIds = {R.id.ivSymbol1, R.id.ivSymbol2, R.id.ivSymbol3, R.id.ivSymbol4};
 
         for (int i = 0; i < 4; i++) {
-            ImageView iv = (ImageView) symbolLayout.getChildAt(i);
+            ImageView iv = row.findViewById(symbolSlotIds[i]);
             if (skCurrentInput[i] != -1) {
                 iv.setImageResource(symbolDrawables[skCurrentInput[i]]);
                 iv.setBackgroundTintList(null);
+                iv.setScaleType(android.widget.ImageView.ScaleType.CENTER_INSIDE);
                 iv.setPadding(8, 8, 8, 8);
             } else {
                 iv.setImageDrawable(null);
@@ -685,8 +689,10 @@ public class ChallengeGameActivity extends AppCompatActivity implements SensorEv
             new android.os.Handler(getMainLooper()).postDelayed(this::startKorakPoKorak, 2000);
         } else if (skAttempts.size() >= 6) {
             if (activeTimer != null) activeTimer.cancel();
+            // Prikaži tačnu kombinaciju
+            showSkockoSolution();
             Toast.makeText(this, "Nisi pogodio kombinaciju.", Toast.LENGTH_SHORT).show();
-            new android.os.Handler(getMainLooper()).postDelayed(this::startKorakPoKorak, 2000);
+            new android.os.Handler(getMainLooper()).postDelayed(this::startKorakPoKorak, 2500);
         } else {
             updateSkCurrentInputUI();
         }
@@ -694,18 +700,32 @@ public class ChallengeGameActivity extends AppCompatActivity implements SensorEv
 
     private void updateHints(int rowIndex, int correctPlace, int wrongPlace) {
         int[] rowIds = {R.id.row1, R.id.row2, R.id.row3, R.id.row4, R.id.row5, R.id.row6};
+        int[] hintIds = {R.id.ivHint1, R.id.ivHint2, R.id.ivHint3, R.id.ivHint4};
         View row = findViewById(rowIds[rowIndex]);
-        GridLayout hintGrid = row.findViewById(R.id.gridHints);
 
         for (int i = 0; i < 4; i++) {
-            ImageView hint = (ImageView) hintGrid.getChildAt(i);
+            ImageView hint = row.findViewById(hintIds[i]);
             if (i < correctPlace) {
+                // Tačno mesto i tačan simbol — roze/crvena
                 hint.setImageTintList(ColorStateList.valueOf(Color.parseColor("#D81B60")));
             } else if (i < correctPlace + wrongPlace) {
+                // Tačan simbol, pogrešno mesto — narandžasta
                 hint.setImageTintList(ColorStateList.valueOf(Color.parseColor("#FF7043")));
             } else {
+                // Pogrešan simbol — siva
                 hint.setImageTintList(ColorStateList.valueOf(Color.parseColor("#D5C4E0")));
             }
+        }
+
+        // Prikaži i simbole iz tog pokušaja u odgovarajući red
+        int[] symbolSlotIds = {R.id.ivSymbol1, R.id.ivSymbol2, R.id.ivSymbol3, R.id.ivSymbol4};
+        int[] attempt = skAttempts.get(rowIndex);
+        for (int i = 0; i < 4; i++) {
+            ImageView iv = row.findViewById(symbolSlotIds[i]);
+            iv.setImageResource(symbolDrawables[attempt[i]]);
+            iv.setBackgroundTintList(null);
+            iv.setScaleType(android.widget.ImageView.ScaleType.CENTER_INSIDE);
+            iv.setPadding(8, 8, 8, 8);
         }
     }
 
@@ -759,14 +779,7 @@ public class ChallengeGameActivity extends AppCompatActivity implements SensorEv
         tvText.setText(kpkSteps.get(kpkStep));
 
         int[] colors = {0xFF823FAB, 0xFF9B59B6, 0xFFA873C7, 0xFFB990D4, 0xFFCCADE0, 0xFFD5C4E0, 0xFFE0D5EE};
-        int bgColor = colors[Math.min(kpkStep, colors.length - 1)];
-        ((androidx.cardview.widget.CardView) card).setCardBackgroundColor(bgColor);
-
-        // Poslednje 3 boje su svetle — koristi taman tekst da ostane čitljiv
-        boolean isLightBg = kpkStep >= 4;
-        int textColor = isLightBg ? Color.parseColor("#321C1C") : Color.WHITE;
-        tvText.setTextColor(textColor);
-        tvNum.setTextColor(isLightBg ? Color.parseColor("#823FAB") : Color.parseColor("#823FAB"));
+        ((androidx.cardview.widget.CardView) card).setCardBackgroundColor(colors[Math.min(kpkStep, colors.length - 1)]);
 
         llSteps.addView(card, 0);
 
@@ -828,24 +841,20 @@ public class ChallengeGameActivity extends AppCompatActivity implements SensorEv
     }
 
     private void startRollingAnimation() {
-        MaterialButton btnStop = new MaterialButton(this);
-        btnStop.setText("STOP");
-        btnStop.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor("#6A1B9A")));
-        btnStop.setOnClickListener(v -> stopRolling());
-
-        LinearLayout ll = (LinearLayout) panelMojBroj.getChildAt(0); // CardView logic
-        // Find or add STOP button to layout
+        // Sakrij Confirm, STOP dugme je repurposed "Clear" dugme dok ne klikne
         findViewById(R.id.btnMbConfirm).setVisibility(View.GONE);
         MaterialButton btnClear = findViewById(R.id.btnMbClear);
         btnClear.setText("STOP");
+        btnClear.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor("#6A1B9A")));
         btnClear.setOnClickListener(v -> stopRolling());
 
-        revealTimer = new CountDownTimer(30000, 100) {
-            Random r = new Random();
+        // Rolling animacija — traženi broj se menja svake 100ms
+        revealTimer = new CountDownTimer(5000, 100) {   // Spec 6d: 5 sekundi
+            final Random r = new Random();
             @Override
             public void onTick(long ms) {
                 TextView tvMbT = findViewById(R.id.tvMbTarget);
-                tvMbT.setText(String.valueOf(r.nextInt(900) + 100));
+                if (tvMbT != null) tvMbT.setText(String.valueOf(r.nextInt(900) + 100));
             }
             @Override
             public void onFinish() { stopRolling(); }
