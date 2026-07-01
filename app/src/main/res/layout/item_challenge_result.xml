@@ -3,9 +3,10 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginBottom="12dp"
+    android:layout_marginBottom="10dp"
     app:cardCornerRadius="16dp"
-    app:cardElevation="2dp">
+    app:cardElevation="2dp"
+    app:cardBackgroundColor="#FEFEFE">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -16,26 +17,25 @@
 
         <TextView
             android:id="@+id/tvResultRank"
-            android:layout_width="40dp"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:fontFamily="@font/fredoka_bold"
-            android:text="🥇 1."
             android:textColor="#321C1C"
-            android:textSize="16sp" />
+            android:textSize="22sp"
+            android:minWidth="44dp" />
 
         <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginStart="12dp"
             android:layout_weight="1"
+            android:layout_marginStart="8dp"
             android:orientation="vertical">
 
             <TextView
                 android:id="@+id/tvResultName"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:fontFamily="@font/fredoka_bold"
-                android:text="Ime Igrača"
+                android:fontFamily="@font/fredoka_semibold"
                 android:textColor="#321C1C"
                 android:textSize="16sp" />
 
@@ -44,9 +44,9 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:fontFamily="@font/fredoka_regular"
-                android:text="0 bodova"
                 android:textColor="#877777"
                 android:textSize="13sp" />
+
         </LinearLayout>
 
         <TextView
@@ -54,9 +54,8 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:fontFamily="@font/fredoka_bold"
-            android:text="+0 ⭐ +0 🎟️"
-            android:textColor="#4CAF50"
-            android:textSize="15sp" />
+            android:textSize="14sp" />
 
     </LinearLayout>
+
 </androidx.cardview.widget.CardView>

@@ -1,6 +1,7 @@
 package com.example.slagalica;
 
 import android.os.Bundle;
+import android.content.Intent;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -31,7 +32,13 @@ public class NotificationsActivity extends AppCompatActivity {
         rvNotifications.setLayoutManager(new LinearLayoutManager(this));
 
         displayedNotifications = new ArrayList<>(NotificationRepository.getAll());
-        adapter = new NotificationAdapter(displayedNotifications);
+        adapter = new NotificationAdapter(displayedNotifications, notification -> {
+            if ("challenge".equals(notification.getType())) {
+                Intent intent = new Intent(this, ChallengeResultActivity.class);
+                intent.putExtra("challengeId", notification.getId());
+                startActivity(intent);
+            }
+        });
         rvNotifications.setAdapter(adapter);
 
         setupFilters();
@@ -60,7 +67,7 @@ public class NotificationsActivity extends AppCompatActivity {
     private void filterNotifications(String criteria) {
         displayedNotifications.clear();
         List<Notification> all = NotificationRepository.getAll();
-        
+
         switch (criteria) {
             case "Sve":
                 displayedNotifications.addAll(all);
