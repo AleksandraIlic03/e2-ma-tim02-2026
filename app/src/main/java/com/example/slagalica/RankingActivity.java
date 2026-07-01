@@ -31,7 +31,7 @@ public class RankingActivity extends AppCompatActivity {
 
     private TabLayout tabLayout;
     private RecyclerView rvRankings;
-    private TextView tvCycleDates;
+    private TextView tvCycleDates, tvEmptyRanking;
     private RankAdapter userAdapter;
     private RegionRankAdapter regionAdapter;
     private List<RankingEntry> rankingList = new ArrayList<>();
@@ -59,6 +59,7 @@ public class RankingActivity extends AppCompatActivity {
         tabLayout = findViewById(R.id.tabLayout);
         rvRankings = findViewById(R.id.rvRankings);
         tvCycleDates = findViewById(R.id.tvCycleDates);
+        tvEmptyRanking = findViewById(R.id.tvEmptyRanking);
 
         rvRankings.setLayoutManager(new LinearLayoutManager(this));
         userAdapter = new RankAdapter(rankingList);
@@ -145,6 +146,7 @@ public class RankingActivity extends AppCompatActivity {
         rvRankings.setAdapter(userAdapter);
         String field = (selectedTab == 0) ? "starsWeekly" : "starsMonthly";
         db.collection("users")
+                .whereGreaterThan(field, 0L)
                 .orderBy(field, Query.Direction.DESCENDING)
                 .limit(50)
                 .get()
@@ -165,6 +167,7 @@ public class RankingActivity extends AppCompatActivity {
                         rankingList.add(entry);
                     }
                     userAdapter.notifyDataSetChanged();
+                    tvEmptyRanking.setVisibility(rankingList.isEmpty() ? View.VISIBLE : View.GONE);
                 })
                 .addOnFailureListener(e -> Toast.makeText(RankingActivity.this,
                         "Greška pri učitavanju rang liste", Toast.LENGTH_SHORT).show());

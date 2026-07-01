@@ -34,6 +34,9 @@ public class HomeActivity extends AppCompatActivity {
         listenToUserData();
         checkForRewards();
 
+        // Spec 3a + 6b: dnevni tokeni (5 + bonus po ligi) jednom dnevno
+        RankingManager.grantDailyTokensIfNeeded(FirebaseAuth.getInstance().getUid());
+
         NotificationHelper.createNotificationChannels(this);
 
         findViewById(R.id.btnNotifications).setOnClickListener(v -> {

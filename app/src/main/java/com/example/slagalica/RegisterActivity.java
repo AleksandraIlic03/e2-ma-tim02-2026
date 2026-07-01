@@ -144,7 +144,8 @@ public class RegisterActivity extends AppCompatActivity {
                     user.put("email", email);
                     user.put("username", username);
                     user.put("region", region);
-                    user.put("tokens", 100);
+                    user.put("tokens", 5);
+                    user.put("lastDailyTokenDate", new java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault()).format(new java.util.Date()));
                     user.put("stars", 0);
                     user.put("starsWeekly", 0);
                     user.put("starsMonthly", 0);

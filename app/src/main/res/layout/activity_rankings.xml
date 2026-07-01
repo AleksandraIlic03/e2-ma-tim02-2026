@@ -65,6 +65,18 @@
         android:fontFamily="@font/fredoka_regular"
         android:textSize="14sp" />
 
+    <TextView
+        android:id="@+id/tvEmptyRanking"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="48dp"
+        android:text="Još niko nije odigrao partiju u ovom ciklusu."
+        android:textAlignment="center"
+        android:textColor="#877777"
+        android:textSize="15sp"
+        android:fontFamily="@font/fredoka_regular"
+        android:visibility="gone" />
+
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rvRankings"
         android:layout_width="match_parent"

@@ -10,6 +10,7 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.slagalica.R;
+import com.example.slagalica.RankingManager;
 import com.example.slagalica.models.RankingEntry;
 
 import java.util.List;
@@ -43,7 +44,8 @@ public class RankAdapter extends RecyclerView.Adapter<RankAdapter.RankViewHolder
         holder.tvStars.setText(String.valueOf(starsToShow));
 
         int leagueIdx = Math.max(0, Math.min(entry.getLeague(), LEAGUE_NAMES.length - 1));
-        holder.tvLeague.setText(LEAGUE_NAMES[leagueIdx]);
+        String emoji = RankingManager.getLeagueEmoji(leagueIdx);
+        holder.tvLeague.setText(emoji + " " + LEAGUE_NAMES[leagueIdx]);
 
         if (entry.getAvatarUrl() != null && !entry.getAvatarUrl().isEmpty()) {
             int resId = holder.itemView.getContext().getResources().getIdentifier(

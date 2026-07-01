@@ -270,6 +270,28 @@ public class RankingManager {
                 });
     }
 
+    // Spec 3a + 6b: svaki dan +5 tokena + broj liga bonus tokena
+    public static void grantDailyTokensIfNeeded(String userId) {
+        if (userId == null) return;
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+        String today = new java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault()).format(new java.util.Date());
+        DocumentReference userRef = db.collection("users").document(userId);
+
+        db.runTransaction(transaction -> {
+            com.google.firebase.firestore.DocumentSnapshot snapshot = transaction.get(userRef);
+            String lastDate = snapshot.getString("lastDailyTokenDate");
+            if (today.equals(lastDate)) return null;
+
+            long league = snapshot.getLong("league") != null ? snapshot.getLong("league") : 0L;
+            long tokensToGrant = 5 + league; // Spec 3a: 5 baznih + Spec 6b: 1 po ligi
+
+            transaction.update(userRef,
+                    "tokens", FieldValue.increment(tokensToGrant),
+                    "lastDailyTokenDate", today);
+            return tokensToGrant;
+        });
+    }
+
     public static void completeMission(String userId, String missionKey) {
         completeMission(userId, missionKey, null);
     }

@@ -256,15 +256,7 @@ public class SlagalicaApp extends Application implements Application.ActivityLif
                         return;
                     }
 
-                    // A. Provera nagrada (Tokeni)
-                    if (snapshot.contains("pendingReward")) {
-                        Object reward = snapshot.get("pendingReward");
-                        if (reward instanceof Map) {
-                            showRewardDialog((Map<String, Object>) reward);
-                        }
-                    }
-
-                    // B. Provera promene lige
+                    // A. Provera promene lige (nagrade se prikazuju u HomeActivity.checkForRewards)
                     if (snapshot.contains("pendingLeagueChange")) {
                         Object leagueData = snapshot.get("pendingLeagueChange");
                         if (leagueData instanceof Map) {

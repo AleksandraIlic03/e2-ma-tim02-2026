@@ -323,6 +323,30 @@ public class FriendsActivity extends AppCompatActivity {
                         friendsList.add(friend);
                     }
                     friendsAdapter.notifyDataSetChanged();
+                    assignMonthlyRanks();
+                });
+    }
+
+    private void assignMonthlyRanks() {
+        if (friendsList.isEmpty()) return;
+        java.util.Map<String, RankingEntry> friendMap = new java.util.HashMap<>();
+        for (RankingEntry f : friendsList) {
+            friendMap.put(f.getUserId(), f);
+        }
+        db.collection("users")
+                .whereGreaterThan("starsMonthly", 0L)
+                .orderBy("starsMonthly", com.google.firebase.firestore.Query.Direction.DESCENDING)
+                .get()
+                .addOnSuccessListener(rankSnap -> {
+                    int rank = 1;
+                    for (com.google.firebase.firestore.QueryDocumentSnapshot doc : rankSnap) {
+                        RankingEntry match = friendMap.get(doc.getId());
+                        if (match != null) {
+                            match.setRank(rank);
+                        }
+                        rank++;
+                    }
+                    friendsAdapter.notifyDataSetChanged();
                 });
     }
 
