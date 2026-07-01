@@ -740,7 +740,7 @@ public class MojBrojActivity extends AppCompatActivity implements SensorEventLis
                     } else {
                         // Spec 3e: prijateljska partija — samo misija, bez zvezda/statistike
                         db.collection("users").document(currentUserId).update("isInGame", false);
-                        RankingManager.completeMission(currentUserId, "play_friendly");
+                        RankingManager.completeMission(currentUserId, "friend_game");
                     }
 
                     // Turnir: ako je ovo turnirska partija, primeni posebna pravila nagrađivanja

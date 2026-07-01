@@ -190,6 +190,9 @@ public class ChatActivity extends AppCompatActivity {
                     db.collection("users").document(currentUserId)
                             .update("lastSeenChat", Timestamp.now());
 
+                    // Spec 12: dnevna misija "Posalji poruku u cet"
+                    RankingManager.completeMission(currentUserId, "send_chat");
+
                     // Spec 11b: istorija notifikacija
                     String time = new SimpleDateFormat("HH:mm", Locale.getDefault())
                             .format(new Date());
