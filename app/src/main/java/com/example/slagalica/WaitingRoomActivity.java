@@ -45,7 +45,7 @@ public class WaitingRoomActivity extends AppCompatActivity {
     private String currentUserName = "Gost";
     private String currentUserAvatar = "ic_user";
     private String roomId;
-    private ListenerRegistration roomListener;
+    private ListenerRegistration roomListener, inviteStatusListener;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -342,16 +342,18 @@ public class WaitingRoomActivity extends AppCompatActivity {
 
                         String opponentId = getIntent().getStringExtra("opponentId");
                         if (isFriendly && opponentId != null) {
-                            FriendsManager.sendGameInvite(opponentId, currentUserName, roomId, new FriendsManager.ActionCallback() {
-                                @Override
-                                public void onSuccess() {
-                                    tvStatus.setText("Poziv poslat prijatelju...");
-                                }
-
-                                @Override
-                                public void onFailure(Exception e) {
-                                    Toast.makeText(WaitingRoomActivity.this, "Greška pri slanju poziva", Toast.LENGTH_SHORT).show();
-                                }
+                            db.collection("gameInvites").add(new HashMap<String, Object>() {{
+                                put("fromUserId", currentUserId);
+                                put("fromUsername", currentUserName);
+                                put("toUserId", opponentId);
+                                put("roomId", roomId);
+                                put("status", "pending");
+                                put("timestamp", FieldValue.serverTimestamp());
+                            }}).addOnSuccessListener(docRef -> {
+                                tvStatus.setText("Poziv poslat prijatelju...");
+                                listenForInviteStatus(docRef.getId());
+                            }).addOnFailureListener(e -> {
+                                Toast.makeText(WaitingRoomActivity.this, "Greška pri slanju poziva", Toast.LENGTH_SHORT).show();
                             });
                         } else if (!isAuto) {
                             tvStatus.setText("Čekanje protivnika...");
@@ -360,6 +362,23 @@ public class WaitingRoomActivity extends AppCompatActivity {
                         listenForOpponent(true);
                     });
         });
+    }
+
+    private void listenForInviteStatus(String inviteId) {
+        if (inviteStatusListener != null) inviteStatusListener.remove();
+        inviteStatusListener = db.collection("gameInvites").document(inviteId)
+                .addSnapshotListener((snapshot, e) -> {
+                    if (snapshot != null && snapshot.exists()) {
+                        String status = snapshot.getString("status");
+                        if ("rejected".equals(status)) {
+                            Toast.makeText(this, "Igrač je odbio poziv.", Toast.LENGTH_SHORT).show();
+                            finish();
+                        } else if ("expired".equals(status)) {
+                            Toast.makeText(this, "Poziv je istekao.", Toast.LENGTH_SHORT).show();
+                            finish();
+                        }
+                    }
+                });
     }
 
     private List<Map<String, Object>> getDefaultAsocijacije() {
@@ -482,5 +501,6 @@ public class WaitingRoomActivity extends AppCompatActivity {
     protected void onDestroy() {
         super.onDestroy();
         if (roomListener != null) roomListener.remove();
+        if (inviteStatusListener != null) inviteStatusListener.remove();
     }
 }

@@ -68,6 +68,9 @@ public class SlagalicaApp extends Application implements Application.ActivityLif
 
         registerActivityLifecycleCallbacks(this);
 
+        // Resetuj sve statuse na startu (za slučaj da je app nasilno ugašena ranije)
+        resetAllUsersStatus();
+
         // Pokreni/zaustavi listenere u zavisnosti od toga da li je korisnik ulogovan
         authStateListener = firebaseAuth -> {
             if (firebaseAuth.getCurrentUser() != null) {
@@ -99,6 +102,27 @@ public class SlagalicaApp extends Application implements Application.ActivityLif
 
     private boolean isGameActivity(@Nullable Activity a) {
         return a != null && GAME_ACTIVITIES.contains(a.getClass().getSimpleName());
+    }
+
+    private void resetAllUsersStatus() {
+        // Resetujemo sve koji su ostali online ili u igri
+        db.collection("users")
+                .whereEqualTo("isOnline", true)
+                .get()
+                .addOnSuccessListener(snapshot -> {
+                    for (DocumentSnapshot doc : snapshot.getDocuments()) {
+                        doc.getReference().update("isOnline", false, "isInGame", false);
+                    }
+                });
+
+        db.collection("users")
+                .whereEqualTo("isInGame", true)
+                .get()
+                .addOnSuccessListener(snapshot -> {
+                    for (DocumentSnapshot doc : snapshot.getDocuments()) {
+                        doc.getReference().update("isOnline", false, "isInGame", false);
+                    }
+                });
     }
 
     private void writeStatus(boolean online, boolean inGame) {
@@ -149,10 +173,12 @@ public class SlagalicaApp extends Application implements Application.ActivityLif
                             String fromUsername = doc.getString("fromUsername");
                             if (fromUsername == null) fromUsername = "Igrac";
 
-                            NotificationHelper.sendRealNotification(this,
-                                    "Poziv za partiju",
-                                    "Igrac " + fromUsername + " vas poziva na partiju.",
-                                    NotificationHelper.CHANNEL_OTHER);
+                            if (!isAppInForeground()) {
+                                NotificationHelper.sendRealNotification(this,
+                                        "Poziv za partiju",
+                                        "Igrac " + fromUsername + " vas poziva na partiju.",
+                                        NotificationHelper.CHANNEL_OTHER);
+                            }
 
                             // In-app dijalog samo ako je neki ekran trenutno vidljiv
                             showGameInviteDialog(doc);

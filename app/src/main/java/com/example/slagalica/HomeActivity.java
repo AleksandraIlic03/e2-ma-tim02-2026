@@ -21,11 +21,7 @@ public class HomeActivity extends AppCompatActivity {
 
     private TextView tvHomeStars, tvHomeTokens, tvHomeLeague;
     private FirebaseFirestore db;
-    private boolean friendRequestsInitialized = false;
-    private boolean acceptedRequestsInitialized = false;
-    private boolean invitesInitialized = false;
     private ListenerRegistration userListener;
-    private ListenerRegistration inviteListener;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -38,7 +34,6 @@ public class HomeActivity extends AppCompatActivity {
         tvHomeLeague = findViewById(R.id.tvHomeLeague);
 
         listenToUserData();
-        listenForGameInvites();
         grantDailyTokens();
 
         NotificationHelper.createNotificationChannels(this);
@@ -113,42 +108,6 @@ public class HomeActivity extends AppCompatActivity {
     }
 
 
-    private void showGameInviteDialog(com.google.firebase.firestore.DocumentSnapshot inviteDoc) {
-        String fromUsername = inviteDoc.getString("fromUsername");
-        String roomId = inviteDoc.getString("roomId");
-        String inviteId = inviteDoc.getId();
-
-        AlertDialog dialog = new AlertDialog.Builder(this)
-                .setTitle("Poziv za partiju")
-                .setMessage("Igrač " + fromUsername + " vas poziva na partiju.")
-                .setPositiveButton("Prihvati", (d, w) -> {
-                    FriendsManager.respondToGameInvite(inviteId, "accepted", new FriendsManager.ActionCallback() {
-                        @Override
-                        public void onSuccess() {
-                            Intent intent = new Intent(HomeActivity.this, WaitingRoomActivity.class);
-                            intent.putExtra("autoJoinRoomId", roomId);
-                            startActivity(intent);
-                        }
-                        @Override
-                        public void onFailure(Exception e) {}
-                    });
-                })
-                .setNegativeButton("Odbij", (d, w) -> {
-                    FriendsManager.respondToGameInvite(inviteId, "rejected", null);
-                })
-                .setCancelable(false)
-                .create();
-
-        dialog.show();
-
-        new android.os.Handler().postDelayed(() -> {
-            if (dialog.isShowing()) {
-                dialog.dismiss();
-                FriendsManager.respondToGameInvite(inviteId, "expired", null);
-            }
-        }, 10000);
-    }
-
     private void listenToUserData() {
         String userId = FirebaseAuth.getInstance().getCurrentUser() != null ? 
                         FirebaseAuth.getInstance().getCurrentUser().getUid() : null;
@@ -201,23 +160,9 @@ public class HomeActivity extends AppCompatActivity {
         });
     }
 
-    private void listenForGameInvites() {
-        String uid = FirebaseAuth.getInstance().getUid();
-        if (uid == null) return;
-        inviteListener = db.collection("gameInvites")
-                .whereEqualTo("toUserId", uid)
-                .whereEqualTo("status", "pending")
-                .addSnapshotListener((snapshot, e) -> {
-                    if (!invitesInitialized) { invitesInitialized = true; return; }
-                    if (snapshot == null || snapshot.isEmpty()) return;
-                    showGameInviteDialog(snapshot.getDocuments().get(0));
-                });
-    }
-
     @Override
     protected void onDestroy() {
         super.onDestroy();
         if (userListener != null) userListener.remove();
-        if (inviteListener != null) inviteListener.remove();
     }
 }
