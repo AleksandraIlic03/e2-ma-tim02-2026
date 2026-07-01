@@ -271,6 +271,10 @@ public class RankingManager {
     }
 
     public static void completeMission(String userId, String missionKey) {
+        completeMission(userId, missionKey, null);
+    }
+
+    public static void completeMission(String userId, String missionKey, Runnable onNewlyCompleted) {
         if (userId == null) return;
         FirebaseFirestore db = FirebaseFirestore.getInstance();
         String today = new java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault()).format(new java.util.Date());
@@ -283,7 +287,9 @@ public class RankingManager {
                 if (isDone != null && !isDone) {
                     transaction.update(missionRef, missionKey, true);
                     updateStars(userId, 3);
+                    return Boolean.TRUE;
                 }
+                return Boolean.FALSE;
             } else {
                 java.util.Map<String, Object> init = new java.util.HashMap<>();
                 init.put("win_game", false);
@@ -294,8 +300,12 @@ public class RankingManager {
                 init.put(missionKey, true);
                 transaction.set(missionRef, init);
                 updateStars(userId, 3);
+                return Boolean.TRUE;
             }
-            return null;
+        }).addOnSuccessListener(result -> {
+            if (Boolean.TRUE.equals(result) && onNewlyCompleted != null) {
+                onNewlyCompleted.run();
+            }
         });
     }
 }

@@ -191,7 +191,8 @@ public class ChatActivity extends AppCompatActivity {
                             .update("lastSeenChat", Timestamp.now());
 
                     // Spec 12: dnevna misija "Posalji poruku u cet"
-                    RankingManager.completeMission(currentUserId, "send_chat");
+                    RankingManager.completeMission(currentUserId, "send_chat", () ->
+                            NotificationHelper.showMissionCompletedDialog(ChatActivity.this, "Pošalji poruku u čet"));
 
                     // Spec 11b: istorija notifikacija
                     String time = new SimpleDateFormat("HH:mm", Locale.getDefault())

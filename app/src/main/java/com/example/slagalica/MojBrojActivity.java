@@ -729,7 +729,8 @@ public class MojBrojActivity extends AppCompatActivity implements SensorEventLis
                         RankingManager.updateStars(currentUserId, starChange);
 
                         if ("win".equals(result)) {
-                            RankingManager.completeMission(currentUserId, "win_game");
+                            RankingManager.completeMission(currentUserId, "win_game", () ->
+                                    NotificationHelper.showMissionCompletedDialog(MojBrojActivity.this, "Pobedi partiju"));
                         }
 
                         if (!gameStatsRecordedThisMatch) {
@@ -740,7 +741,8 @@ public class MojBrojActivity extends AppCompatActivity implements SensorEventLis
                     } else {
                         // Spec 3e: prijateljska partija — samo misija, bez zvezda/statistike
                         db.collection("users").document(currentUserId).update("isInGame", false);
-                        RankingManager.completeMission(currentUserId, "friend_game");
+                        RankingManager.completeMission(currentUserId, "friend_game", () ->
+                                NotificationHelper.showMissionCompletedDialog(MojBrojActivity.this, "Odigraj prijateljsku partiju"));
                     }
 
                     // Turnir: ako je ovo turnirska partija, primeni posebna pravila nagrađivanja

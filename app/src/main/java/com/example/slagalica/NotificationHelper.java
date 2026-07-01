@@ -88,4 +88,37 @@ public class NotificationHelper {
                 .setOngoing(true)
                 .build();
     }
+
+    public static void showMissionCompletedDialog(android.app.Activity activity, String missionName) {
+        if (activity == null || activity.isFinishing()) return;
+        activity.runOnUiThread(() -> {
+            android.view.View dialogView = activity.getLayoutInflater().inflate(R.layout.dialog_reward, null);
+            androidx.appcompat.app.AlertDialog dialog = new androidx.appcompat.app.AlertDialog.Builder(
+                    activity, android.R.style.Theme_Material_Light_Dialog_NoActionBar)
+                    .setView(dialogView)
+                    .setCancelable(true)
+                    .create();
+            if (dialog.getWindow() != null) {
+                dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+            }
+            android.widget.TextView tvTitle   = dialogView.findViewById(R.id.tvRewardTitle);
+            android.widget.TextView tvMessage = dialogView.findViewById(R.id.tvRewardMessage);
+            android.widget.TextView tvValue   = dialogView.findViewById(R.id.tvRewardValue);
+            com.google.android.material.button.MaterialButton btn = dialogView.findViewById(R.id.btnCollectReward);
+            android.view.View container = dialogView.findViewById(R.id.rewardContainer);
+
+            tvTitle.setText("MISIJA ZAVRŠENA!");
+            tvMessage.setText(missionName);
+            tvValue.setText("+3 ⭐");
+            btn.setText("ODLIČNO!");
+
+            container.setScaleX(0.7f);
+            container.setScaleY(0.7f);
+            container.setAlpha(0f);
+            container.animate().scaleX(1f).scaleY(1f).alpha(1f).setDuration(400).start();
+
+            btn.setOnClickListener(v -> dialog.dismiss());
+            dialog.show();
+        });
+    }
 }
