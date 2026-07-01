@@ -202,6 +202,8 @@ public class TournamentActivity extends AppCompatActivity {
                     if ("SEMI_FINALS".equals(status) || "FINAL".equals(status)) {
                         checkMyMatch(data);
                         checkMyResult(data);
+                    } else if ("COMPLETED".equals(status)) {
+                        checkMyResult(data);
                     }
                 });
     }
@@ -320,7 +322,7 @@ public class TournamentActivity extends AppCompatActivity {
                 db.collection("tournaments").document(tournamentId).update(updates);
             }
 
-        } else if ("FINAL".equals(status) && !resultShownForMatchType.equals("FINAL")) {
+        } else if (("FINAL".equals(status) || "COMPLETED".equals(status)) && !resultShownForMatchType.equals("FINAL")) {
             List<String> finalists = (List<String>) data.get("finalists");
             String finalWinner = (String) data.get("finalWinner");
 
@@ -340,9 +342,11 @@ public class TournamentActivity extends AppCompatActivity {
                             "Pobedio si turnir!", "+3 tokena i +10 bonus zvezda!",
                             NotificationHelper.CHANNEL_REWARDS);
 
-                    // Zaključi turnir
-                    db.collection("tournaments").document(tournamentId)
-                            .update("status", "COMPLETED", "winner", finalWinner);
+                    if ("FINAL".equals(status)) {
+                        // Zaključi turnir
+                        db.collection("tournaments").document(tournamentId)
+                                .update("status", "COMPLETED", "winner", finalWinner);
+                    }
                 }
             }
         }
