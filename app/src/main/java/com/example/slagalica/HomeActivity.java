@@ -21,11 +21,7 @@ public class HomeActivity extends AppCompatActivity {
 
     private TextView tvHomeStars, tvHomeTokens, tvHomeLeague;
     private FirebaseFirestore db;
-    private boolean friendRequestsInitialized = false;
-    private boolean acceptedRequestsInitialized = false;
-    private boolean invitesInitialized = false;
     private ListenerRegistration userListener;
-    private ListenerRegistration inviteListener;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -38,8 +34,6 @@ public class HomeActivity extends AppCompatActivity {
         tvHomeLeague = findViewById(R.id.tvHomeLeague);
 
         listenToUserData();
-        listenForGameInvites();
-        checkForRewards();
         grantDailyTokens();
 
         NotificationHelper.createNotificationChannels(this);
@@ -114,42 +108,6 @@ public class HomeActivity extends AppCompatActivity {
     }
 
 
-    private void showGameInviteDialog(com.google.firebase.firestore.DocumentSnapshot inviteDoc) {
-        String fromUsername = inviteDoc.getString("fromUsername");
-        String roomId = inviteDoc.getString("roomId");
-        String inviteId = inviteDoc.getId();
-
-        AlertDialog dialog = new AlertDialog.Builder(this)
-                .setTitle("Poziv za partiju")
-                .setMessage("Igrač " + fromUsername + " vas poziva na partiju.")
-                .setPositiveButton("Prihvati", (d, w) -> {
-                    FriendsManager.respondToGameInvite(inviteId, "accepted", new FriendsManager.ActionCallback() {
-                        @Override
-                        public void onSuccess() {
-                            Intent intent = new Intent(HomeActivity.this, WaitingRoomActivity.class);
-                            intent.putExtra("autoJoinRoomId", roomId);
-                            startActivity(intent);
-                        }
-                        @Override
-                        public void onFailure(Exception e) {}
-                    });
-                })
-                .setNegativeButton("Odbij", (d, w) -> {
-                    FriendsManager.respondToGameInvite(inviteId, "rejected", null);
-                })
-                .setCancelable(false)
-                .create();
-
-        dialog.show();
-
-        new android.os.Handler().postDelayed(() -> {
-            if (dialog.isShowing()) {
-                dialog.dismiss();
-                FriendsManager.respondToGameInvite(inviteId, "expired", null);
-            }
-        }, 10000);
-    }
-
     private void listenToUserData() {
         String userId = FirebaseAuth.getInstance().getCurrentUser() != null ? 
                         FirebaseAuth.getInstance().getCurrentUser().getUid() : null;
@@ -166,94 +124,10 @@ public class HomeActivity extends AppCompatActivity {
                     if (stars < 0) stars = 0;
                     if (tokens < 0) tokens = 0;
 
-                    // Spec: Ako su zvezde promenjene spolja, uskladi ligu automatski
-                    int calculatedLeague = RankingManager.calculateLeague(stars);
-                    if (calculatedLeague != (int) league) {
-                        // Umesto direktnog dijaloga, upisujemo u bazu da bi checkForRewards primetio
-                        Map<String, Object> pending = new HashMap<>();
-                        pending.put("oldLeague", league);
-                        pending.put("newLeague", (long) calculatedLeague);
-                        
-                        db.collection("users").document(userId).update(
-                            "league", (long) calculatedLeague,
-                            "pendingLeagueChange", pending
-                        );
-                        
-                        // Pozivamo proveru odmah da ne bismo čekali sledeći ulazak
-                        checkForRewards();
-                    }
-
                     tvHomeStars.setText("⭐ " + stars);
                     tvHomeTokens.setText("🎟️ " + tokens);
-                    tvHomeLeague.setText(getLeagueEmoji(league) + " " + league);
+                    tvHomeLeague.setText(RankingManager.getLeagueEmoji(league) + " " + league);
                 });
-    }
-
-    private void triggerLeagueNotification(int oldL, int newL) {
-        String leagueName = getLeagueName(newL);
-        String emoji = getLeagueEmoji(newL);
-        String title = newL > oldL ? "Napredovali ste!" : "Obaveštenje o ligi";
-        String body = "Sada ste u ligi: " + emoji + " " + leagueName;
-
-        NotificationHelper.sendRealNotification(this, title, body, NotificationHelper.CHANNEL_RANKING);
-
-        runOnUiThread(() -> showLeagueRewardDialog(oldL, newL));
-    }
-
-    private String getLeagueEmoji(long league) {
-        switch ((int) league) {
-            case 1: return "🐺";
-            case 2: return "🐻";
-            case 3: return "🦁";
-            case 4: return "🦅";
-            case 5: return "🐉";
-            default: return "🐭";
-        }
-    }
-
-    private void showLeagueRewardDialog(int oldL, int newL) {
-        View dialogView = getLayoutInflater().inflate(R.layout.dialog_reward, null);
-        AlertDialog dialog = new AlertDialog.Builder(this, android.R.style.Theme_Material_Light_Dialog_NoActionBar)
-                .setView(dialogView)
-                .setCancelable(true)
-                .create();
-
-        if (dialog.getWindow() != null) {
-            dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
-        }
-
-        TextView tvTitle = dialogView.findViewById(R.id.tvRewardTitle);
-        TextView tvMsg = dialogView.findViewById(R.id.tvRewardMessage);
-        TextView tvVal = dialogView.findViewById(R.id.tvRewardValue);
-        MaterialButton btn = dialogView.findViewById(R.id.btnCollectReward);
-        View container = dialogView.findViewById(R.id.rewardContainer);
-
-        String leagueName = getLeagueName(newL);
-        String emoji = getLeagueEmoji(newL);
-        
-        if (newL > oldL) {
-            tvTitle.setText("NOVA LIGA!");
-            tvMsg.setText("Napredovali ste u novu ligu!");
-            btn.setText("U REDU");
-        } else {
-            tvTitle.setText("OBAVEŠTENJE");
-            tvMsg.setText("Nažalost, ispali ste u nižu ligu.");
-            btn.setText("U REDU");
-        }
-        
-        tvVal.setText(emoji + " " + leagueName);
-
-        container.setScaleX(0.7f); container.setScaleY(0.7f); container.setAlpha(0f);
-        container.animate().scaleX(1f).scaleY(1f).alpha(1f).setDuration(500).start();
-
-        btn.setOnClickListener(v -> dialog.dismiss());
-        dialog.show();
-    }
-
-    private String getLeagueName(int league) {
-        String[] names = {"Miš", "Vuk", "Medved", "Lav", "Orao", "Zmaj"};
-        if (league >= 0 && league < names.length) return names[league];
-        return "Nepoznato";
     }
 
     private void grantDailyTokens() {
@@ -286,108 +160,9 @@ public class HomeActivity extends AppCompatActivity {
         });
     }
 
-    private void listenForGameInvites() {
-        String uid = FirebaseAuth.getInstance().getUid();
-        if (uid == null) return;
-        inviteListener = db.collection("gameInvites")
-                .whereEqualTo("toUserId", uid)
-                .whereEqualTo("status", "pending")
-                .addSnapshotListener((snapshot, e) -> {
-                    if (!invitesInitialized) { invitesInitialized = true; return; }
-                    if (snapshot == null || snapshot.isEmpty()) return;
-                    showGameInviteDialog(snapshot.getDocuments().get(0));
-                });
-    }
-
     @Override
     protected void onDestroy() {
         super.onDestroy();
         if (userListener != null) userListener.remove();
-        if (inviteListener != null) inviteListener.remove();
-    }
-
-    private void checkForRewards() {
-        String userId = FirebaseAuth.getInstance().getCurrentUser() != null ? 
-                        FirebaseAuth.getInstance().getCurrentUser().getUid() : null;
-        if (userId == null) return;
-
-        db.collection("users").document(userId).get().addOnSuccessListener(doc -> {
-            if (!doc.exists()) return;
-            
-            // 1. Provera nagrada (Tokeni)
-            if (doc.contains("pendingReward")) {
-                Map<String, Object> reward = (Map<String, Object>) doc.get("pendingReward");
-                if (reward != null) showRewardDialog(reward);
-            }
-            
-            // 2. Provera promene lige
-            if (doc.contains("pendingLeagueChange")) {
-                Map<String, Object> leagueData = (Map<String, Object>) doc.get("pendingLeagueChange");
-                if (leagueData != null) {
-                    long oldL = leagueData.get("oldLeague") != null ? (long) leagueData.get("oldLeague") : 0L;
-                    long newL = leagueData.get("newLeague") != null ? (long) leagueData.get("newLeague") : 0L;
-                    showLeagueRewardDialog((int) oldL, (int) newL);
-                    
-                    // Obriši obaveštenje iz baze nakon prikaza
-                    db.collection("users").document(userId).update("pendingLeagueChange", com.google.firebase.firestore.FieldValue.delete());
-                }
-            }
-        });
-    }
-
-    private void showRewardDialog(Map<String, Object> rewardData) {
-        View dialogView = getLayoutInflater().inflate(R.layout.dialog_reward, null);
-        AlertDialog dialog = new AlertDialog.Builder(this, android.R.style.Theme_Material_Light_Dialog_NoActionBar)
-                .setView(dialogView)
-                .setCancelable(false)
-                .create();
-
-        if (dialog.getWindow() != null) {
-            dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
-        }
-
-        TextView tvMsg = dialogView.findViewById(R.id.tvRewardMessage);
-        TextView tvVal = dialogView.findViewById(R.id.tvRewardValue);
-        MaterialButton btn = dialogView.findViewById(R.id.btnCollectReward);
-        View container = dialogView.findViewById(R.id.rewardContainer);
-
-        long tokens = rewardData.get("tokens") != null ? (long) rewardData.get("tokens") : 0;
-        long rank = rewardData.get("rank") != null ? (long) rewardData.get("rank") : 0;
-        String period = rewardData.get("period") != null ? (String) rewardData.get("period") : "";
-
-        String[] ordinals = {"1.", "2.", "3.", "4.", "5.", "6.", "7.", "8.", "9.", "10."};
-        String rankStr = (rank >= 1 && rank <= 10) ? ordinals[(int) rank - 1] + " mesto" : rank + ". mesto";
-        tvMsg.setText(period + " rang lista je završena!\nZauzeo si " + rankStr + " i nagrađen si tokenima.");
-        tvVal.setText("+" + tokens + " 🎟️");
-
-        container.setScaleX(0.4f);
-        container.setScaleY(0.4f);
-        container.setAlpha(0f);
-        container.animate()
-                .scaleX(1f).scaleY(1f).alpha(1f)
-                .setDuration(500)
-                .withEndAction(() -> {
-                    tvVal.animate().scaleX(1.2f).scaleY(1.2f).setDuration(300)
-                            .withEndAction(() ->
-                                tvVal.animate().scaleX(1f).scaleY(1f).setDuration(300).start())
-                            .start();
-                })
-                .start();
-
-        try {
-            android.media.Ringtone r = android.media.RingtoneManager.getRingtone(
-                    getApplicationContext(),
-                    android.media.RingtoneManager.getDefaultUri(android.media.RingtoneManager.TYPE_NOTIFICATION));
-            if (r != null) r.play();
-        } catch (Exception ignored) {}
-
-        btn.setOnClickListener(v -> {
-            String userId = FirebaseAuth.getInstance().getCurrentUser().getUid();
-            db.collection("users").document(userId)
-                    .update("pendingReward", com.google.firebase.firestore.FieldValue.delete());
-            dialog.dismiss();
-        });
-
-        dialog.show();
     }
 }

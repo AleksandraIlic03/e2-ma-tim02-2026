@@ -23,10 +23,21 @@ public class RankingManager {
         return 0;
     }
 
-    private static String calculateLeagueName(int league) {
+    public static String calculateLeagueName(int league) {
         String[] names = {"Miš", "Vuk", "Medved", "Lav", "Orao", "Zmaj"};
         if (league >= 0 && league < names.length) return names[league];
         return "Nepoznato";
+    }
+
+    public static String getLeagueEmoji(long league) {
+        switch ((int) league) {
+            case 1: return "🐺";
+            case 2: return "🐻";
+            case 3: return "🦁";
+            case 4: return "🦅";
+            case 5: return "🐉";
+            default: return "🐭";
+        }
     }
 
     public static void updateStars(String userId, int starChange) {

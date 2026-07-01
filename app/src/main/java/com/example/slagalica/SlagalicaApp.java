@@ -19,6 +19,7 @@ import com.google.firebase.firestore.ListenerRegistration;
 
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 
@@ -28,9 +29,13 @@ public class SlagalicaApp extends Application implements Application.ActivityLif
 
     // Trenutno vidljivi (foreground) Activity - za prikaz in-app dijaloga
     @Nullable
-    private Activity currentActivity;
+    private static Activity currentActivity;
 
-    private int startedActivities = 0;
+    private static int startedActivities = 0;
+
+    public static boolean isAppInForeground() {
+        return startedActivities > 0;
+    }
 
     // Activity-ji koji se racunaju kao "u igri"
     private static final Set<String> GAME_ACTIVITIES = new HashSet<>(Arrays.asList(
@@ -44,7 +49,7 @@ public class SlagalicaApp extends Application implements Application.ActivityLif
     ));
 
     // Globalni listeneri
-    private ListenerRegistration inviteListener, requestListener, acceptedListener;
+    private ListenerRegistration inviteListener, requestListener, acceptedListener, userDataListener;
 
     // Flagovi za preskakanje prvog (inicijalnog) snapshota
     private boolean invitesInitialized = false;
@@ -63,6 +68,9 @@ public class SlagalicaApp extends Application implements Application.ActivityLif
 
         registerActivityLifecycleCallbacks(this);
 
+        // Resetuj sve statuse na startu (za slučaj da je app nasilno ugašena ranije)
+        resetAllUsersStatus();
+
         // Pokreni/zaustavi listenere u zavisnosti od toga da li je korisnik ulogovan
         authStateListener = firebaseAuth -> {
             if (firebaseAuth.getCurrentUser() != null) {
@@ -71,10 +79,20 @@ public class SlagalicaApp extends Application implements Application.ActivityLif
                     writeStatus(true, isGameActivity(currentActivity));
                 }
                 startGlobalListeners(firebaseAuth.getCurrentUser().getUid());
+                
+                // Pokreni servis za ligu (Vežbe 5)
+                Intent serviceIntent = new Intent(this, LeagueService.class);
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                    startForegroundService(serviceIntent);
+                } else {
+                    startService(serviceIntent);
+                }
             } else {
                 // Logout/expired: samo gasimo listenere.
-                // Offline se upisuje u SlagalicaApp.logout() PRE signOut-a.
                 stopGlobalListeners();
+                
+                // Ugasi servis za ligu
+                stopService(new Intent(this, LeagueService.class));
             }
         };
         FirebaseAuth.getInstance().addAuthStateListener(authStateListener);
@@ -84,6 +102,27 @@ public class SlagalicaApp extends Application implements Application.ActivityLif
 
     private boolean isGameActivity(@Nullable Activity a) {
         return a != null && GAME_ACTIVITIES.contains(a.getClass().getSimpleName());
+    }
+
+    private void resetAllUsersStatus() {
+        // Resetujemo sve koji su ostali online ili u igri
+        db.collection("users")
+                .whereEqualTo("isOnline", true)
+                .get()
+                .addOnSuccessListener(snapshot -> {
+                    for (DocumentSnapshot doc : snapshot.getDocuments()) {
+                        doc.getReference().update("isOnline", false, "isInGame", false);
+                    }
+                });
+
+        db.collection("users")
+                .whereEqualTo("isInGame", true)
+                .get()
+                .addOnSuccessListener(snapshot -> {
+                    for (DocumentSnapshot doc : snapshot.getDocuments()) {
+                        doc.getReference().update("isOnline", false, "isInGame", false);
+                    }
+                });
     }
 
     private void writeStatus(boolean online, boolean inGame) {
@@ -134,10 +173,12 @@ public class SlagalicaApp extends Application implements Application.ActivityLif
                             String fromUsername = doc.getString("fromUsername");
                             if (fromUsername == null) fromUsername = "Igrac";
 
-                            NotificationHelper.sendRealNotification(this,
-                                    "Poziv za partiju",
-                                    "Igrac " + fromUsername + " vas poziva na partiju.",
-                                    NotificationHelper.CHANNEL_OTHER);
+                            if (!isAppInForeground()) {
+                                NotificationHelper.sendRealNotification(this,
+                                        "Poziv za partiju",
+                                        "Igrac " + fromUsername + " vas poziva na partiju.",
+                                        NotificationHelper.CHANNEL_OTHER);
+                            }
 
                             // In-app dijalog samo ako je neki ekran trenutno vidljiv
                             showGameInviteDialog(doc);
@@ -190,12 +231,58 @@ public class SlagalicaApp extends Application implements Application.ActivityLif
                         }
                     }
                 });
+
+        // 4. Podaci o korisniku (promene lige, nagrade)
+        userDataListener = db.collection("users").document(userId)
+                .addSnapshotListener((snapshot, e) -> {
+                    if (e != null || snapshot == null || !snapshot.exists()) return;
+
+                    Long starsLong = snapshot.getLong("stars");
+                    long stars = starsLong != null ? starsLong : 0L;
+                    Long leagueLong = snapshot.getLong("league");
+                    long league = leagueLong != null ? leagueLong : 0L;
+
+                    // Spec: Ako su zvezde promenjene spolja, uskladi ligu automatski
+                    int calculatedLeague = RankingManager.calculateLeague(stars);
+                    if (calculatedLeague != (int) league) {
+                        Map<String, Object> pending = new java.util.HashMap<>();
+                        pending.put("oldLeague", league);
+                        pending.put("newLeague", (long) calculatedLeague);
+
+                        db.collection("users").document(userId).update(
+                                "league", (long) calculatedLeague,
+                                "pendingLeagueChange", pending
+                        );
+                        return;
+                    }
+
+                    // A. Provera nagrada (Tokeni)
+                    if (snapshot.contains("pendingReward")) {
+                        Object reward = snapshot.get("pendingReward");
+                        if (reward instanceof Map) {
+                            showRewardDialog((Map<String, Object>) reward);
+                        }
+                    }
+
+                    // B. Provera promene lige
+                    if (snapshot.contains("pendingLeagueChange")) {
+                        Object leagueData = snapshot.get("pendingLeagueChange");
+                        if (leagueData instanceof Map) {
+                            // Dijalog prikazujemo samo ako je aplikacija u prvom planu
+                            // Servis (LeagueService) će poslati notifikaciju nezavisno
+                            if (currentActivity != null) {
+                                showLeagueRewardDialog((Map<String, Object>) leagueData);
+                            }
+                        }
+                    }
+                });
     }
 
     private void stopGlobalListeners() {
         if (inviteListener != null) { inviteListener.remove(); inviteListener = null; }
         if (requestListener != null) { requestListener.remove(); requestListener = null; }
         if (acceptedListener != null) { acceptedListener.remove(); acceptedListener = null; }
+        if (userDataListener != null) { userDataListener.remove(); userDataListener = null; }
     }
 
     private void showGameInviteDialog(DocumentSnapshot inviteDoc) {
@@ -265,6 +352,131 @@ public class SlagalicaApp extends Application implements Application.ActivityLif
                     FriendsManager.respondToGameInvite(inviteId, "expired", null);
                 }
             }, 10000);
+        });
+    }
+
+    private void showRewardDialog(Map<String, Object> rewardData) {
+        final Activity activity = currentActivity;
+        if (activity == null || activity.isFinishing()) return;
+
+        activity.runOnUiThread(() -> {
+            if (activity.isFinishing()) return;
+
+            View dialogView = activity.getLayoutInflater().inflate(R.layout.dialog_reward, null);
+            AlertDialog dialog = new AlertDialog.Builder(activity, android.R.style.Theme_Material_Light_Dialog_NoActionBar)
+                    .setView(dialogView)
+                    .setCancelable(false)
+                    .create();
+
+            if (dialog.getWindow() != null) {
+                dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+            }
+
+            android.widget.TextView tvMsg = dialogView.findViewById(R.id.tvRewardMessage);
+            android.widget.TextView tvVal = dialogView.findViewById(R.id.tvRewardValue);
+            com.google.android.material.button.MaterialButton btn = dialogView.findViewById(R.id.btnCollectReward);
+            View container = dialogView.findViewById(R.id.rewardContainer);
+
+            Object tokensObj = rewardData.get("tokens");
+            long tokens = tokensObj instanceof Long ? (Long) tokensObj : 0L;
+            Object rankObj = rewardData.get("rank");
+            long rank = rankObj instanceof Long ? (Long) rankObj : 0L;
+            String period = rewardData.get("period") != null ? (String) rewardData.get("period") : "";
+
+            String[] ordinals = {"1.", "2.", "3.", "4.", "5.", "6.", "7.", "8.", "9.", "10."};
+            String rankStr = (rank >= 1 && rank <= 10) ? ordinals[(int) rank - 1] + " mesto" : rank + ". mesto";
+            tvMsg.setText(period + " rang lista je završena!\nZauzeo si " + rankStr + " i nagrađen si tokenima.");
+            tvVal.setText("+" + tokens + " 🎟️");
+
+            container.setScaleX(0.4f);
+            container.setScaleY(0.4f);
+            container.setAlpha(0f);
+            container.animate()
+                    .scaleX(1f).scaleY(1f).alpha(1f)
+                    .setDuration(500)
+                    .withEndAction(() -> {
+                        tvVal.animate().scaleX(1.2f).scaleY(1.2f).setDuration(300)
+                                .withEndAction(() ->
+                                        tvVal.animate().scaleX(1f).scaleY(1f).setDuration(300).start())
+                                .start();
+                    })
+                    .start();
+
+            try {
+                android.media.Ringtone r = android.media.RingtoneManager.getRingtone(
+                        getApplicationContext(),
+                        android.media.RingtoneManager.getDefaultUri(android.media.RingtoneManager.TYPE_NOTIFICATION));
+                if (r != null) r.play();
+            } catch (Exception ignored) {}
+
+            btn.setOnClickListener(v -> {
+                String userId = FirebaseAuth.getInstance().getUid();
+                if (userId != null) {
+                    db.collection("users").document(userId)
+                            .update("pendingReward", com.google.firebase.firestore.FieldValue.delete());
+                }
+                dialog.dismiss();
+            });
+
+            dialog.show();
+        });
+    }
+
+    private void showLeagueRewardDialog(Map<String, Object> leagueData) {
+        final Activity activity = currentActivity;
+        if (activity == null || activity.isFinishing()) return;
+
+        activity.runOnUiThread(() -> {
+            if (activity.isFinishing()) return;
+
+            View dialogView = activity.getLayoutInflater().inflate(R.layout.dialog_reward, null);
+            AlertDialog dialog = new AlertDialog.Builder(activity, android.R.style.Theme_Material_Light_Dialog_NoActionBar)
+                    .setView(dialogView)
+                    .setCancelable(true)
+                    .create();
+
+            if (dialog.getWindow() != null) {
+                dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+            }
+
+            android.widget.TextView tvTitle = dialogView.findViewById(R.id.tvRewardTitle);
+            android.widget.TextView tvMsg = dialogView.findViewById(R.id.tvRewardMessage);
+            android.widget.TextView tvVal = dialogView.findViewById(R.id.tvRewardValue);
+            com.google.android.material.button.MaterialButton btn = dialogView.findViewById(R.id.btnCollectReward);
+            View container = dialogView.findViewById(R.id.rewardContainer);
+
+            Object oldLObj = leagueData.get("oldLeague");
+            long oldL = oldLObj instanceof Long ? (Long) oldLObj : 0L;
+            Object newLObj = leagueData.get("newLeague");
+            long newL = newLObj instanceof Long ? (Long) newLObj : 0L;
+
+            String leagueName = RankingManager.calculateLeagueName((int) newL);
+            String emoji = RankingManager.getLeagueEmoji(newL);
+
+            if (newL > oldL) {
+                tvTitle.setText("NOVA LIGA!");
+                tvMsg.setText("Napredovali ste u novu ligu!");
+                btn.setText("U REDU");
+            } else {
+                tvTitle.setText("OBAVEŠTENJE");
+                tvMsg.setText("Nažalost, ispali ste u nižu ligu.");
+                btn.setText("U REDU");
+            }
+
+            tvVal.setText(emoji + " " + leagueName);
+
+            container.setScaleX(0.7f); container.setScaleY(0.7f); container.setAlpha(0f);
+            container.animate().scaleX(1f).scaleY(1f).alpha(1f).setDuration(500).start();
+
+            btn.setOnClickListener(v -> {
+                String userId = FirebaseAuth.getInstance().getUid();
+                if (userId != null) {
+                    db.collection("users").document(userId)
+                            .update("pendingLeagueChange", com.google.firebase.firestore.FieldValue.delete());
+                }
+                dialog.dismiss();
+            });
+            dialog.show();
         });
     }
 
