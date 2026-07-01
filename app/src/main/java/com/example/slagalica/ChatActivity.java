@@ -190,7 +190,7 @@ public class ChatActivity extends AppCompatActivity {
                     db.collection("users").document(currentUserId)
                             .update("lastSeenChat", Timestamp.now());
 
-                    // Spec 12: dnevna misija "Pošalji poruku u čet"
+                    // Spec 12: dnevna misija "Posalji poruku u cet"
                     RankingManager.completeMission(currentUserId, "send_chat");
 
                     // Spec 11b: istorija notifikacija
