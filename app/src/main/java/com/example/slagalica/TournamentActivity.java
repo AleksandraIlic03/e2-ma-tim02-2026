@@ -334,7 +334,8 @@ public class TournamentActivity extends AppCompatActivity {
                     db.collection("users").document(userId)
                             .update("tokens", FieldValue.increment(3));
                     RankingManager.updateStars(userId, 10); // 10 bonus zvezda
-                    RankingManager.completeMission(userId, "tournament_win");
+                    RankingManager.completeMission(userId, "tournament_win", () ->
+                            NotificationHelper.showMissionCompletedDialog(TournamentActivity.this, "Pobedi partiju u turniru"));
                     NotificationHelper.sendRealNotification(this,
                             "Pobedio si turnir!", "+3 tokena i +10 bonus zvezda!",
                             NotificationHelper.CHANNEL_REWARDS);
