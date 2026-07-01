@@ -29,9 +29,13 @@ public class SlagalicaApp extends Application implements Application.ActivityLif
 
     // Trenutno vidljivi (foreground) Activity - za prikaz in-app dijaloga
     @Nullable
-    private Activity currentActivity;
+    private static Activity currentActivity;
 
-    private int startedActivities = 0;
+    private static int startedActivities = 0;
+
+    public static boolean isAppInForeground() {
+        return startedActivities > 0;
+    }
 
     // Activity-ji koji se racunaju kao "u igri"
     private static final Set<String> GAME_ACTIVITIES = new HashSet<>(Arrays.asList(
@@ -72,10 +76,20 @@ public class SlagalicaApp extends Application implements Application.ActivityLif
                     writeStatus(true, isGameActivity(currentActivity));
                 }
                 startGlobalListeners(firebaseAuth.getCurrentUser().getUid());
+                
+                // Pokreni servis za ligu (Vežbe 5)
+                Intent serviceIntent = new Intent(this, LeagueService.class);
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                    startForegroundService(serviceIntent);
+                } else {
+                    startService(serviceIntent);
+                }
             } else {
                 // Logout/expired: samo gasimo listenere.
-                // Offline se upisuje u SlagalicaApp.logout() PRE signOut-a.
                 stopGlobalListeners();
+                
+                // Ugasi servis za ligu
+                stopService(new Intent(this, LeagueService.class));
             }
         };
         FirebaseAuth.getInstance().addAuthStateListener(authStateListener);
@@ -228,7 +242,11 @@ public class SlagalicaApp extends Application implements Application.ActivityLif
                     if (snapshot.contains("pendingLeagueChange")) {
                         Object leagueData = snapshot.get("pendingLeagueChange");
                         if (leagueData instanceof Map) {
-                            showLeagueRewardDialog((Map<String, Object>) leagueData);
+                            // Dijalog prikazujemo samo ako je aplikacija u prvom planu
+                            // Servis (LeagueService) će poslati notifikaciju nezavisno
+                            if (currentActivity != null) {
+                                showLeagueRewardDialog((Map<String, Object>) leagueData);
+                            }
                         }
                     }
                 });

@@ -19,7 +19,7 @@ import java.util.Locale;
 
 public class NotificationHelper {
     public static final String CHANNEL_CHAT    = "chat_channel";
-    public static final String CHANNEL_RANKING = "ranking_updates";
+    public static final String CHANNEL_RANKING = "ranking_updates_v3";
     public static final String CHANNEL_REWARDS = "rewards_channel";
     public static final String CHANNEL_OTHER   = "other_notifications_v2";
 
@@ -32,7 +32,7 @@ public class NotificationHelper {
                     CHANNEL_CHAT, "Čet poruke", NotificationManager.IMPORTANCE_HIGH));
 
             manager.createNotificationChannel(new NotificationChannel(
-                    CHANNEL_RANKING, "Rangiranje", NotificationManager.IMPORTANCE_LOW));
+                    CHANNEL_RANKING, "Rangiranje", NotificationManager.IMPORTANCE_HIGH));
 
             manager.createNotificationChannel(new NotificationChannel(
                     CHANNEL_REWARDS, "Nagrade", NotificationManager.IMPORTANCE_HIGH));
@@ -58,7 +58,7 @@ public class NotificationHelper {
                 context, 0, intent,
                 PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
 
-        int priority = (CHANNEL_OTHER.equals(channelId) || CHANNEL_REWARDS.equals(channelId))
+        int priority = (CHANNEL_OTHER.equals(channelId) || CHANNEL_REWARDS.equals(channelId) || CHANNEL_RANKING.equals(channelId))
                 ? NotificationCompat.PRIORITY_HIGH : NotificationCompat.PRIORITY_DEFAULT;
 
         NotificationCompat.Builder builder = new NotificationCompat.Builder(context, channelId)
@@ -73,5 +73,19 @@ public class NotificationHelper {
             NotificationManagerCompat.from(context)
                     .notify((int) System.currentTimeMillis(), builder.build());
         } catch (SecurityException ignored) {}
+    }
+
+    public static android.app.Notification createForegroundNotification(Context context) {
+        Intent intent = new Intent(context, HomeActivity.class);
+        PendingIntent pendingIntent = PendingIntent.getActivity(
+                context, 0, intent,
+                PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
+
+        return new NotificationCompat.Builder(context, CHANNEL_OTHER)
+                .setSmallIcon(R.drawable.ic_launcher_foreground)
+                .setPriority(NotificationCompat.PRIORITY_MIN)
+                .setContentIntent(pendingIntent)
+                .setOngoing(true)
+                .build();
     }
 }
