@@ -146,12 +146,12 @@ public class WaitingRoomActivity extends AppCompatActivity {
         // Transaction sprecava race condition gde dva igraca uzmu istu sobu istovremeno.
         db.collection("gameRooms")
                 .whereEqualTo("status", "waiting")
+                .whereEqualTo("isPublic", true)
                 .limit(10)
                 .get()
                 .addOnSuccessListener(querySnapshot -> {
                     DocumentSnapshot target = null;
                     for (DocumentSnapshot doc : querySnapshot.getDocuments()) {
-                        if (!Boolean.TRUE.equals(doc.getBoolean("isPublic"))) continue;
                         String p1Id = doc.getString("player1Id");
                         if (p1Id != null && !p1Id.equals(currentUserId)) {
                             target = doc;
