@@ -25,6 +25,7 @@ public class HomeActivity extends AppCompatActivity {
     private boolean acceptedRequestsInitialized = false;
     private boolean invitesInitialized = false;
     private ListenerRegistration userListener;
+    private ListenerRegistration inviteListener;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -37,6 +38,7 @@ public class HomeActivity extends AppCompatActivity {
         tvHomeLeague = findViewById(R.id.tvHomeLeague);
 
         listenToUserData();
+        listenForGameInvites();
         checkForRewards();
         grantDailyTokens();
 
@@ -284,10 +286,24 @@ public class HomeActivity extends AppCompatActivity {
         });
     }
 
+    private void listenForGameInvites() {
+        String uid = FirebaseAuth.getInstance().getUid();
+        if (uid == null) return;
+        inviteListener = db.collection("gameInvites")
+                .whereEqualTo("toUserId", uid)
+                .whereEqualTo("status", "pending")
+                .addSnapshotListener((snapshot, e) -> {
+                    if (!invitesInitialized) { invitesInitialized = true; return; }
+                    if (snapshot == null || snapshot.isEmpty()) return;
+                    showGameInviteDialog(snapshot.getDocuments().get(0));
+                });
+    }
+
     @Override
     protected void onDestroy() {
         super.onDestroy();
         if (userListener != null) userListener.remove();
+        if (inviteListener != null) inviteListener.remove();
     }
 
     private void checkForRewards() {
