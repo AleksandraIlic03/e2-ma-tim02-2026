@@ -58,9 +58,18 @@ public class LeagueService extends Service {
         Object newLObj = data.get("newLeague");
         long newL = newLObj instanceof Long ? (Long) newLObj : 0L;
 
-        String title = newL > oldL ? "Napredovali ste!" : "Obaveštenje o ligi";
-        String emoji = RankingManager.getLeagueEmoji(newL);
+        String title = (String) data.get("title");
+        if (title == null) {
+            title = newL > oldL ? "Napredovali ste!" : "Obaveštenje o ligi";
+        }
+        
+        // Specifičan zahtev korisnika za tekst ispadanja
+        if (newL < oldL) {
+            title = "Pali ste u nižu ligu";
+        }
+
         String name = RankingManager.calculateLeagueName((int) newL);
+        String emoji = RankingManager.getLeagueEmoji(newL);
         String body = "Sada ste u ligi: " + emoji + " " + name;
 
         if (!SlagalicaApp.isAppInForeground()) {
@@ -73,7 +82,6 @@ public class LeagueService extends Service {
             db.collection("users").document(uid)
                     .update("pendingLeagueChange", com.google.firebase.firestore.FieldValue.delete());
         }
-        
     }
 
     @Override

@@ -71,7 +71,7 @@ public class RankingManager {
 
             // Obaveštavanje o promeni lige
             if (newLeague != (int) currentLeague) {
-                String title = newLeague > (int) currentLeague ? "Napredovali ste u novu ligu!" : "Obaveštenje: Ispali ste u nižu ligu.";
+                String title = newLeague > (int) currentLeague ? "Napredovali ste u novu ligu!" : "Pali ste u nižu ligu";
                 String[] leagueNames = {"Miš", "Vuk", "Medved", "Lav", "Orao", "Zmaj"};
                 String body = "Sada ste u ligi: " + leagueNames[newLeague];
                 

@@ -495,7 +495,7 @@ public class SlagalicaApp extends Application implements Application.ActivityLif
 
     @Override
     public void onActivityStopped(@NonNull Activity activity) {
-        startedActivities--;
+        if (startedActivities > 0) startedActivities--;
         // App otisla u pozadinu -> offline (ako je jos ulogovan)
         if (startedActivities == 0 && FirebaseAuth.getInstance().getCurrentUser() != null) {
             writeStatus(false, false);

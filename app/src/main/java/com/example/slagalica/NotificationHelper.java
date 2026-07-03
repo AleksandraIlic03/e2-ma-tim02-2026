@@ -33,6 +33,7 @@ public class NotificationHelper {
 
             manager.createNotificationChannel(new NotificationChannel(
                     CHANNEL_RANKING, "Rangiranje", NotificationManager.IMPORTANCE_HIGH));
+            manager.getNotificationChannel(CHANNEL_RANKING).setLockscreenVisibility(android.app.Notification.VISIBILITY_PUBLIC);
 
             manager.createNotificationChannel(new NotificationChannel(
                     CHANNEL_REWARDS, "Nagrade", NotificationManager.IMPORTANCE_HIGH));
@@ -67,6 +68,8 @@ public class NotificationHelper {
                 .setContentText(message)
                 .setPriority(priority)
                 .setContentIntent(pendingIntent)
+                .setDefaults(NotificationCompat.DEFAULT_ALL)
+                .setCategory(NotificationCompat.CATEGORY_MESSAGE)
                 .setAutoCancel(true);
 
         try {
